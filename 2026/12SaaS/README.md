@@ -28,18 +28,21 @@
 
 | 项目 | 优先级 | 定位 | 状态 | MRR 目标 |
 | :--- | :--- | :--- | :--- | :--- |
-| [51title](./51title/51title.md) | **P0** | 标题生成 SaaS | ✅ 开发中 | $7,500/月 |
+| [51title](./51title/51title.md) | **P0** | 标题生成 SaaS | ✅ 开发中 | 500/月 |
 | [KOL Tools](./koltools/koltools.md) | **P0** | 自媒体工具矩阵 | 🟡 设计中 | $12,000/月 |
-| [Wukong CLI](./wukong/wukong.md) | **P0** | 开发者 CLI | 🛠 重构中 | 开源 (导流) |
-| [BookFlow](./bookflow.md) | **P1** | 关系管理 CRM | 📅 规划中 | $500/月 |
+| [Wukong CLI](./wukong/wukong.md) | **P0** | 开发者 CLI | 🛠 重构中 | 20000/月 |
+| [BookFlow](./bookflow.md) | **P1** | 关系管理 CRM | 📅 规划中 | $2000/月 |
 | [Ideas GPT](./ideas-gpt.md) | **P1** | 趋势洞察+内容生成 | 🟡 待打磨 | $7,000/月 |
 | [AIGC News](./aigc-news.md) | **P1** | AI 资讯 Newsletter | ✅ 运营中 | $2,000/月 |
+| [OneBot](./onebot.md) | **P1** | 极简 AI 聊天机器人 | 📅 规划中 | $1,000/月 |
+| [ZhongKui](./zhongkui.md) | **P1** | Agent安全 | 💡 概念期 | 0/月 |
 | [AIPwn](./aipwn.md) | **P2** | AI 安全内容+工具 | 🟡 内容驱动 | $1,000/月 |
+| [MutNPC](./mutnpc.md) | **P2** | AI 游戏 NPC 平台 | 📋 概念期 | $500/月 |
 | [DeepFeather](./deepfeather.md) | **P3** | 情绪化 AI 产品 | 🟡 探索期 | $300/月 |
 | [OpenBot](./openbot.md) | **P4** | Agent 平台储备 | ⏸ 未启动 | - |
 | [FlyPython](./flypython.md) | **P4** | 编程训练营 | ⏸ 未启动 | - |
 
-**状态说明**：✅ 开发/运营中 | 🟡 设计/打磨中 | 🛠 重构中 | 📅 规划中 | ⏸ 未启动
+**状态说明**：✅ 开发/运营中 | 🟡 设计/打磨中 | 🛠 重构中 | 📅 规划中 | 💡 概念期 | 📋 概念期 | ⏸ 未启动
 
 ---
 
@@ -118,6 +121,11 @@
 - [Wukong CLI](./wukong/wukong.md) - 开发者 CLI 工具
 - [BookFlow](./bookflow.md) - 关系管理工具
 - [DeepFeather](./deepfeather.md) - 情绪化 AI 产品
+- [OneBot](./onebot.md) - 极简 AI 聊天机器人
+
+### 🎮 垂直场景 (细分市场)
+- [ZhongKui](./zhongkui.md) - AI 安全助手（契合漏洞挖掘）
+- [MutNPC](./mutnpc.md) - AI 游戏 NPC 平台
 
 ### ⏸ 储备项目 (等待时机)
 - [OpenBot](./openbot.md) - Agent 平台

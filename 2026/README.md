@@ -60,11 +60,14 @@
 | **KOL Tools** | [Doc](./12SaaS/koltools/koltools.md) | 多平台自媒体分发与管理工具 |
 | **AIGC News** | [Doc](./12SaaS/aigc-news.md) | AI 资讯站 + Newsletter |
 | **Wukong** | [Doc](./12SaaS/wukong/wukong.md) | 开发者 情感+ CLI 工具 |
+| **OneBot** | [Doc](./12SaaS/onebot.md) | 极简 AI 聊天机器人平台 |
 | **OpenBot** | [Doc](./12SaaS/openbot.md) | Agent 编排平台 |
 | **BookFlow** | [Doc](./12SaaS/bookflow.md) | 个人 CRM / 关系管理 |
-| **AIPwn** | [Doc](./12SaaS/aipwn.md) | aipwn newsletter  |
+| **ZhongKui** | [Doc](./12SaaS/zhongkui.md) | AI 安全助手（契合漏洞挖掘） |
+| **AIPwn** | [Doc](./12SaaS/aipwn.md) | AI 安全 Newsletter + 工具 |
+| **MutNPC** | [Doc](./12SaaS/mutnpc.md) | AI 游戏 NPC 生成平台 |
 | **FlyPython** | [Doc](./12SaaS/flypython.md) | Python 学习/工具 |
-| **DeepFeather** | [Doc](./12SaaS/deepfeather.md) | 情感 |
+| **DeepFeather** | [Doc](./12SaaS/deepfeather.md) | 情感化 AI 产品 |
 | **IdeasGPT** | [Doc](./12SaaS/ideas-gpt.md) | 创意生成器 |
 
 ---
