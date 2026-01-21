@@ -118,30 +118,30 @@
 ## 📈 增长策略
 ### 流量获取（SEO 驱动）
 1. **SEO**：每个工具对应一组关键词
-   - 「YouTube title generator」- 月搜索 10k+
-   - 「Thread writer AI」- 月搜索 5k+
-   - 「小红书文案生成器」- 月搜索 3k+
+   - [ ] 「YouTube title generator」- 月搜索 10k+
+   - [ ] 「Thread writer AI」- 月搜索 5k+
+   - [ ] 「小红书文案生成器」- 月搜索 3k+
 
 2. **内容营销**
-   - 在 aigc.news 发布创作者工具测评
-   - YouTube 教程（如何用 AI 提升创作效率）
-   - 案例研究（真实创作者使用效果）
+   - [ ] 在 aigc.news 发布创作者工具测评
+   - [ ] YouTube 教程（如何用 AI 提升创作效率）
+   - [ ] 案例研究（真实创作者使用效果）
 
 3. **社区运营**
-   - ProductHunt 上线
-   - Reddit（r/YouTubers, r/ContentCreators）
-   - Discord 社群（创作者交流）
+   - [ ] ProductHunt 上线
+   - [ ] Reddit（r/YouTubers, r/ContentCreators）
+   - [ ] Discord 社群（创作者交流）
 
 4. **口碑传播**
-   - 工具底部「Made with kol.tools」水印
-   - 分享解锁额外次数
-   - 推荐好友得 Pro 会员
+   - [ ] 工具底部「Made with kol.tools」水印
+   - [ ] 分享解锁额外次数
+   - [ ] 推荐好友得 Pro 会员
 
 ### 转化优化
-- 免费试用 → 付费转化率目标：10%
-- 在生成结果页引导升级
-- 邮件营销（创作技巧 + 工具更新）
-- 限时优惠（首月 $4.99）
+- [ ] 免费试用 → 付费转化率目标：10%
+- [ ] 在生成结果页引导升级
+- [ ] 邮件营销（创作技巧 + 工具更新）
+- [ ] 限时优惠（首月 $4.99）
 
 ## ⚠️ 风险与应对
 | 风险 | 概率 | 应对策略 | 验证标准 |

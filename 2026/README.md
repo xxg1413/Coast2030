@@ -101,19 +101,19 @@
 **执行日历 (The 30-Day Grind):**
 
 **Phase 1: 冷启动 (Week 1)**
-*   **X**: 每天 2 条 Threads (总结 GitHub 热榜 / AI 新工具)。**目标**：混脸熟，互粉。
-*   **YT**: 发布 `Wukong CLI` 预告片 (Trailer) + 第一集 "I built an emotional AI CLI in 24 hours"。
-*   **Action**: 整理 50 个 AI 领域大 V 名单，开启"回复引流"模式。
+- [ ] **X**: 每天 2 条 Threads (总结 GitHub 热榜 / AI 新工具)。**目标**：混脸熟，互粉。
+- [ ] **YT**: 发布 `Wukong CLI` 预告片 (Trailer) + 第一集 "I built an emotional AI CLI in 24 hours"。
+- [ ] **Action**: 整理 50 个 AI 领域大 V 名单，开启"回复引流"模式。
 
 **Phase 2: 病毒期 (Week 2-3)**
-*   **X**: 发布 `Wukong CLI` v0.1 发布推文。**请求转推 (Retweet)**。如果 Github Trending 上榜，立刻截图发战报。
-*   **YT**: 两天一条 Shorts (剪辑高能编程时刻/AI搞笑对话)。不要怕粗糙。
-*   **Action**: 寻找 "AI Agent" 相关话题通过 Controversy (争议性观点) 获取流量。
+- [ ] **X**: 发布 `Wukong CLI` v0.1 发布推文。**请求转推 (Retweet)**。如果 Github Trending 上榜，立刻截图发战报。
+- [ ] **YT**: 两天一条 Shorts (剪辑高能编程时刻/AI搞笑对话)。不要怕粗糙。
+- [ ] **Action**: 寻找 "AI Agent" 相关话题通过 Controversy (争议性观点) 获取流量。
 
 **Phase 3: 冲刺变现 (Week 4)**
-*   **X**: 晒数据 (Build in Public)，展示真实增长曲线，吸引慕强粉。
-*   **YT**: 发布长视频 "How to make money with AI Coding" (复盘 Wukong 开发)。
-*   **Check**: 检查 Watch Hour 是否达标 4000h。如果不够，开启一次 24h 这是一个"Live Coding" 直播。
+- [ ] **X**: 晒数据 (Build in Public)，展示真实增长曲线，吸引慕强粉。
+- [ ] **YT**: 发布长视频 "How to make money with AI Coding" (复盘 Wukong 开发)。
+- [ ] **Check**: 检查 Watch Hour 是否达标 4000h。如果不够，开启一次 24h 这是一个"Live Coding" 直播。
 
 ---
 

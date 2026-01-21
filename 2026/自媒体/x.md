@@ -37,25 +37,25 @@
 ## 🔥 增长策略 (Growth Hacking)
 
 ### Phase 0: 账号清洗 (Rebranding)
-*   **Delete/Hide Legacy**: 删除或隐藏过去所有的纯中文推文（尤其是最近 3 个月的 Timeline）。
-*   **English Only**: 确保 Top 20 条推文全英文，给新访客 "Global Builder" 的第一印象。
-*   **Algorithm Reset**: 停止浏览中文区内容，强制算法重置你的标签为 `en`。
+- [X] **Delete/Hide Legacy**: 删除或隐藏过去所有的纯中文推文（尤其是最近 3 个月的 Timeline）。
+- [X] **English Only**: 确保 Top 20 条推文全英文，给新访客 "Global Builder" 的第一印象。
+- [X] **Algorithm Reset**: 停止浏览中文区内容，强制算法重置你的标签为 `en`。
 
 ### Phase 1: 冷启动 (0 → 1k)
-*   **Sniper Reply (狙击回复)**: 每天挑选 10 个目标大 V，在其推文发出 15 分钟内回复。
+- [ ] **Sniper Reply (狙击回复)**: 每天挑选 10 个目标大 V，在其推文发出 15 分钟内回复。
     *   ❌ 不要回: "Great thread!", "Agreed."
     *   ✅ 要回: 补充数据截图、提供反直觉观点、"I built X to solve exactly this."
-*   **List Management**: 建立 "Core AI Builders" 列表，不看 For You，只看列表互动。
-*   **Profile 漏斗**: Bio 必须在 3 秒内说清 "我是谁 + 我在做什么 + 为什么关注我"。
+- [ ] **List Management**: 建立 "Core AI Builders" 列表，不看 For You，只看列表互动。
+- [ ] **Profile 漏斗**: Bio 必须在 3 秒内说清 "我是谁 + 我在做什么 + 为什么关注我"。
 
 ### Phase 2: 病毒期 (1k → 5k)
-*   **Launch Day**: 配合 Product Hunt 发布，准备完整的 Launch Thread (Problem -> Agony -> Solution)。
-*   **Giveaway**: "Retweet to get my SaaS boilerplate code / notion template".
-*   **Controversy**: 适度表达有争议的技术观点 (e.g., "Why I chose SQLite over Postgres").
+- [ ] **Launch Day**: 配合 Product Hunt 发布，准备完整的 Launch Thread (Problem -> Agony -> Solution)。
+- [ ] **Giveaway**: "Retweet to get my SaaS boilerplate code / notion template".
+- [ ] **Controversy**: 适度表达有争议的技术观点 (e.g., "Why I chose SQLite over Postgres").
 
 ### Phase 3: 复利期 (5k → 2w)
-*   **Social Proof**: 只要有增长，马上晒图表。人们喜欢追随增长者。
-*   **Cross-Pollination**: YouTube 视频切片 -> X Clip -> Newsletter Deep Dive。
+- [ ] **Social Proof**: 只要有增长，马上晒图表。人们喜欢追随增长者。
+- [ ] **Cross-Pollination**: YouTube 视频切片 -> X Clip -> Newsletter Deep Dive。
 
 ---
 
@@ -72,18 +72,18 @@
 
 ## � 变现路径
 
-1.  **SaaS 产品导流**: 核心目标，通过 Profile Link 和 Thread 尾部 CTA 导流至 Wukong / BookFlow。
-2.  **SaaS 分销 (Affiliate)**: 推荐自己使用的工具 (如 Hypefury, Beehiiv) 赚取佣金。
-3.  **Newsletter 赞助**: 当订阅者 > 2000 时开启。
+- [ ] **SaaS 产品导流**: 核心目标，通过 Profile Link 和 Thread 尾部 CTA 导流至 Wukong / BookFlow。
+- [ ] **SaaS 分销 (Affiliate)**: 推荐自己使用的工具 (如 Hypefury, Beehiiv) 赚取佣金。
+- [ ] **Newsletter 赞助**: 当订阅者 > 2000 时开启。
 
 ---
 
 ## 🔗 工具链 (Stack)
 
-*   **写作 & 排程**: **Typefully** (优于 TweetDeck，支持 Auto-retweet 延长推文寿命)
-*   **润色**: **ChatGPT (Custom Instruction: "Make it sound like a native SF tech twitter user")**
-*   **分析**: BlackMagic (浏览器插件，直接看大 V 粉丝质量，避免无效社交)
-*   **作图**: **Xnapper** (生成漂亮的推文截图)
+- [ ] **写作 & 排程**: **Typefully** (优于 TweetDeck，支持 Auto-retweet 延长推文寿命)
+- [ ] **润色**: **ChatGPT (Custom Instruction: "Make it sound like a native SF tech twitter user")**
+- [ ] **分析**: BlackMagic (浏览器插件，直接看大 V 粉丝质量，避免无效社交)
+- [ ] **作图**: **Xnapper** (生成漂亮的推文截图)
 
 ---
 
