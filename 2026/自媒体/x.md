@@ -21,80 +21,71 @@
 
 ### 内容支柱 (Content Pillars)
 
-| 支柱 | 占比 | 示例 |
-| :--- | :--- | :--- |
-| **Build in Public** | 40% | 项目进度、收入截图、踩坑经验 |
-| **AI/Dev 资讯** | 30% | 热点评论、工具推荐、GitHub Trending |
-| **个人观点** | 20% | 创业感悟、效率方法、争议性话题 |
-| **互动引流** | 10% | 问答、投票、回复大 V |
+| 支柱 | 占比 | 核心价值 | 示例 |
+| :--- | :--- | :--- | :--- |
+| **Build in Public** | **60%** | **真实感/信任** | 真实的 MRR 曲线、Server Cost 优化(如 serves.md)、Bug 修复全过程、被拒审经历 |
+| **Micro-SaaS 见解** | 20% | **专业度** | 独立开发技术栈选型、支付接入坑、SEO 实战数据 |
+| **个人观点** | 10% | **人设** | 对 AI 泡沫的看法、远程工作生活、效率方法论 |
+| **互动引流** | 10% | **连接** | "What's your stack?" 提问、回复大 V 的 Value Reply |
 
-### 发帖节奏
-
-| 时间 | 类型 | 目标 |
-| :--- | :--- | :--- |
-| **早 8:00** | 资讯/观点 | 抢占时间线 |
-| **中 12:00** | 项目更新 | Build in Public |
-| **晚 20:00** | 互动/总结 | 提升互动率 |
-
-**周产出**：15-20 条推文（含 Thread）
+### 形式策略
+*   **Video First**: 优先展示 终端录屏 (Wukong)、SaaS 交互动图，传播效率 > 文字 10 倍。
+*   **English First**: 使用 GPT-4 + Grammarly 润色，确保 Native 表达，拒绝中式英语。
 
 ---
 
-## 🔥 增长策略
+## 🔥 增长策略 (Growth Hacking)
+
+### Phase 0: 账号清洗 (Rebranding)
+*   **Delete/Hide Legacy**: 删除或隐藏过去所有的纯中文推文（尤其是最近 3 个月的 Timeline）。
+*   **English Only**: 确保 Top 20 条推文全英文，给新访客 "Global Builder" 的第一印象。
+*   **Algorithm Reset**: 停止浏览中文区内容，强制算法重置你的标签为 `en`。
 
 ### Phase 1: 冷启动 (0 → 1k)
-- **每天回复 10 个大 V** 热门推文
-- **整理 50 个 AI 领域 KOL** 名单互动
-- **发布 Thread**：长内容建立专业形象
+*   **Sniper Reply (狙击回复)**: 每天挑选 10 个目标大 V，在其推文发出 15 分钟内回复。
+    *   ❌ 不要回: "Great thread!", "Agreed."
+    *   ✅ 要回: 补充数据截图、提供反直觉观点、"I built X to solve exactly this."
+*   **List Management**: 建立 "Core AI Builders" 列表，不看 For You，只看列表互动。
+*   **Profile 漏斗**: Bio 必须在 3 秒内说清 "我是谁 + 我在做什么 + 为什么关注我"。
 
 ### Phase 2: 病毒期 (1k → 5k)
-- **蹭热点**：DeepSeek / OpenAI / Claude 发布时第一时间评论
-- **争议性观点**：用 Controversy 引发讨论
-- **项目发布**：Wukong CLI 发布时请求转推
+*   **Launch Day**: 配合 Product Hunt 发布，准备完整的 Launch Thread (Problem -> Agony -> Solution)。
+*   **Giveaway**: "Retweet to get my SaaS boilerplate code / notion template".
+*   **Controversy**: 适度表达有争议的技术观点 (e.g., "Why I chose SQLite over Postgres").
 
 ### Phase 3: 复利期 (5k → 2w)
-- **晒数据**：展示真实增长曲线，吸引慕强粉
-- **固定 IP**：建立 "AI安全 + 独立开发" 标签
-- **跨平台导流**：YouTube 视频 → X Thread
+*   **Social Proof**: 只要有增长，马上晒图表。人们喜欢追随增长者。
+*   **Cross-Pollination**: YouTube 视频切片 -> X Clip -> Newsletter Deep Dive。
 
 ---
 
-## 💰 变现路径
+## ✅ 每日执行清单 (Daily Checklist)
 
-1. **X Ads 分成**（门槛达成后）
-2. **SaaS 产品导流**：Wukong / BookFlow 用户获取
-3. **Newsletter 订阅**：AIPwn / AIGC News
-4. **影响力**：提高漏洞挖掘 & 商务谈判筹码
-
----
-
-## ⚠️ 红线
-
-- ❌ 不发纯中文内容（面向国际市场）
-- ❌ 不发无价值互动（早安/晚安）
-- ❌ 不买粉、不刷量
-- ✅ 坚持价值输出，宁缺毋滥
+- [ ] **早 (08:00)**: 检查 "Core AI Builders" 列表，进行 3-5 个高质量 Value Reply。
+- [ ] **中 (12:00)**: 发布一条 Build in Public 推文 (截图/代码/思考)。
+- [ ] **晚 (20:00)**: 
+    - [ ] 检查所有评论并回复 (互动率关键)。
+    - [ ] 使用 Typefully 安排明天的推文。
+    - [ ] 记录今日涨粉数据到 Weekly Review。
 
 ---
 
-## 📊 关键指标追踪
+## � 变现路径
 
-| 指标 | 周度检查 |
-| :--- | :--- |
-| 新增粉丝 | ≥ 200 / 周 |
-| 推文数量 | ≥ 15 条 / 周 |
-| 互动率 | ≥ 3% |
-| Profile 访问 | 增长趋势 |
+1.  **SaaS 产品导流**: 核心目标，通过 Profile Link 和 Thread 尾部 CTA 导流至 Wukong / BookFlow。
+2.  **SaaS 分销 (Affiliate)**: 推荐自己使用的工具 (如 Hypefury, Beehiiv) 赚取佣金。
+3.  **Newsletter 赞助**: 当订阅者 > 2000 时开启。
 
 ---
 
-## 🔗 工具链
+## 🔗 工具链 (Stack)
 
-- **发布**：TweetDeck / Typefully
-- **数据**：X Analytics / Tweepy
-- **内容**：AI 辅助生成，人工润色
+*   **写作 & 排程**: **Typefully** (优于 TweetDeck，支持 Auto-retweet 延长推文寿命)
+*   **润色**: **ChatGPT (Custom Instruction: "Make it sound like a native SF tech twitter user")**
+*   **分析**: BlackMagic (浏览器插件，直接看大 V 粉丝质量，避免无效社交)
+*   **作图**: **Xnapper** (生成漂亮的推文截图)
 
 ---
 
-**最后更新**：2026-01-19
-**当前状态**：🟡 冷启动中
+**最后更新**: 2026-01-21
+**当前状态**: 🟡 冷启动优化中
