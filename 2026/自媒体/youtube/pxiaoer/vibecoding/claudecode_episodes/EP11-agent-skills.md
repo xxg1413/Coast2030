@@ -41,20 +41,40 @@
 
 ---
 
-### 4. 创建自定义Skill (4:00-7:30)
+### 4. 创建自定义Skill (4:00-7:00)
 
-**文件结构**:
+> 来源: Best Practices - Add agent skills
+
+**目录结构**:
 ```
 .claude/skills/deploy/
-├── instructions.md
+├── SKILL.md           # 主指令文件（必需）
 ├── scripts/
 │   └── deploy.sh
 └── resources/
     └── deployment-checklist.md
 ```
 
-**instructions.md示例**:
+**SKILL.md 格式** 🆕:
 ```markdown
+---
+name: api-conventions
+description: REST API design conventions for our services
+---
+# API Conventions
+
+- Use kebab-case for URL paths
+- Use camelCase for JSON properties
+- Always include pagination for list endpoints
+- Version APIs in the URL path (/v1/, /v2/)
+```
+
+**部署 Skill 示例**:
+```markdown
+---
+name: deploy
+description: Deployment workflow for our services
+---
 # Deployment Skill
 
 When deploying:
@@ -67,10 +87,15 @@ When deploying:
 
 **演示**:
 1. 创建目录结构
-2. 编写instructions
+2. 编写 SKILL.md（frontmatter + instructions）
 3. 添加脚本
 4. 测试Skill
 5. 使用 `@skill:deploy`
+
+**视觉元素**:
+- 目录结构树
+- YAML frontmatter 高亮
+- Skill 调用动画
 
 ---
 

@@ -48,17 +48,72 @@
 
 ---
 
-### 4. Claude Code Remote (5:30-6:45)
+### 4. Claude Code Remote (5:30-6:00)
 
 **字幕**: "Remote collaboration with AI"
 **演示**:
 - 团队成员远程访问会话
 - 实时共享编程环境
-- 配对编程演示
 
 ---
 
-### 5. /export命令 (6:45-8:00)
+### 5. 激进管理上下文 (6:00-7:15) 🆕
+
+> 来源: Best Practices - Manage context aggressively
+
+**字幕脚本**:
+```
+[6:00] "Pro tip: Manage context aggressively"
+[6:15] "/clear frequently between tasks"
+[6:30] "Long sessions = messy context = worse results"
+[6:45] "Auto compaction: Claude summarizes when full"
+[7:00] "/compact Focus on API changes - Manual control"
+```
+
+**屏幕操作**:
+1. 展示上下文使用量指示器
+2. 演示 /clear 命令
+3. 演示 /compact 带自定义指令
+4. 显示压缩前后对比
+
+**视觉元素**:
+- 上下文使用量条 (0%-100%)
+- 压缩动画：大→小
+- 警告图标：⚠️ Context pollution
+
+---
+
+### 6. 恢复会话技巧 (7:15-8:00) 🆕
+
+**字幕脚本**:
+```
+[7:15] "Resume conversations like a pro"
+[7:30] "claude --continue → Resume most recent"
+[7:40] "claude --resume → Pick from history"
+[7:50] "/rename → Name your session for easy find"
+```
+
+**示例**:
+```bash
+# 恢复最近会话
+claude --continue
+
+# 选择历史会话
+claude --resume
+
+# 命名会话
+/rename "oauth-migration"
+/rename "debugging-memory-leak"
+```
+
+**视觉元素**:
+- 会话历史列表
+- 命名标签动画
+- Before/After 会话组织对比
+
+---
+
+### 7. /export命令 (8:00-8:30)
 
 **字幕**: "Export session for documentation"
 ```bash

@@ -53,20 +53,77 @@ Step 5: Update documentation
 
 ---
 
-### 4. 最佳实践 (7:00-8:30)
+### 4. 最佳实践 (7:00-7:45)
 
 **字幕**:
 ```
 [7:00] "Use Plan Mode 90% of the time"
 [7:20] "When to skip:"
 [7:30] "→ Trivial changes (fix typo)"
-[7:45] "→ Well-defined simple tasks"
-[8:00] "Critical: Large refactors always use Plan Mode"
+[7:40] "→ Well-defined simple tasks"
 ```
 
 ---
 
-### 5. 总结 (8:30-9:00)
+### 5. Explore → Plan → Code 工作流 (7:45-8:45) 🆕
+
+> 来源: Best Practices - Explore first, then plan, then code
+
+**字幕脚本**:
+```
+[7:45] "The complete workflow: 4 phases"
+[8:00] "1. EXPLORE: 'Read /src/auth, understand sessions'"
+[8:15] "2. PLAN: 'Add Google OAuth. Create a plan.'"
+[8:25] "3. IMPLEMENT: 'Implement from plan, write tests'"
+[8:35] "4. COMMIT: 'Commit with message, open a PR'"
+```
+
+**示例 Prompts**:
+```
+# Explore
+"read /src/auth and understand how we handle sessions 
+and login. also look at how we manage environment 
+variables for secrets."
+
+# Plan  
+"I want to add Google OAuth. What files need to change? 
+What's the session flow? Create a plan."
+
+# Implement
+"implement the OAuth flow from your plan. write tests 
+for the callback handler, run the test suite and fix 
+any failures."
+
+# Commit
+"commit with a descriptive message and open a PR"
+```
+
+---
+
+### 6. 常见失败模式 (8:45-9:30) 🆕
+
+> 来源: Best Practices - Avoid common failure patterns
+
+**字幕脚本**:
+```
+[8:45] "Avoid these 5 failure patterns:"
+[8:55] "1. Kitchen sink session - Mix unrelated tasks"
+[9:05] "   Fix: /clear between tasks"
+[9:10] "2. Correcting over and over - Polluted context"
+[9:15] "   Fix: /clear and write better initial prompt"
+[9:20] "3. Over-specified CLAUDE.md - Too long, ignored"
+[9:25] "4. Trust-then-verify gap - No tests = bugs"
+[9:30] "5. Infinite exploration - Scope investigations"
+```
+
+**视觉元素**:
+- ❌ 错误模式图标
+- ✅ 修复方法
+- 警告标志：⚠️
+
+---
+
+### 7. 总结 (9:30-10:00)
 **字幕**: "Plan Mode = Safety + Transparency"
 **预告**: "Next: Subagents - Parallel task delegation"
 

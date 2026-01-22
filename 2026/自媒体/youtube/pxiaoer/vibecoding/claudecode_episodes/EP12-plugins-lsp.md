@@ -46,7 +46,80 @@ my-plugin/
 
 ---
 
-### Part 2: LSP Integration (5:00-8:30)
+### Part 2: Hooks (5:00-7:00) 🆕
+
+> 来源: Best Practices - Set up hooks
+
+#### 1. Hooks 是什么 (5:00-5:30)
+**字幕**: "Hooks = Automated actions on events"
+
+#### 2. Hooks 配置 (5:30-6:30)
+
+**字幕脚本**:
+```
+[5:30] "Configure hooks via /hooks or settings.json"
+[5:45] "5 powerful use cases:"
+[5:55] "1. Auto-format: .ts → prettier, .go → gofmt"
+[6:05] "2. Linting: Auto-lint changed files"
+[6:15] "3. Guardrails: Block .env, secrets/ edits"
+[6:25] "4. Logging: Track all executed commands"
+```
+
+**配置示例** (`.claude/settings.json`):
+```json
+{
+  "hooks": {
+    "onFileChange": {
+      "*.ts": "npx prettier --write",
+      "*.go": "gofmt -w"
+    },
+    "onBeforeEdit": {
+      "block": [".env", "secrets/*", "*.pem"]
+    }
+  }
+}
+```
+
+**视觉元素**:
+- 5种 Hooks 用例图标
+- 配置文件高亮
+- 自动触发动画
+
+#### 3. 自定义 Slash Commands (6:30-7:00) 🆕
+
+**字幕脚本**:
+```
+[6:30] "Create custom slash commands"
+[6:40] "Put in .claude/commands/ or ~/.claude/commands/"
+[6:50] "Use $ARGUMENTS for input"
+```
+
+**配置示例** (`.claude/commands/fix-github-issue.md`):
+```markdown
+---
+description: Fix a GitHub issue
+---
+Please analyze and fix the GitHub issue: $ARGUMENTS.
+
+Follow these steps:
+1. Use `gh issue view` to get the issue details
+2. Understand the problem described in the issue
+3. Search the codebase for relevant files
+4. Implement the necessary changes to fix the issue
+5. Write and run tests to verify the fix
+6. Ensure code passes linting and type checking
+7. Create a descriptive commit message
+8. Push and create a PR
+```
+
+**使用**:
+```
+/fix-github-issue 1234
+```
+
+---
+
+### Part 3: LSP Integration (7:00-9:00)
 
 #### 1. LSP是什么 (5:00-5:45)
 **字幕**: "Language Server Protocol = IDE-level intelligence"

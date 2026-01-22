@@ -146,7 +146,33 @@
 
 ---
 
-### 6. 快捷键速查表 (7:30-8:30)
+### 6. 上下文管理快捷键 (7:30-8:30) 🆕
+
+> 来源: Best Practices - Course-correct early and often
+
+**字幕脚本**:
+```
+[7:30] "Bonus: Context management shortcuts"
+[7:45] "/clear - Reset context between tasks"
+[8:00] "/rewind - Restore to checkpoint"
+[8:10] "/compact Focus on X - Compress context"
+[8:20] "'Undo that' - Revert Claude's changes"
+```
+
+**屏幕操作**:
+1. 演示 /clear 清除上下文
+2. 演示 /rewind 恢复检查点
+3. 演示 /compact 手动压缩
+4. 演示 "Undo that" 口头指令
+
+**视觉元素**:
+- 上下文使用量条（Before/After）
+- 检查点时间线
+- 压缩动画效果
+
+---
+
+### 7. 快捷键速查表 (8:30-9:15)
 
 **字幕脚本**:
 ```

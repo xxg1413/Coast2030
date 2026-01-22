@@ -57,20 +57,75 @@ Create a subagent to update docs
 
 ---
 
-### 4. 使用场景 (7:00-8:15)
+### 4. 使用场景 (7:00-7:30)
 
 **字幕**:
 ```
 [7:00] "Perfect for:"
 [7:10] "→ Large codebase refactoring"
-[7:25] "→ Multi-module development"
-[7:40] "→ Documentation generation"
-[7:55] "→ Parallel testing"
+[7:20] "→ Multi-module development"
 ```
 
 ---
 
-### 5. 总结 (8:15-9:00)
+### 5. 用 Subagent 做调查 (7:30-8:15) 🆕
+
+> 来源: Best Practices - Use subagents for investigation
+
+**字幕脚本**:
+```
+[7:30] "Pro tip: Subagents for investigation"
+[7:45] "'Use subagents to investigate how our auth 
+        handles token refresh'"
+[8:00] "Benefits:"
+[8:05] "→ Doesn't pollute main context"
+[8:10] "→ Explore unfamiliar code safely"
+```
+
+**示例 Prompts**:
+```
+"Use subagents to investigate how our authentication
+system handles token refresh, and whether we have
+any existing OAuth utilities I should reuse."
+
+"use a subagent to review this code for edge cases"
+```
+
+---
+
+### 6. 自定义 Subagent (8:15-8:45) 🆕
+
+**字幕脚本**:
+```
+[8:15] "Create custom subagents in .claude/agents/"
+[8:30] "Example: security-reviewer.md"
+```
+
+**配置示例**:
+`.claude/agents/security-reviewer.md`:
+```markdown
+---
+name: security-reviewer
+description: Reviews code for security vulnerabilities
+tools: Read, Grep, Glob, Bash
+model: opus
+---
+You are a senior security engineer. Review code for:
+- Injection vulnerabilities (SQL, XSS, command injection)
+- Authentication and authorization flaws
+- Secrets or credentials in code
+- Insecure data handling
+
+Provide specific line references and suggested fixes.
+```
+
+**视觉元素**:
+- 配置文件结构
+- 安全审查报告示例
+
+---
+
+### 7. 总结 (8:45-9:00)
 
 **字幕**: "Subagents = Multiply your productivity"
 **预告**: "Next: Agent Skills - Custom capabilities"
