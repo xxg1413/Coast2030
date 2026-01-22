@@ -11,10 +11,10 @@
 
 | 项目 | 月目标 MRR | 年收入 | 占比 | 启动时间 |
 | :--- | :--- | :--- | :--- | :--- |
-| [51title](./51title/51title.md) | $7,500 | ¥450,000 | 26% | Q1 |
+| [51title](./51title/51title.md) | $7,500 | ¥450,000 | 26% | Q2 |
 | [KOL Tools](./koltools/koltools.md) | $12,000 | ¥650,000 | 37% | Q1 |
 | [Ideas GPT](./ideas-gpt.md) | $7,000 | ¥350,000 | 20% | Q2 |
-| [BookFlow](./bookflow.md) | $500 | ¥30,000 | 2% | Q1 |
+| [BookFlow](./bookflow.md) | $500 ❓ 疑问：下表是$2000 | ¥30,000 | 2% | Q1 |
 | [AIGC News](./aigc-news.md) | $2,000 (订阅) | ¥100,000 | 6% | 运营中 |
 | [AIPwn](./aipwn.md) | $1,000 (订阅) | ¥70,000 | 4% | Q1 |
 | **其他/Buffer** | - | ¥100,000 | 6% | - |
@@ -28,16 +28,16 @@
 
 | 项目 | 优先级 | 定位 | 状态 | MRR 目标 |
 | :--- | :--- | :--- | :--- | :--- |
-| [51title](./51title/51title.md) | **P0** | 标题生成 SaaS | ✅ 开发中 | 500/月 |
+| [51title](./51title/51title.md) | **P0** | 标题生成 SaaS | ❓ 疑问：状态应改为Q2待启动 | 500/月 |
 | [KOL Tools](./koltools/koltools.md) | **P0** | 自媒体工具矩阵 | 🟡 设计中 | $12,000/月 |
-| [Wukong CLI](./wukong/wukong.md) | **P0** | 开发者 CLI | 🛠 重构中 | 20000/月 |
-| [BookFlow](./bookflow.md) | **P1** | 关系管理 CRM | 📅 规划中 | $2000/月 |
+| [Wukong CLI](./wukong/wukong.md) | **P0** | 开发者 CLI | 🛠 重构中 | ❓ 疑问：CLI工具如何实现2万MRR？托管？插件？ |
+| [BookFlow](./bookflow.md) | **P1** | 关系管理 CRM | 🟡 开发中 | ❓ 疑问：收入表是$500，这里是$2000，Q1指标是$200 |
 | [Ideas GPT](./ideas-gpt.md) | **P1** | 趋势洞察+内容生成 | 🟡 待打磨 | $7,000/月 |
 | [AIGC News](./aigc-news.md) | **P1** | AI 资讯 Newsletter | ✅ 运营中 | $2,000/月 |
 | [OneBot](./onebot.md) | **P1** | 极简 AI 聊天机器人 | 📅 规划中 | $1,000/月 |
 | [ZhongKui](./zhongkui.md) | **P1** | Agent安全 | 💡 概念期 | 0/月 |
 | [AIPwn](./aipwn.md) | **P2** | AI 安全内容+工具 | 🟡 内容驱动 | $1,000/月 |
-| [MutNPC](./mutnpc.md) | **P2** | AI 游戏 NPC 平台 | 📋 概念期 | $500/月 |
+| [MutNPC](./mutnpc.md) | **P2** | AI 游戏 NPC 平台 | 🟡 开发中（Q1 3月发布） | $500/月 |
 | [DeepFeather](./deepfeather.md) | **P3** | 情绪化 AI 产品 | 🟡 探索期 | $300/月 |
 | [OpenBot](./openbot.md) | **P4** | Agent 平台储备 | ⏸ 未启动 | - |
 | [FlyPython](./flypython.md) | **P4** | 编程训练营 | ⏸ 未启动 | - |
@@ -50,29 +50,31 @@
 
 ### Q1 (1-3月): **MVP 验证季**
 
-> **目标**：跑通 2 个 MVP，验证付费意愿
+> **目标**：跑通 3 个 MVP，验证付费意愿
 
-| 周次 | 51title | KOL Tools | Wukong |
-| :--- | :--- | :--- | :--- |
-| W1-2 | MVP 开发 | 需求调研 | v1.0 发布 |
-| W3-4 | 上线内测 | 原型设计 | 社区推广 |
-| W5-6 | ProductHunt | MVP 开发 | 迭代优化 |
-| W7-8 | SEO 优化 | 上线内测 | 稳定运营 |
-| W9-12 | 增长迭代 | 收费验证 | 稳定运营 |
+| 日期 | KOL Tools | Wukong | BookFlow | MutNPC |
+| :--- | :--- | :--- | :--- | :--- |
+| 1/1-1/14 | 需求调研 | 准备发布 | 需求调研 | 概念设计 |
+| 1/15-1/28 | 原型设计 | 社区预热 | 原型设计 | 原型开发 |
+| 1/29-2/11 | MVP 开发 | 迭代优化 | MVP 开发 | 核心开发 |
+| 2/12-2/25 | 上线内测 | **2/14 发布** | MVP 开发 | 内测准备 |
+| 2/26-3/9 | 收费验证 | 社区推广 | 上线内测 | **3 月发布** |
+| 3/10-3/25 | 增长迭代 | 稳定运营 | 收费验证 | 迭代优化 |
 
 **Q1 硬指标**：
-- [ ] 51title：100 付费用户，MRR ≥ $1,500
-- [ ] KOL Tools：50 付费用户，MRR ≥ $1,000
-- [ ] Wukong：GitHub Stars ≥ 500
+- [ ] KOL Tools：50 付费用户，MRR ≥ $1,000 ❓ 疑问：离年度目标1.2万差距大，中间策略？
+- [ ] Wukong：GitHub Stars ≥ 500（2/14 发布）❓ 疑问：需要补充MRR指标
+- [ ] BookFlow：20 付费用户，MRR ≥ $200 ❓ 疑问：上表是$500/$2000，哪个为准？
+- [ ] MutNPC：上线并验证核心功能 ❓ 疑问：指标太模糊，需要数字
 - [ ] AIGC News：1,000 订阅用户
 
 ### Q2 (4-6月): **增长加速季**
 
 > **目标**：验证成功项目加速增长，失败项目果断止损
 
-- [ ] 51title → MRR $5,000
-- [ ] KOL Tools → MRR $8,000
-- [ ] Ideas GPT → MVP 上线
+- [ ] 51title → MVP 上线（推迟到 Q2）❓ 疑问：MRR目标？上表是$7500，Q2可达吗？
+- [ ] KOL Tools → MRR $8,000 ❓ 疑问：Q1是$1k，Q2到$8k，如何增长？
+- [ ] Ideas GPT → MVP 上线 ❓ 疑问：年度目标$7k，Q2可达吗？
 - [ ] 止损判断：3 个月未达标项目直接放弃
 
 ### Q3-Q4: **规模化或 Pivot**
@@ -89,10 +91,11 @@
 
 | 优先级 | 项目 | 时间占比 | 小时/周 |
 | :--- | :--- | :--- | :--- |
-| **P0** | 51title + KOL Tools | 60% | 30h |
-| **P0** | Wukong CLI | 15% | 8h |
-| **P1** | BookFlow + Ideas GPT | 15% | 8h |
+| **P0** | KOL Tools | 40% | 20h |
+| **P0** | Wukong CLI（2/14发布） | 15% | 8h |
+| **P1** | BookFlow + MutNPC | 25% | 12h |
 | **P2** | AIGC News + AIPwn | 10% | 5h |
+| **Q2启动** | 51title | - | - |
 
 ### 同时在研项目控制
 
@@ -100,9 +103,9 @@
 
 | 时间段 | 主攻项目 1 | 主攻项目 2 | 维护项目 |
 | :--- | :--- | :--- | :--- |
-| 1-2月 | 51title | Wukong | AIGC News |
-| 3-4月 | 51title | KOL Tools | AIGC News |
-| 5-6月 | KOL Tools | Ideas GPT | 51title |
+| 1-2月 | KOL Tools | Wukong（2/14发布） | AIGC News |
+| 3-4月 | KOL Tools | BookFlow + MutNPC | AIGC News |
+| 5-6月 | 51title（Q2启动） | Ideas GPT | KOL Tools |
 
 ---
 
