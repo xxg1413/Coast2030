@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDB } from '@/lib/db';
 
 const AUTH_USERNAME_KEY = 'AUTH_USERNAME';
 const AUTH_PASSWORD_SALT_KEY = 'AUTH_PASSWORD_SALT';
 const AUTH_PASSWORD_HASH_KEY = 'AUTH_PASSWORD_HASH';
+const LOGIN_WINDOW_MINUTES = 15;
+const LOGIN_MAX_ATTEMPTS = 10;
 
 function readRuntimeEnv(key: string): string | undefined {
     const fromProcess = process.env[key];
@@ -50,10 +53,57 @@ function secureCompare(left: string, right: string): boolean {
     return mismatch === 0;
 }
 
+function getClientIp(request: Request): string {
+    const cfIp = request.headers.get('cf-connecting-ip');
+    if (cfIp && cfIp.trim().length > 0) return cfIp.trim();
+
+    const forwarded = request.headers.get('x-forwarded-for');
+    if (forwarded && forwarded.trim().length > 0) {
+        return forwarded.split(',')[0].trim();
+    }
+
+    return 'unknown';
+}
+
+async function isLoginRateLimited(ip: string): Promise<boolean> {
+    const db = await getDB();
+    const windowModifier = `-${LOGIN_WINDOW_MINUTES} minutes`;
+    const row = await db
+        .prepare(`
+            SELECT COUNT(*) AS count
+            FROM auth_login_attempts
+            WHERE ip = ?
+              AND attempted_at >= datetime('now', ?)
+        `)
+        .bind(ip, windowModifier)
+        .first<{ count: number }>();
+
+    return Number(row?.count || 0) >= LOGIN_MAX_ATTEMPTS;
+}
+
+async function recordFailedLogin(ip: string): Promise<void> {
+    const db = await getDB();
+    await db.prepare('INSERT INTO auth_login_attempts (ip) VALUES (?)').bind(ip).run();
+}
+
+async function clearFailedLogins(ip: string): Promise<void> {
+    const db = await getDB();
+    await db.prepare('DELETE FROM auth_login_attempts WHERE ip = ?').bind(ip).run();
+}
+
 export async function POST(request: Request) {
     try {
         const { username, password } = await request.json();
         const isProd = process.env.NODE_ENV === 'production';
+        const clientIp = getClientIp(request);
+
+        if (await isLoginRateLimited(clientIp)) {
+            return NextResponse.json(
+                { error: `Too many attempts. Please retry in about ${LOGIN_WINDOW_MINUTES} minutes.` },
+                { status: 429 }
+            );
+        }
+
         const configuredUsername = readRuntimeEnv(AUTH_USERNAME_KEY);
         const configuredPasswordSalt = readRuntimeEnv(AUTH_PASSWORD_SALT_KEY) ?? '';
         const configuredPasswordHash = readRuntimeEnv(AUTH_PASSWORD_HASH_KEY);
@@ -70,6 +120,7 @@ export async function POST(request: Request) {
         const calculatedHash = await sha256Hex(`${configuredPasswordSalt}:${passwordInput}`);
 
         if (secureCompare(usernameInput, configuredUsername) && secureCompare(calculatedHash, configuredPasswordHash)) {
+            await clearFailedLogins(clientIp);
             const cookieStore = await cookies();
             cookieStore.set('auth_token', 'valid_session', {
                 httpOnly: true,
@@ -82,6 +133,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: true });
         }
 
+        await recordFailedLogin(clientIp);
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     } catch (error) {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });

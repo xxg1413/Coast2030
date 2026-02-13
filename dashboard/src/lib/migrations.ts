@@ -55,6 +55,19 @@ const MIGRATIONS: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_daily_tasks_task_date ON daily_tasks(task_date);
         `,
     },
+    {
+        version: 2,
+        name: 'create_auth_login_attempts',
+        sql: `
+            CREATE TABLE IF NOT EXISTS auth_login_attempts (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              ip TEXT NOT NULL,
+              attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_ip_time ON auth_login_attempts(ip, attempted_at);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

@@ -29,6 +29,7 @@ Coast2030 的年度计划与收入跟踪系统（Next.js + Cloudflare）。
 - 登录页自定义品牌样式
 - Cookie 登录态（生产环境 `Secure + SameSite=None`）
 - 账号密码通过环境变量配置（不再写死在代码里）
+- 登录失败限流（按 IP，15 分钟窗口）
 
 ## 技术栈
 
