@@ -2,6 +2,7 @@ import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { runMigrations } from './migrations';
 
 // Interface for D1-like behavior
 export interface D1Database {
@@ -228,7 +229,19 @@ class CloudflareD1PreparedStatement implements D1PreparedStatement {
 // Singleton definition with global type for development hot reload
 const globalForDB = globalThis as unknown as {
     conn: Promise<D1Database> | undefined;
+    migrationsReady: Promise<void> | undefined;
 };
+
+async function ensureMigrationsReady(db: D1Database): Promise<void> {
+    if (!globalForDB.migrationsReady) {
+        globalForDB.migrationsReady = runMigrations(db).catch((error) => {
+            globalForDB.migrationsReady = undefined;
+            throw error;
+        });
+    }
+
+    await globalForDB.migrationsReady;
+}
 
 export async function getDB(): Promise<D1Database> {
     if (process.env.NODE_ENV === 'development') {
@@ -257,7 +270,9 @@ export async function getDB(): Promise<D1Database> {
             };
             globalForDB.conn = init();
         }
-        return globalForDB.conn;
+        const db = await globalForDB.conn;
+        await ensureMigrationsReady(db);
+        return db;
     } else {
         const context = getCloudflareContext();
         const env = context?.env as Record<string, unknown> | undefined;
@@ -265,6 +280,8 @@ export async function getDB(): Promise<D1Database> {
         if (!d1) {
             throw new Error('Cloudflare D1 binding "DB" not found');
         }
-        return new CloudflareD1Database(d1);
+        const db = new CloudflareD1Database(d1);
+        await ensureMigrationsReady(db);
+        return db;
     }
 }

@@ -1,4 +1,12 @@
-DROP TABLE IF EXISTS transactions;
+-- Non-destructive bootstrap schema for local/dev initialization.
+-- Use explicit SQL commands when you need to reset data.
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   date TEXT NOT NULL,
@@ -9,7 +17,6 @@ CREATE TABLE IF NOT EXISTS transactions (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-DROP TABLE IF EXISTS monthly_milestones;
 CREATE TABLE IF NOT EXISTS monthly_milestones (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   year INTEGER NOT NULL,
@@ -21,7 +28,6 @@ CREATE TABLE IF NOT EXISTS monthly_milestones (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-DROP TABLE IF EXISTS weekly_focus;
 CREATE TABLE IF NOT EXISTS weekly_focus (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   text TEXT NOT NULL,
@@ -29,7 +35,6 @@ CREATE TABLE IF NOT EXISTS weekly_focus (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-DROP TABLE IF EXISTS daily_tasks;
 CREATE TABLE IF NOT EXISTS daily_tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_date TEXT NOT NULL,
@@ -39,3 +44,8 @@ CREATE TABLE IF NOT EXISTS daily_tasks (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_monthly_milestones_year_month ON monthly_milestones(year, month);
+CREATE INDEX IF NOT EXISTS idx_daily_tasks_task_date ON daily_tasks(task_date);

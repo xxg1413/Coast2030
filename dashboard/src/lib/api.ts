@@ -16,7 +16,6 @@ const YEAR_TARGETS = {
 } as const;
 
 type IncomeType = (typeof INCOME_TYPES)[number];
-type DBConn = Awaited<ReturnType<typeof getDB>>;
 
 function resolveProjectPath(...segments: string[]): string {
     return path.resolve(process.cwd(), "..", ...segments);
@@ -141,49 +140,6 @@ function getProgress(current: number, target: number): number {
     return Math.min((current / target) * 100, 999);
 }
 
-async function ensureDailyTasksTable(db: DBConn): Promise<void> {
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS daily_tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task_date TEXT NOT NULL,
-            task_datetime TEXT,
-            text TEXT NOT NULL,
-            completed INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-    `);
-
-    // Backward-compatible migration for existing databases.
-    try {
-        await db.exec("ALTER TABLE daily_tasks ADD COLUMN task_datetime TEXT");
-    } catch {
-        // Ignore when column already exists.
-    }
-}
-
-async function ensureMonthlyMilestonesTable(db: DBConn): Promise<void> {
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS monthly_milestones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            year INTEGER NOT NULL,
-            month INTEGER NOT NULL,
-            text TEXT NOT NULL,
-            completed INTEGER DEFAULT 0,
-            milestone_datetime TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-    `);
-
-    // Backward-compatible migration for existing databases.
-    try {
-        await db.exec("ALTER TABLE monthly_milestones ADD COLUMN milestone_datetime TEXT");
-    } catch {
-        // Ignore when column already exists.
-    }
-}
-
 // --- Weekly Focus ---
 
 export interface WeeklyFocus {
@@ -305,8 +261,6 @@ export interface DailyTaskItem {
 
 export async function getDailyTasks(date?: string): Promise<DailyTaskItem[]> {
     const db = await getDB();
-    await ensureDailyTasksTable(db);
-
     const targetDate = normalizeDate(date) || getCurrentDate();
     const result = await db
         .prepare("SELECT id, task_date, text, completed FROM daily_tasks WHERE task_date = ? ORDER BY created_at ASC")
@@ -323,8 +277,6 @@ export async function getDailyTasks(date?: string): Promise<DailyTaskItem[]> {
 
 export async function addDailyTask(text: string, date?: string): Promise<boolean> {
     const db = await getDB();
-    await ensureDailyTasksTable(db);
-
     const trimmed = text.trim();
     const targetDate = normalizeDate(date) || getCurrentDate();
     if (!trimmed) return false;
@@ -340,8 +292,6 @@ export async function addDailyTask(text: string, date?: string): Promise<boolean
 
 export async function toggleDailyTask(id: string, completed: boolean): Promise<boolean> {
     const db = await getDB();
-    await ensureDailyTasksTable(db);
-
     await db
         .prepare("UPDATE daily_tasks SET completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
         .bind(completed ? 1 : 0, Number(id))
@@ -351,8 +301,6 @@ export async function toggleDailyTask(id: string, completed: boolean): Promise<b
 
 export async function updateDailyTask(id: string, text: string): Promise<boolean> {
     const db = await getDB();
-    await ensureDailyTasksTable(db);
-
     const trimmed = text.trim();
     if (!trimmed) return false;
 
@@ -365,8 +313,6 @@ export async function updateDailyTask(id: string, text: string): Promise<boolean
 
 export async function deleteDailyTask(id: string): Promise<boolean> {
     const db = await getDB();
-    await ensureDailyTasksTable(db);
-
     await db.prepare("DELETE FROM daily_tasks WHERE id = ?").bind(Number(id)).run();
     return true;
 }
@@ -558,7 +504,6 @@ export async function getIncomeComposition(month?: string): Promise<IncomeCompos
 
 export async function getMonthlyTasks(month?: string): Promise<TaskItem[]> {
     const db = await getDB();
-    await ensureMonthlyMilestonesTable(db);
     const parsed = parseYearMonth(month);
 
     if (!parsed) {
@@ -586,7 +531,6 @@ export async function getMonthlyTasks(month?: string): Promise<TaskItem[]> {
 
 export async function toggleMonthlyTask(taskId: string, completed: boolean): Promise<boolean> {
     const db = await getDB();
-    await ensureMonthlyMilestonesTable(db);
     await db
         .prepare("UPDATE monthly_milestones SET completed = ? WHERE id = ?")
         .bind(completed ? 1 : 0, Number(taskId))
@@ -596,7 +540,6 @@ export async function toggleMonthlyTask(taskId: string, completed: boolean): Pro
 
 export async function addMonthlyTask(taskText: string, month?: string): Promise<boolean> {
     const db = await getDB();
-    await ensureMonthlyMilestonesTable(db);
     const parsed = parseYearMonth(month || getCurrentYearMonth());
     if (!parsed) return false;
     const addedAt = getNowDateTimeInfo();
@@ -611,7 +554,6 @@ export async function addMonthlyTask(taskText: string, month?: string): Promise<
 
 export async function deleteMonthlyTask(id: string): Promise<boolean> {
     const db = await getDB();
-    await ensureMonthlyMilestonesTable(db);
     await db.prepare("DELETE FROM monthly_milestones WHERE id = ?").bind(Number(id)).run();
     return true;
 }

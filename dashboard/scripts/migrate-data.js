@@ -26,6 +26,9 @@ async function migrate() {
 
     // 1. Transactions
     if (fs.existsSync(LEDGER_PATH)) {
+        // Keep behavior deterministic when rerunning migration.
+        db.run('DELETE FROM transactions');
+
         const fileContent = fs.readFileSync(LEDGER_PATH, 'utf8');
         const lines = fileContent.split('\n');
 
@@ -42,10 +45,6 @@ async function migrate() {
 
             const cols = trimmed.split('|').map(c => c.trim()).filter(c => c !== '');
             if (cols.length >= 5) {
-                // Check if exists to avoid dupes (rough check)
-                // For migration, we might just wipe and recreation or assume empty start. 
-                // Let's checking if ID exists is hard without ID. 
-                // Let's assume we are initializing.
                 stmt.run([cols[0], cols[1], cols[2], parseFloat(cols[3]) || 0, cols[4]]);
                 count++;
             }
@@ -57,6 +56,9 @@ async function migrate() {
 
     // 2. Monthly Tasks
     if (fs.existsSync(PLAN_PATH)) {
+        // Keep behavior deterministic when rerunning migration.
+        db.run('DELETE FROM monthly_milestones');
+
         const fileContent = fs.readFileSync(PLAN_PATH, 'utf8');
         const match = fileContent.match(/## 📅 关键里程碑.*?\n([\s\S]*?)## 🚀/);
 
