@@ -1,0 +1,28 @@
+DROP TABLE IF EXISTS transactions;
+CREATE TABLE IF NOT EXISTS transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  type TEXT NOT NULL, -- 'SaaS', 'Hunter', 'Media', 'Other'
+  project TEXT,
+  amount REAL NOT NULL,
+  memo TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS monthly_milestones;
+CREATE TABLE IF NOT EXISTS monthly_milestones (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  completed INTEGER DEFAULT 0, -- boolean
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS weekly_focus;
+CREATE TABLE IF NOT EXISTS weekly_focus (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  text TEXT NOT NULL,
+  completed INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
