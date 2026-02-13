@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Lock } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -43,11 +43,15 @@ export default function LoginPage() {
             <Card className="w-full max-w-sm border-zinc-800 bg-zinc-900/50">
                 <CardHeader className="space-y-1">
                     <div className="flex justify-center mb-4">
-                        <div className="p-3 rounded-full bg-zinc-800">
-                            <Lock className="h-6 w-6 text-zinc-400" />
-                        </div>
+                        <Image
+                            src="/coast-logo.svg"
+                            alt="Coast2030 Logo"
+                            width={56}
+                            height={56}
+                            className="h-14 w-14 rounded-xl border border-zinc-700/80"
+                        />
                     </div>
-                    <CardTitle className="text-2xl text-center font-bold">CoastOS</CardTitle>
+                    <CardTitle className="text-2xl text-center font-bold">Coast2030</CardTitle>
                     <CardDescription className="text-center">
                         请输入管理员密码访问看板
                     </CardDescription>

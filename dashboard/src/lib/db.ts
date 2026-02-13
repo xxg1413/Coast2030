@@ -1,6 +1,7 @@
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 // Interface for D1-like behavior
 export interface D1Database {
@@ -145,6 +146,85 @@ class LocalD1PreparedStatement implements D1PreparedStatement {
     }
 }
 
+class CloudflareD1Database implements D1Database {
+    private db: any;
+
+    constructor(db: any) {
+        this.db = db;
+    }
+
+    prepare(query: string): D1PreparedStatement {
+        return new CloudflareD1PreparedStatement(this.db.prepare(query));
+    }
+
+    async batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
+        const nativeStatements = statements.map((statement) => {
+            if (statement instanceof CloudflareD1PreparedStatement) {
+                return statement.getNativeStatement();
+            }
+            throw new Error('Cloudflare D1 batch only supports statements created from the same DB instance');
+        });
+        const result = await this.db.batch(nativeStatements);
+        return result as D1Result[];
+    }
+
+    async exec(query: string): Promise<D1ExecResult> {
+        // Avoid native exec() metadata aggregation edge-cases in workerd by
+        // executing each statement via prepare().run().
+        const statements = query
+            .split(';')
+            .map((statement: string) => statement.trim())
+            .filter((statement: string) => statement.length > 0);
+
+        const startedAt = Date.now();
+        for (const statement of statements) {
+            await this.db.prepare(statement).run();
+        }
+
+        return {
+            count: statements.length,
+            duration: Date.now() - startedAt,
+        };
+    }
+}
+
+class CloudflareD1PreparedStatement implements D1PreparedStatement {
+    private statement: any;
+
+    constructor(statement: any) {
+        this.statement = statement;
+    }
+
+    getNativeStatement() {
+        return this.statement;
+    }
+
+    bind(...values: any[]): D1PreparedStatement {
+        this.statement = this.statement.bind(...values);
+        return this;
+    }
+
+    async first<T = unknown>(colName?: string): Promise<T | null> {
+        const result = await this.statement.first(colName);
+        return (result ?? null) as T | null;
+    }
+
+    async run(): Promise<D1Result> {
+        const result = await this.statement.run();
+        return result as D1Result;
+    }
+
+    async all<T = unknown>(): Promise<D1Result<T>> {
+        const result = await this.statement.all();
+        return result as D1Result<T>;
+    }
+
+    async raw<T = unknown>(): Promise<T[]> {
+        const result = await this.statement.raw();
+        return result as T[];
+    }
+}
+
 // Singleton definition with global type for development hot reload
 const globalForDB = globalThis as unknown as {
     conn: Promise<D1Database> | undefined;
@@ -179,7 +259,12 @@ export async function getDB(): Promise<D1Database> {
         }
         return globalForDB.conn;
     } else {
-        // Production D1 logic (needs context)
-        throw new Error('Production DB adapter not fully implemented');
+        const context = getCloudflareContext();
+        const env = context?.env as Record<string, unknown> | undefined;
+        const d1 = env?.DB;
+        if (!d1) {
+            throw new Error('Cloudflare D1 binding "DB" not found');
+        }
+        return new CloudflareD1Database(d1);
     }
 }

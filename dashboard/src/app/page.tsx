@@ -1,88 +1,83 @@
-import { getStructuredWeeklyFocus, getMonthlyTasks, getCoreMetrics, getTransactions, getTotalIncome } from "@/lib/api";
+import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
-import { TaskList } from "@/components/dashboard/task-list";
-import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
-import { TransactionList } from "@/components/dashboard/transaction-list";
-import { RetirementProgress } from "@/components/dashboard/retirement-progress";
-import { MonthFilter } from "@/components/dashboard/month-filter";
+import { getYearIncome, formatMoney } from "@/lib/api";
 
-interface Props {
-  searchParams: Promise<{ month?: string }>;
-}
+export const dynamic = "force-dynamic";
 
-export default async function Home({ searchParams }: Props) {
-  const params = await searchParams;
-  const currentMonth = params.month || new Date().toISOString().slice(0, 7);
+const YEAR_TARGETS: Record<number, number> = {
+  2026: 3000000,
+  2027: 4000000,
+  2028: 8000000,
+  2029: 15000000,
+  2030: 25000000,
+};
 
-  const weeklyFocus = await getStructuredWeeklyFocus();
-  const monthlyTasks = await getMonthlyTasks();
-  const metrics = getCoreMetrics();
-  const transactions = await getTransactions(currentMonth);
-  const totalIncome = await getTotalIncome(); // Total for Coast Progress (All time? Or Year?)
-  // For RetirementProgress, it should be TOTAL (All Time / Year), not filtered month. 
-  // User asked for "View income info for a month", but Retirement is usually global.
-  // Exception: "2026 Goal" is usually Yearly. 
-  // Let's keep totalIncome global for Goal, but we might want a monthly total in Finance section.
+const YEAR_LINKS: Record<number, string | null> = {
+  2026: "/2026",
+  2027: null,
+  2028: null,
+  2029: null,
+  2030: null,
+};
 
-  const monthlyIncome = await getTotalIncome(currentMonth);
+export default async function Home() {
+  const years = [2026, 2027, 2028, 2029, 2030];
+  const incomes = await Promise.all(years.map((year) => getYearIncome(year)));
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:p-8 bg-zinc-950 text-zinc-100">
-      <div className="z-10 w-full max-w-6xl items-center justify-between font-mono text-sm">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-600">
-            CoastOS v0.3
-          </h1>
-          {/* RevenueRecorder moved from here */}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <div className="col-span-2">
-            <RetirementProgress current={totalIncome} />
-          </div>
-          {metrics.map((metric) => (
-            <Card key={metric.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {metric.label === 'Cash Flow' ? '现金流' :
-                    metric.label === 'SaaS MRR' ? 'SaaS 月收' :
-                      metric.label === 'Hunter' ? 'Hunter 收入' : metric.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{metric.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  {metric.trend} 较上月
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Task Section: Split View */}
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <TaskList title={weeklyFocus.title} tasks={weeklyFocus.tasks} />
-          <MonthlyTaskList tasks={monthlyTasks} />
-        </div>
-
-        {/* Finance Section */}
-        <div className="grid gap-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">💰 财务明细</h2>
-            <div className="flex gap-2">
-              <MonthFilter />
-              <RevenueRecorder />
+    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        <section className="rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-900 via-zinc-900/70 to-zinc-950 p-6">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/coast-logo.svg"
+              alt="Coast2030 Logo"
+              width={52}
+              height={52}
+              className="h-12 w-12 rounded-xl border border-zinc-700/80"
+            />
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Coast2030</p>
+              <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">
+                年度总主页
+              </h1>
+              <p className="mt-2 text-sm text-zinc-400">先选年份，再进入对应年度看板进行跟踪与复盘。</p>
             </div>
           </div>
-          {/* We can pass monthlyIncome to TransactionList or show it separately */}
-          <div className="bg-zinc-900/50 p-4 rounded-lg flex justify-between items-center border border-zinc-800">
-            <span className="text-muted-foreground">本月总收入:</span>
-            <span className="text-xl font-bold text-emerald-400">¥{monthlyIncome.toLocaleString()}</span>
-          </div>
+        </section>
 
-          <TransactionList transactions={transactions} />
-        </div>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {years.map((year, index) => {
+            const income = incomes[index];
+            const target = YEAR_TARGETS[year];
+            const progress = target > 0 ? Math.min((income / target) * 100, 100) : 0;
+            const link = YEAR_LINKS[year];
+
+            const card = (
+              <Card className="h-full border-zinc-800 bg-zinc-900/70 hover:border-zinc-700 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span>{year}</span>
+                    <span className="text-xs text-zinc-400">{link ? "已开启" : "待开启"}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-zinc-300">年累计：{formatMoney(income)}</p>
+                  <p className="text-zinc-400">年度目标：{formatMoney(target)}</p>
+                  <p className="text-zinc-500">完成度：{progress.toFixed(1)}%</p>
+                </CardContent>
+              </Card>
+            );
+
+            if (!link) return <div key={year}>{card}</div>;
+            return (
+              <Link key={year} href={link} className="block">
+                {card}
+              </Link>
+            );
+          })}
+        </section>
       </div>
     </main>
   );

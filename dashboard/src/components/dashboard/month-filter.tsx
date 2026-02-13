@@ -7,25 +7,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export function MonthFilter() {
+interface MonthFilterProps {
+    months: string[];
+    currentMonth: string;
+}
+
+export function MonthFilter({ months, currentMonth }: MonthFilterProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
-    const currentMonth = searchParams.get("month") || new Date().toISOString().slice(0, 7); // Default YYYY-MM
 
     const handleValueChange = (value: string) => {
-        // Replace URL param
-        router.push(`/?month=${value}`);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("month", value);
+        router.push(`${pathname}?${params.toString()}`);
     };
-
-    // Generate last 12 months + next 12 months list? Or just 2026.
-    // For V0.3 let's stick to 2026 Focus.
-    const months = [
-        "2026-01", "2026-02", "2026-03", "2026-04",
-        "2026-05", "2026-06", "2026-07", "2026-08",
-        "2026-09", "2026-10", "2026-11", "2026-12"
-    ];
 
     return (
         <Select value={currentMonth} onValueChange={handleValueChange}>

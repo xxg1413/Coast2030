@@ -25,7 +25,8 @@ export function TaskList({ title, tasks }: { title: string, tasks: TaskItem[] })
         try {
             await fetch("/api/tasks/toggle", {
                 method: "POST",
-                body: JSON.stringify({ text: task.text, completed: !task.completed }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: task.id, completed: !task.completed }),
             });
             router.refresh();
         } catch (e) {
@@ -41,6 +42,7 @@ export function TaskList({ title, tasks }: { title: string, tasks: TaskItem[] })
         try {
             await fetch("/api/tasks/add", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text: newTask }),
             });
             setNewTask("");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ interface TaskItem {
     completed: boolean;
 }
 
-export function MonthlyTaskList({ tasks }: { tasks: TaskItem[] }) {
+export function MonthlyTaskList({ tasks, month }: { tasks: TaskItem[]; month: string }) {
     const router = useRouter();
     const [toggling, setToggling] = useState<string | null>(null);
     const [newTask, setNewTask] = useState("");
@@ -26,7 +27,8 @@ export function MonthlyTaskList({ tasks }: { tasks: TaskItem[] }) {
         try {
             await fetch("/api/tasks/monthly/toggle", {
                 method: "POST",
-                body: JSON.stringify({ text: task.text, completed: !task.completed }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: task.id, completed: !task.completed }),
             });
             router.refresh();
         } catch (e) {
@@ -36,14 +38,15 @@ export function MonthlyTaskList({ tasks }: { tasks: TaskItem[] }) {
         }
     };
 
-    const handleAdd = async (e: React.FormEvent) => {
+    const handleAdd = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!newTask.trim()) return;
         setAdding(true);
         try {
             await fetch("/api/tasks/monthly/add", {
                 method: "POST",
-                body: JSON.stringify({ text: newTask }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: newTask, month }),
             });
             setNewTask("");
             router.refresh();
@@ -60,6 +63,7 @@ export function MonthlyTaskList({ tasks }: { tasks: TaskItem[] }) {
         try {
             await fetch("/api/tasks/monthly/delete", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: task.id }),
             });
             router.refresh();
@@ -73,7 +77,7 @@ export function MonthlyTaskList({ tasks }: { tasks: TaskItem[] }) {
     return (
         <Card className="w-full h-full flex flex-col">
             <CardHeader>
-                <CardTitle>📅 本月里程碑 (关键战役)</CardTitle>
+                <CardTitle>📅 本月关键点</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
                 <div className="space-y-4 flex-1">
@@ -95,33 +99,33 @@ export function MonthlyTaskList({ tasks }: { tasks: TaskItem[] }) {
                                     {task.text}
                                 </label>
                             </div>
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                            onClick={() => handleDelete(task)}
-                            disabled={deleting === task.id}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                onClick={() => handleDelete(task)}
+                                disabled={deleting === task.id}
                             >
-                            {deleting === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                        </Button>
+                                {deleting === task.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                            </Button>
                         </div>
                     ))}
-                {tasks.length === 0 && (
-                    <p className="text-sm text-muted-foreground">本月暂无里程碑。</p>
-                )}
-            </div>
+                    {tasks.length === 0 && (
+                        <p className="text-sm text-muted-foreground">本月暂无关键点。</p>
+                    )}
+                </div>
 
-            <form onSubmit={handleAdd} className="mt-6 flex gap-2">
-                <Input
-                    placeholder="新增里程碑..."
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    className="bg-zinc-950/50"
-                />
-                <Button type="submit" size="icon" disabled={adding}>
-                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                </Button>
-            </form>
-        </CardContent>
-        </Card >
+                <form onSubmit={handleAdd} className="mt-6 flex gap-2">
+                    <Input
+                        value={newTask}
+                        onChange={(e) => setNewTask(e.target.value)}
+                        className="bg-zinc-950/50"
+                    />
+                    <Button type="submit" size="icon" disabled={adding}>
+                        {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
     );
 }

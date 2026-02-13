@@ -2,43 +2,49 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface RetirementProgressProps {
-    current: number;
+    year: number;
+    yearIncome: number;
+    lifetimeIncome: number;
 }
 
-export function RetirementProgress({ current }: RetirementProgressProps) {
-    const target2026 = 3000000; // 300w
-    const target2030 = 5000000; // 500w
+export function RetirementProgress({ year, yearIncome, lifetimeIncome }: RetirementProgressProps) {
+    const yearTarget = 3000000;
+    const coastTarget = 5000000;
 
-    const percentage2026 = Math.min((current / target2026) * 100, 100);
-    const percentage2030 = Math.min((current / target2030) * 100, 100);
+    const yearPercentage = Math.min((yearIncome / yearTarget) * 100, 100);
+    const coastPercentage = Math.min((lifetimeIncome / coastTarget) * 100, 100);
 
     return (
-        <Card className="border-l-4 border-l-emerald-500">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-base font-bold flex justify-between items-center">
-                    <span>🚀 2026 年度目标 (现金流验证)</span>
-                    <span className="text-emerald-400">¥{current.toLocaleString()}</span>
+        <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-zinc-950/80">
+            <CardHeader className="pb-3">
+                <CardTitle className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-sm text-zinc-400">{year} 年目标进度</p>
+                        <p className="text-xl font-semibold mt-1">年累计 ¥{yearIncome.toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs text-emerald-300">
+                        年目标 ¥{yearTarget.toLocaleString()}
+                    </div>
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-                {/* 2026 Progress */}
+
+            <CardContent className="space-y-5">
                 <div>
-                    <div className="flex items-center justify-between mb-2 text-sm">
-                        <span className="text-zinc-400">目标: ¥{target2026.toLocaleString()}</span>
-                        <span className="text-white font-medium">{percentage2026.toFixed(2)}%</span>
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                        <span className="text-zinc-400">年度目标完成率</span>
+                        <span className="font-medium">{yearPercentage.toFixed(2)}%</span>
                     </div>
-                    <Progress value={percentage2026} className="h-3 bg-zinc-800" indicatorClassName="bg-emerald-500" />
+                    <Progress value={yearPercentage} className="h-3 bg-zinc-800" indicatorClassName="bg-emerald-500" />
                 </div>
 
-                {/* 2030 Progress */}
-                <div className="pt-2 border-t border-zinc-800">
-                    <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-muted-foreground">🏝️ Coast 2030 退休进度</span>
-                        <span className="text-xs text-muted-foreground">{percentage2030.toFixed(4)}%</span>
+                <div className="border-t border-zinc-800 pt-4">
+                    <div className="mb-2 flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">Coast 2030 终局目标</span>
+                        <span className="text-zinc-300">{coastPercentage.toFixed(2)}%</span>
                     </div>
-                    <Progress value={percentage2030} className="h-1.5 bg-zinc-900" indicatorClassName="bg-blue-600" />
-                    <p className="text-[10px] text-zinc-600 text-right mt-1">
-                        终点: ¥{target2030.toLocaleString()}
+                    <Progress value={coastPercentage} className="h-1.5 bg-zinc-900" indicatorClassName="bg-blue-500" />
+                    <p className="mt-2 text-[11px] text-zinc-500">
+                        全部累计 ¥{lifetimeIncome.toLocaleString()} / 目标 ¥{coastTarget.toLocaleString()}
                     </p>
                 </div>
             </CardContent>

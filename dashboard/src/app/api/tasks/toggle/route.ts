@@ -3,11 +3,15 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     try {
-        const { text, completed } = await request.json();
+        const { id, completed } = await request.json();
 
-        const success = await toggleTask(text, completed);
+        if (!id || typeof completed !== 'boolean') {
+            return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+        }
+
+        const success = await toggleTask(id, completed);
         return NextResponse.json({ success });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });
     }
 }
