@@ -28,6 +28,7 @@ Coast2030 的年度计划与收入跟踪系统（Next.js + Cloudflare）。
 ### 5) 登录认证
 - 登录页自定义品牌样式
 - Cookie 登录态（生产环境 `Secure + SameSite=None`）
+- 账号密码通过环境变量配置（不再写死在代码里）
 
 ## 技术栈
 
@@ -45,6 +46,31 @@ pnpm dev
 ```
 
 默认访问：`http://localhost:3000`
+
+## 登录配置（必填）
+
+本地请创建 `dashboard/.dev.vars`（可参考 `dashboard/.dev.vars.example`）：
+
+```bash
+NEXTJS_ENV=development
+AUTH_USERNAME=pxiaoer
+AUTH_PASSWORD_SALT=coast2030-login-salt
+AUTH_PASSWORD_HASH=<sha256(salt:password)>
+```
+
+生成密码哈希：
+
+```bash
+pnpm auth:hash "Coast2030@1413" "coast2030-login-salt"
+```
+
+Cloudflare 线上建议使用 Secrets：
+
+```bash
+wrangler secret put AUTH_USERNAME
+wrangler secret put AUTH_PASSWORD_SALT
+wrangler secret put AUTH_PASSWORD_HASH
+```
 
 ## 构建与部署
 

@@ -1,0 +1,4 @@
+NEXTJS_ENV=development
+AUTH_USERNAME=your_username
+AUTH_PASSWORD_SALT=your_salt
+AUTH_PASSWORD_HASH=your_sha256_hash
