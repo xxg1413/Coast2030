@@ -5,17 +5,20 @@ export async function POST(request: Request) {
     try {
         const data = await request.json();
         const amount = Number(data.amount);
+        const project = typeof data.project === 'string' ? data.project.trim() : '';
+        const memo = typeof data.memo === 'string' ? data.memo.trim() : '';
+        const type = typeof data.type === 'string' && data.type ? data.type : 'Other';
 
-        if (!data.date || !Number.isFinite(amount) || amount <= 0) {
+        if (!data.date || !project || !Number.isFinite(amount) || amount <= 0) {
             return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
         }
 
         const success = await addTransaction({
             date: data.date,
-            type: data.type || 'Other',
-            project: data.project || data.type || 'Other',
+            type,
+            project,
             amount,
-            memo: data.memo || ''
+            memo
         });
 
         return NextResponse.json({ success });

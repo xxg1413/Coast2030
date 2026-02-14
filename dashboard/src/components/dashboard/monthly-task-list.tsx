@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 interface TaskItem {
     id: string;
@@ -15,12 +15,21 @@ interface TaskItem {
     completed: boolean;
 }
 
-export function MonthlyTaskList({ tasks, month }: { tasks: TaskItem[]; month: string }) {
+export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; month: string; months: string[] }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const [toggling, setToggling] = useState<string | null>(null);
     const [newTask, setNewTask] = useState("");
     const [adding, setAdding] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
+    const isAllMonths = month === "all";
+
+    const handleMonthChange = (value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("taskMonth", value);
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     const handleToggle = async (task: TaskItem) => {
         setToggling(task.id);
@@ -40,6 +49,7 @@ export function MonthlyTaskList({ tasks, month }: { tasks: TaskItem[]; month: st
 
     const handleAdd = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (isAllMonths) return;
         if (!newTask.trim()) return;
         setAdding(true);
         try {
@@ -76,8 +86,20 @@ export function MonthlyTaskList({ tasks, month }: { tasks: TaskItem[]; month: st
 
     return (
         <Card className="w-full h-full flex flex-col">
-            <CardHeader>
+            <CardHeader className="space-y-3">
                 <CardTitle>📅 本月关键点</CardTitle>
+                <select
+                    value={month}
+                    onChange={(event) => handleMonthChange(event.target.value)}
+                    className="h-9 w-full max-w-[220px] rounded-md border border-zinc-700 bg-zinc-950/60 px-3 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-zinc-500"
+                >
+                    <option value="all">全部月份</option>
+                    {months.map((item) => (
+                        <option key={item} value={item}>
+                            {item}
+                        </option>
+                    ))}
+                </select>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
                 <div className="space-y-4 flex-1">
@@ -120,8 +142,10 @@ export function MonthlyTaskList({ tasks, month }: { tasks: TaskItem[]; month: st
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
                         className="bg-zinc-950/50"
+                        disabled={isAllMonths}
+                        placeholder={isAllMonths ? "请先选择具体月份再新增" : ""}
                     />
-                    <Button type="submit" size="icon" disabled={adding}>
+                    <Button type="submit" size="icon" disabled={adding || isAllMonths}>
                         {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                     </Button>
                 </form>

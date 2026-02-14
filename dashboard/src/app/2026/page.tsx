@@ -51,7 +51,7 @@ function getIncomeTypeLabel(type: string): string {
 }
 
 interface Props {
-  searchParams: Promise<{ month?: string; day?: string }>;
+  searchParams: Promise<{ month?: string; day?: string; taskMonth?: string }>;
 }
 
 export default async function Year2026Page({ searchParams }: Props) {
@@ -60,10 +60,16 @@ export default async function Year2026Page({ searchParams }: Props) {
   const fallbackMonth = availableMonths[0] || getBeijingCurrentYearMonth();
   const currentMonth = params.month && availableMonths.includes(params.month) ? params.month : fallbackMonth;
   const currentDay = params.day && DATE_REGEX.test(params.day) ? params.day : getBeijingCurrentDate();
+  const currentTaskMonth =
+    params.taskMonth === "all"
+      ? "all"
+      : params.taskMonth && availableMonths.includes(params.taskMonth)
+        ? params.taskMonth
+        : currentMonth;
 
   const [monthlyTasks, dailyTasks, transactions, lifetimeIncome, monthlyIncome, yearIncome, composition] =
     await Promise.all([
-      getMonthlyTasks(currentMonth),
+      getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
       getTransactions(currentMonth),
       getTotalIncome(),
@@ -150,7 +156,7 @@ export default async function Year2026Page({ searchParams }: Props) {
           <h2 className="text-xl font-semibold">任务跟踪</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <MonthlyTaskList tasks={monthlyTasks} month={currentMonth} />
+              <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
             </div>
             <div>
               <DailyTaskList date={currentDay} tasks={dailyTasks} />

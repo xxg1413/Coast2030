@@ -320,6 +320,7 @@ export async function deleteDailyTask(id: string): Promise<boolean> {
 // --- Finance ---
 
 export interface Transaction {
+    id: number;
     date: string;
     type: string;
     project: string;
@@ -447,12 +448,18 @@ export async function getTransactions(month?: string): Promise<Transaction[]> {
     return result.results;
 }
 
-export async function addTransaction(transaction: Transaction): Promise<boolean> {
+export async function addTransaction(transaction: Omit<Transaction, "id">): Promise<boolean> {
     const db = await getDB();
     await db
         .prepare("INSERT INTO transactions (date, type, project, amount, memo) VALUES (?, ?, ?, ?, ?)")
         .bind(transaction.date, transaction.type, transaction.project, transaction.amount, transaction.memo)
         .run();
+    return true;
+}
+
+export async function deleteTransaction(id: number): Promise<boolean> {
+    const db = await getDB();
+    await db.prepare("DELETE FROM transactions WHERE id = ?").bind(id).run();
     return true;
 }
 

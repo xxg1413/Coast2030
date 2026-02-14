@@ -40,9 +40,8 @@ export default async function Home() {
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Coast2030</p>
               <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">
-                年度总主页
+                P小二的5年退休计划
               </h1>
-              <p className="mt-2 text-sm text-zinc-400">先选年份，再进入对应年度看板进行跟踪与复盘。</p>
             </div>
           </div>
         </section>

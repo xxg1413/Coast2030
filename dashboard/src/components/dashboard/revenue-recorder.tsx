@@ -28,11 +28,15 @@ export function RevenueRecorder() {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [type, setType] = useState<string>("SaaS");
+    const [project, setProject] = useState("");
     const [amount, setAmount] = useState("");
     const [memo, setMemo] = useState("");
 
     const handleSave = async () => {
-        if (!amount) return;
+        const trimmedProject = project.trim();
+        const trimmedMemo = memo.trim();
+
+        if (!amount || !trimmedProject) return;
         setLoading(true);
         try {
             await fetch("/api/revenue/add", {
@@ -41,13 +45,14 @@ export function RevenueRecorder() {
                 body: JSON.stringify({
                     date: new Date().toISOString().split('T')[0],
                     type,
-                    project: memo || type, // Simplified linkage
+                    project: trimmedProject,
                     amount: parseFloat(amount),
-                    memo
+                    memo: trimmedMemo
                 }),
             });
 
             setOpen(false);
+            setProject("");
             setAmount("");
             setMemo("");
             router.refresh();
@@ -91,6 +96,18 @@ export function RevenueRecorder() {
                         </Select>
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="project" className="text-right">
+                            项目
+                        </Label>
+                        <Input
+                            id="project"
+                            value={project}
+                            onChange={(e) => setProject(e.target.value)}
+                            className="col-span-3"
+                            placeholder="例如：漏洞挖掘单 #2026-02"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="amount" className="text-right">
                             金额 (¥)
                         </Label>
@@ -111,12 +128,12 @@ export function RevenueRecorder() {
                             value={memo}
                             onChange={(e) => setMemo(e.target.value)}
                             className="col-span-3"
-                            placeholder="例如：某个项目收入"
+                            placeholder="例如：打款备注/渠道信息"
                         />
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSave} disabled={loading}>
+                    <Button onClick={handleSave} disabled={loading || !project.trim() || !amount || Number(amount) <= 0}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         确认录入
                     </Button>
