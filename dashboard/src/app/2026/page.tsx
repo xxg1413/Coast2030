@@ -100,9 +100,17 @@ export default async function Year2026Page({ searchParams }: Props) {
                 </h1>
               </div>
             </div>
-            <Link href="/" className="text-sm text-zinc-300 hover:text-white underline underline-offset-4">
-              返回年度主页
-            </Link>
+            <div className="flex gap-4">
+              <a
+                href="https://aibounty.pxiaoer.blog/"
+                className="text-sm text-emerald-300 hover:text-emerald-100 underline underline-offset-4"
+              >
+                🤖 AIBounty
+              </a>
+              <Link href="/" className="text-sm text-zinc-300 hover:text-white underline underline-offset-4">
+                返回年度主页
+              </Link>
+            </div>
           </div>
         </section>
 
