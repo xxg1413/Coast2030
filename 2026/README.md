@@ -23,6 +23,7 @@
 - SaaS：[`12SaaS/README.md`](./12SaaS/README.md)
 - 漏洞挖掘：[`漏洞挖掘/README.md`](./漏洞挖掘/README.md)
 - 自媒体：[`自媒体/README.md`](./自媒体/README.md)
+- 月度计划：[`03-plan.md`](./03-plan.md)
 - 服务器记录：[`servers.md`](./servers.md)
 
 ---

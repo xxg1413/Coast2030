@@ -45,6 +45,37 @@ CREATE TABLE IF NOT EXISTS daily_tasks (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS monthly_reviews (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  year INTEGER NOT NULL,
+  month INTEGER NOT NULL,
+  wins TEXT DEFAULT '',
+  losses TEXT DEFAULT '',
+  blockers TEXT DEFAULT '',
+  next_steps TEXT DEFAULT '',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(year, month)
+);
+
+CREATE TABLE IF NOT EXISTS hunter_targets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  platform TEXT DEFAULT '',
+  url TEXT DEFAULT '',
+  priority TEXT DEFAULT 'P1',
+  status TEXT DEFAULT 'watch',
+  bounty_estimate INTEGER DEFAULT 0,
+  thesis TEXT DEFAULT '',
+  odds_note TEXT DEFAULT '',
+  last_action TEXT DEFAULT '',
+  last_action_date TEXT DEFAULT '',
+  next_step TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS auth_login_attempts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ip TEXT NOT NULL,
@@ -55,4 +86,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_monthly_milestones_year_month ON monthly_milestones(year, month);
 CREATE INDEX IF NOT EXISTS idx_daily_tasks_task_date ON daily_tasks(task_date);
+CREATE INDEX IF NOT EXISTS idx_monthly_reviews_year_month ON monthly_reviews(year, month);
+CREATE INDEX IF NOT EXISTS idx_hunter_targets_priority_status ON hunter_targets(priority, status);
+CREATE INDEX IF NOT EXISTS idx_hunter_targets_last_action_date ON hunter_targets(last_action_date);
 CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_ip_time ON auth_login_attempts(ip, attempted_at);

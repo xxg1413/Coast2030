@@ -1,6 +1,4 @@
 import { getDB } from "./db";
-import { remark } from "remark";
-import html from "remark-html";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -142,75 +140,6 @@ function getProgress(current: number, target: number): number {
 
 // --- Weekly Focus ---
 
-export interface WeeklyFocus {
-    title: string;
-    items: string[];
-    htmlContent: string;
-}
-
-export async function getWeeklyFocus(): Promise<WeeklyFocus> {
-    const db = await getDB();
-    const result = await db
-        .prepare("SELECT text, completed FROM weekly_focus ORDER BY created_at ASC")
-        .all<{ text: string; completed: number }>();
-
-    const items = result.results.map((r) => r.text);
-    const listMarkdown = result.results
-        .map((item) => `- [${item.completed === 1 ? "x" : " "}] ${item.text}`)
-        .join("\n");
-    const processedContent = await remark().use(html).process(listMarkdown);
-
-    return {
-        title: "本周焦点",
-        items,
-        htmlContent: processedContent.toString(),
-    };
-}
-
-export async function saveWeeklyFocus(content: string): Promise<boolean> {
-    const db = await getDB();
-    const lines = content
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-    const parsedTasks = lines
-        .map((line) => {
-            const markdownTaskMatch = line.match(/^-+\s*\[([ xX])\]\s*(.+)$/);
-            if (markdownTaskMatch) {
-                return {
-                    text: markdownTaskMatch[2].trim(),
-                    completed: markdownTaskMatch[1].toLowerCase() === "x",
-                };
-            }
-
-            const bulletMatch = line.match(/^-+\s*(.+)$/);
-            if (bulletMatch) {
-                return {
-                    text: bulletMatch[1].trim(),
-                    completed: false,
-                };
-            }
-
-            return {
-                text: line,
-                completed: false,
-            };
-        })
-        .filter((task) => task.text.length > 0);
-
-    await db.exec("DELETE FROM weekly_focus");
-
-    for (const task of parsedTasks) {
-        await db
-            .prepare("INSERT INTO weekly_focus (text, completed) VALUES (?, ?)")
-            .bind(task.text, task.completed ? 1 : 0)
-            .run();
-    }
-
-    return true;
-}
-
 export interface TaskItem {
     id: string;
     text: string;
@@ -247,6 +176,462 @@ export async function addTask(taskText: string): Promise<boolean> {
         .prepare("INSERT INTO weekly_focus (text, completed) VALUES (?, 0)")
         .bind(taskText.trim())
         .run();
+    return true;
+}
+
+export async function deleteTask(taskId: string): Promise<boolean> {
+    const db = await getDB();
+    await db.prepare("DELETE FROM weekly_focus WHERE id = ?").bind(Number(taskId)).run();
+    return true;
+}
+
+// --- Monthly Reviews ---
+
+export interface MonthlyReview {
+    wins: string;
+    losses: string;
+    blockers: string;
+    nextSteps: string;
+}
+
+async function ensureMonthlyReviewsTable() {
+    const db = await getDB();
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS monthly_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER NOT NULL,
+            month INTEGER NOT NULL,
+            wins TEXT DEFAULT '',
+            losses TEXT DEFAULT '',
+            blockers TEXT DEFAULT '',
+            next_steps TEXT DEFAULT '',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(year, month)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_monthly_reviews_year_month ON monthly_reviews(year, month);
+    `);
+}
+
+async function ensureHunterTargetsTable() {
+    const db = await getDB();
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS hunter_targets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            platform TEXT DEFAULT '',
+            url TEXT DEFAULT '',
+            priority TEXT DEFAULT 'P1',
+            status TEXT DEFAULT 'watch',
+            bounty_estimate INTEGER DEFAULT 0,
+            thesis TEXT DEFAULT '',
+            odds_note TEXT DEFAULT '',
+            last_action TEXT DEFAULT '',
+            last_action_date TEXT DEFAULT '',
+            next_step TEXT DEFAULT '',
+            notes TEXT DEFAULT '',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_hunter_targets_priority_status ON hunter_targets(priority, status);
+        CREATE INDEX IF NOT EXISTS idx_hunter_targets_last_action_date ON hunter_targets(last_action_date);
+    `);
+}
+
+export async function getMonthlyReview(month?: string): Promise<MonthlyReview> {
+    await ensureMonthlyReviewsTable();
+    const db = await getDB();
+    const parsed = parseYearMonth(month || getCurrentYearMonth());
+
+    if (!parsed) {
+        return {
+            wins: "",
+            losses: "",
+            blockers: "",
+            nextSteps: "",
+        };
+    }
+
+    const result = await db
+        .prepare("SELECT wins, losses, blockers, next_steps FROM monthly_reviews WHERE year = ? AND month = ? LIMIT 1")
+        .bind(parsed.year, parsed.month)
+        .first<{ wins: string; losses: string; blockers: string; next_steps: string }>();
+
+    return {
+        wins: result?.wins || "",
+        losses: result?.losses || "",
+        blockers: result?.blockers || "",
+        nextSteps: result?.next_steps || "",
+    };
+}
+
+export async function saveMonthlyReview(
+    month: string | undefined,
+    review: MonthlyReview,
+): Promise<boolean> {
+    await ensureMonthlyReviewsTable();
+    const db = await getDB();
+    const parsed = parseYearMonth(month || getCurrentYearMonth());
+
+    if (!parsed) return false;
+
+    const wins = review.wins.trim();
+    const losses = review.losses.trim();
+    const blockers = review.blockers.trim();
+    const nextSteps = review.nextSteps.trim();
+
+    const existing = await db
+        .prepare("SELECT id FROM monthly_reviews WHERE year = ? AND month = ? LIMIT 1")
+        .bind(parsed.year, parsed.month)
+        .first<{ id: number }>();
+
+    if (existing?.id) {
+        await db
+            .prepare(`
+                UPDATE monthly_reviews
+                SET wins = ?, losses = ?, blockers = ?, next_steps = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `)
+            .bind(wins, losses, blockers, nextSteps, existing.id)
+            .run();
+        return true;
+    }
+
+    await db
+        .prepare(`
+            INSERT INTO monthly_reviews (year, month, wins, losses, blockers, next_steps)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `)
+        .bind(parsed.year, parsed.month, wins, losses, blockers, nextSteps)
+        .run();
+
+    return true;
+}
+
+export async function getMonthlyReviewDraft(month?: string): Promise<MonthlyReview> {
+    await ensureMonthlyReviewsTable();
+    await ensureHunterTargetsTable();
+
+    const targetMonth = normalizeYearMonth(month) || getCurrentYearMonth();
+    const db = await getDB();
+
+    const [transactions, monthlyTasks, dailyStats, hunterStats] = await Promise.all([
+        getTransactions(targetMonth),
+        getMonthlyTasks(targetMonth),
+        db
+            .prepare(`
+                SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) AS completed
+                FROM daily_tasks
+                WHERE strftime('%Y-%m', task_date) = ?
+            `)
+            .bind(targetMonth)
+            .first<{ total: number; completed: number }>(),
+        db
+            .prepare(`
+                SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active_count,
+                    SUM(CASE WHEN status = 'submitted' THEN 1 ELSE 0 END) AS submitted_count,
+                    SUM(CASE WHEN priority = 'P0' THEN 1 ELSE 0 END) AS p0_count
+                FROM hunter_targets
+            `)
+            .first<{ total: number; active_count: number; submitted_count: number; p0_count: number }>(),
+    ]);
+
+    const incomeByType = new Map<string, number>();
+    let totalIncome = 0;
+    for (const transaction of transactions) {
+        totalIncome += Number(transaction.amount || 0);
+        incomeByType.set(transaction.type, (incomeByType.get(transaction.type) || 0) + Number(transaction.amount || 0));
+    }
+
+    const monthlyCompleted = monthlyTasks.filter((task) => task.completed).length;
+    const monthlyPending = monthlyTasks.filter((task) => !task.completed);
+    const dailyTotal = Number(dailyStats?.total || 0);
+    const dailyCompleted = Number(dailyStats?.completed || 0);
+    const hunterTotal = Number(hunterStats?.total || 0);
+    const hunterActive = Number(hunterStats?.active_count || 0);
+    const hunterSubmitted = Number(hunterStats?.submitted_count || 0);
+    const hunterP0 = Number(hunterStats?.p0_count || 0);
+
+    const wins: string[] = [];
+    const losses: string[] = [];
+    const blockers: string[] = [];
+    const nextSteps: string[] = [];
+
+    if (totalIncome > 0) {
+        wins.push(
+            `本月已记录收入 ${formatCurrency(totalIncome)}，Hunter ${formatCurrency(incomeByType.get("Hunter") || 0)} / SaaS ${formatCurrency(incomeByType.get("SaaS") || 0)} / Media ${formatCurrency(incomeByType.get("Media") || 0)}。`,
+        );
+    } else {
+        losses.push("本月数据库里还没有形成已到账收入，现金流验证仍未闭环。");
+    }
+
+    if (monthlyTasks.length > 0) {
+        wins.push(`本月关键点完成 ${monthlyCompleted}/${monthlyTasks.length}。`);
+        if (monthlyPending.length > 0) {
+            losses.push(`仍有 ${monthlyPending.length} 个本月关键点未完成。`);
+        }
+    } else {
+        blockers.push("本月关键点还没有建立成结构化执行清单。");
+    }
+
+    if (dailyTotal > 0) {
+        wins.push(`本月日任务完成 ${dailyCompleted}/${dailyTotal}。`);
+        if (dailyCompleted / dailyTotal < 0.5) {
+            losses.push("日任务完成率偏低，说明执行节奏还不稳定。");
+        }
+    } else {
+        blockers.push("本月没有形成足够的日任务沉淀，执行数据偏少。");
+    }
+
+    if (hunterTotal > 0) {
+        wins.push(`Hunter 目标池当前共 ${hunterTotal} 个目标，其中活跃 ${hunterActive} 个，已提交 ${hunterSubmitted} 个，P0 ${hunterP0} 个。`);
+    } else {
+        blockers.push("Hunter 目标池尚未建库，无法判断赔率是否集中在正确标的上。");
+    }
+
+    if (hunterTotal < 5) {
+        blockers.push("高潜 AI 目标数量仍然不足，距离“至少 5 个可重注目标”的要求有缺口。");
+        nextSteps.push("补齐 Hunter 目标池到至少 5 个高潜目标，并把 2 个最强标的推进到 active。");
+    }
+
+    if (hunterActive < 2) {
+        blockers.push("主攻目标还不够集中，当前 active 数量不足 2 个。");
+        nextSteps.push("收缩目标池，明确 2 个主攻项目和 3 个跟进项目。");
+    }
+
+    if (monthlyPending.length > 0) {
+        nextSteps.push(
+            `优先收口这些未完成关键点：${monthlyPending
+                .slice(0, 3)
+                .map((task) => task.text)
+                .join("；")}。`,
+        );
+    }
+
+    if ((incomeByType.get("SaaS") || 0) === 0) {
+        nextSteps.push("继续推进 kol.tools 的转化入口验证，至少形成可追踪的注册、反馈或付费数据。");
+    }
+
+    if ((incomeByType.get("Hunter") || 0) === 0) {
+        nextSteps.push("把 Hunter 主线推进到可提交或深度沟通阶段，优先追求高赔率命中而不是低危堆量。");
+    }
+
+    if (wins.length === 0) {
+        wins.push("本月尚未形成足够明确的正反馈，说明策略还需要进一步收敛。");
+    }
+
+    if (losses.length === 0) {
+        losses.push("本月没有明显的结构性失误记录，后续应继续把失败案例写进数据库，避免复发。");
+    }
+
+    if (blockers.length === 0) {
+        blockers.push("当前没有显著阻塞项暴露，但仍需要持续用目标池和转化数据验证判断。");
+    }
+
+    if (nextSteps.length === 0) {
+        nextSteps.push("延续本月有效动作，避免扩张，继续围绕唯一主线加码。");
+    }
+
+    return {
+        wins: wins.map((item) => `- ${item}`).join("\n"),
+        losses: losses.map((item) => `- ${item}`).join("\n"),
+        blockers: blockers.map((item) => `- ${item}`).join("\n"),
+        nextSteps: nextSteps.map((item) => `- ${item}`).join("\n"),
+    };
+}
+
+export interface HunterTarget {
+    id: string;
+    name: string;
+    platform: string;
+    url: string;
+    priority: string;
+    status: string;
+    bountyEstimate: number;
+    thesis: string;
+    oddsNote: string;
+    lastAction: string;
+    lastActionDate: string;
+    nextStep: string;
+    notes: string;
+}
+
+export interface HunterTargetInput {
+    name: string;
+    platform: string;
+    url: string;
+    priority: string;
+    status: string;
+    bountyEstimate: number;
+    thesis: string;
+    oddsNote: string;
+    lastAction: string;
+    lastActionDate: string;
+    nextStep: string;
+    notes: string;
+}
+
+function normalizeHunterTargetInput(input: HunterTargetInput): HunterTargetInput {
+    return {
+        name: input.name.trim(),
+        platform: input.platform.trim(),
+        url: input.url.trim(),
+        priority: input.priority.trim() || "P1",
+        status: input.status.trim() || "watch",
+        bountyEstimate: Number.isFinite(Number(input.bountyEstimate)) ? Number(input.bountyEstimate) : 0,
+        thesis: input.thesis.trim(),
+        oddsNote: input.oddsNote.trim(),
+        lastAction: input.lastAction.trim(),
+        lastActionDate: normalizeDate(input.lastActionDate) || "",
+        nextStep: input.nextStep.trim(),
+        notes: input.notes.trim(),
+    };
+}
+
+export async function getHunterTargets(): Promise<HunterTarget[]> {
+    await ensureHunterTargetsTable();
+    const db = await getDB();
+    const result = await db
+        .prepare(`
+            SELECT
+                id,
+                name,
+                platform,
+                url,
+                priority,
+                status,
+                bounty_estimate,
+                thesis,
+                odds_note,
+                last_action,
+                last_action_date,
+                next_step,
+                notes
+            FROM hunter_targets
+            ORDER BY
+                CASE priority WHEN 'P0' THEN 0 WHEN 'P1' THEN 1 ELSE 2 END ASC,
+                CASE status WHEN 'active' THEN 0 WHEN 'submitted' THEN 1 WHEN 'follow_up' THEN 2 WHEN 'watch' THEN 3 ELSE 4 END ASC,
+                CASE WHEN last_action_date = '' THEN 1 ELSE 0 END ASC,
+                last_action_date DESC,
+                created_at DESC
+        `)
+        .all<{
+            id: number;
+            name: string;
+            platform: string;
+            url: string;
+            priority: string;
+            status: string;
+            bounty_estimate: number;
+            thesis: string;
+            odds_note: string;
+            last_action: string;
+            last_action_date: string;
+            next_step: string;
+            notes: string;
+        }>();
+
+    return result.results.map((item) => ({
+        id: item.id.toString(),
+        name: item.name,
+        platform: item.platform || "",
+        url: item.url || "",
+        priority: item.priority || "P1",
+        status: item.status || "watch",
+        bountyEstimate: Number(item.bounty_estimate || 0),
+        thesis: item.thesis || "",
+        oddsNote: item.odds_note || "",
+        lastAction: item.last_action || "",
+        lastActionDate: item.last_action_date || "",
+        nextStep: item.next_step || "",
+        notes: item.notes || "",
+    }));
+}
+
+export async function addHunterTarget(input: HunterTargetInput): Promise<boolean> {
+    await ensureHunterTargetsTable();
+    const db = await getDB();
+    const normalized = normalizeHunterTargetInput(input);
+    if (!normalized.name) return false;
+
+    await db
+        .prepare(`
+            INSERT INTO hunter_targets (
+                name, platform, url, priority, status, bounty_estimate, thesis, odds_note, last_action, last_action_date, next_step, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+            normalized.name,
+            normalized.platform,
+            normalized.url,
+            normalized.priority,
+            normalized.status,
+            normalized.bountyEstimate,
+            normalized.thesis,
+            normalized.oddsNote,
+            normalized.lastAction,
+            normalized.lastActionDate,
+            normalized.nextStep,
+            normalized.notes,
+        )
+        .run();
+    return true;
+}
+
+export async function updateHunterTarget(id: string, input: HunterTargetInput): Promise<boolean> {
+    await ensureHunterTargetsTable();
+    const db = await getDB();
+    const normalized = normalizeHunterTargetInput(input);
+    if (!normalized.name) return false;
+
+    await db
+        .prepare(`
+            UPDATE hunter_targets
+            SET
+                name = ?,
+                platform = ?,
+                url = ?,
+                priority = ?,
+                status = ?,
+                bounty_estimate = ?,
+                thesis = ?,
+                odds_note = ?,
+                last_action = ?,
+                last_action_date = ?,
+                next_step = ?,
+                notes = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `)
+        .bind(
+            normalized.name,
+            normalized.platform,
+            normalized.url,
+            normalized.priority,
+            normalized.status,
+            normalized.bountyEstimate,
+            normalized.thesis,
+            normalized.oddsNote,
+            normalized.lastAction,
+            normalized.lastActionDate,
+            normalized.nextStep,
+            normalized.notes,
+            Number(id),
+        )
+        .run();
+    return true;
+}
+
+export async function deleteHunterTarget(id: string): Promise<boolean> {
+    await ensureHunterTargetsTable();
+    const db = await getDB();
+    await db.prepare("DELETE FROM hunter_targets WHERE id = ?").bind(Number(id)).run();
     return true;
 }
 
@@ -566,6 +951,7 @@ export async function deleteMonthlyTask(id: string): Promise<boolean> {
 }
 
 export async function getAvailableMonths(): Promise<string[]> {
+    await ensureMonthlyReviewsTable();
     const db = await getDB();
     const result = await db
         .prepare(`
@@ -574,6 +960,8 @@ export async function getAvailableMonths(): Promise<string[]> {
                 SELECT DISTINCT strftime('%Y-%m', date) AS month_key FROM transactions
                 UNION
                 SELECT DISTINCT printf('%04d-%02d', year, month) AS month_key FROM monthly_milestones
+                UNION
+                SELECT DISTINCT printf('%04d-%02d', year, month) AS month_key FROM monthly_reviews
             )
             WHERE month_key IS NOT NULL AND month_key != ''
             ORDER BY month_key DESC

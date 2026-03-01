@@ -68,6 +68,52 @@ const MIGRATIONS: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_ip_time ON auth_login_attempts(ip, attempted_at);
         `,
     },
+    {
+        version: 3,
+        name: 'create_monthly_reviews',
+        sql: `
+            CREATE TABLE IF NOT EXISTS monthly_reviews (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              year INTEGER NOT NULL,
+              month INTEGER NOT NULL,
+              wins TEXT DEFAULT '',
+              losses TEXT DEFAULT '',
+              blockers TEXT DEFAULT '',
+              next_steps TEXT DEFAULT '',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              UNIQUE(year, month)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_monthly_reviews_year_month ON monthly_reviews(year, month);
+        `,
+    },
+    {
+        version: 4,
+        name: 'create_hunter_targets',
+        sql: `
+            CREATE TABLE IF NOT EXISTS hunter_targets (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT NOT NULL,
+              platform TEXT DEFAULT '',
+              url TEXT DEFAULT '',
+              priority TEXT DEFAULT 'P1',
+              status TEXT DEFAULT 'watch',
+              bounty_estimate INTEGER DEFAULT 0,
+              thesis TEXT DEFAULT '',
+              odds_note TEXT DEFAULT '',
+              last_action TEXT DEFAULT '',
+              last_action_date TEXT DEFAULT '',
+              next_step TEXT DEFAULT '',
+              notes TEXT DEFAULT '',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_hunter_targets_priority_status ON hunter_targets(priority, status);
+            CREATE INDEX IF NOT EXISTS idx_hunter_targets_last_action_date ON hunter_targets(last_action_date);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

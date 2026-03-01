@@ -5,9 +5,13 @@ import {
   getBeijingCurrentDate,
   getBeijingCurrentYearMonth,
   getAvailableMonths,
+  getCoreMetrics,
   getDailyTasks,
+  getHunterTargets,
   getIncomeComposition,
+  getMonthlyReview,
   getMonthlyTasks,
+  getStructuredWeeklyFocus,
   getTotalIncome,
   getTransactions,
   getYearIncome,
@@ -19,6 +23,13 @@ import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
+import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
+import { ExecutionSummary } from "@/components/dashboard/execution-summary";
+import { MonthlyReviewCard } from "@/components/dashboard/monthly-review-card";
+import { HunterTargetPool } from "@/components/dashboard/hunter-target-pool";
+import { CoreMetricsGrid } from "@/components/dashboard/core-metrics-grid";
+import { HunterPipelineSummary } from "@/components/dashboard/hunter-pipeline-summary";
+import { PendingMilestonesCard } from "@/components/dashboard/pending-milestones-card";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -67,10 +78,15 @@ export default async function Year2026Page({ searchParams }: Props) {
         ? params.taskMonth
         : currentMonth;
 
-  const [monthlyTasks, dailyTasks, transactions, lifetimeIncome, monthlyIncome, yearIncome, composition] =
+  const [weeklyFocus, hunterTargets, coreMetrics, currentMonthTasks, monthlyTasks, dailyTasks, monthlyReview, transactions, lifetimeIncome, monthlyIncome, yearIncome, composition] =
     await Promise.all([
+      getStructuredWeeklyFocus(),
+      getHunterTargets(),
+      getCoreMetrics(currentMonth),
+      getMonthlyTasks(currentMonth),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
+      getMonthlyReview(currentMonth),
       getTransactions(currentMonth),
       getTotalIncome(),
       getTotalIncome(currentMonth),
@@ -80,6 +96,10 @@ export default async function Year2026Page({ searchParams }: Props) {
 
   const yearTarget = 3000000;
   const annualProgress = Math.min((yearIncome / yearTarget) * 100, 100);
+  const weeklyCompleted = weeklyFocus.tasks.filter((task) => task.completed).length;
+  const monthlyCompleted = monthlyTasks.filter((task) => task.completed).length;
+  const dailyCompleted = dailyTasks.filter((task) => task.completed).length;
+
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
@@ -160,6 +180,47 @@ export default async function Year2026Page({ searchParams }: Props) {
           </div>
         </section>
 
+        <section className="grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <ExecutionSummary
+              weekly={{
+                label: "本周焦点",
+                completed: weeklyCompleted,
+                total: weeklyFocus.tasks.length,
+                accentClassName: "bg-blue-500",
+              }}
+              monthly={{
+                label: "本月关键点",
+                completed: monthlyCompleted,
+                total: monthlyTasks.length,
+                accentClassName: "bg-amber-500",
+              }}
+              daily={{
+                label: "当日任务",
+                completed: dailyCompleted,
+                total: dailyTasks.length,
+                accentClassName: "bg-emerald-500",
+              }}
+            />
+          </div>
+          <div className="lg:col-span-8">
+            <WeeklyFocusList tasks={weeklyFocus.tasks} />
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <CoreMetricsGrid metrics={coreMetrics} />
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <HunterPipelineSummary targets={hunterTargets} />
+          </div>
+          <div className="lg:col-span-7">
+            <PendingMilestonesCard month={currentMonth} tasks={currentMonthTasks} />
+          </div>
+        </section>
+
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">任务跟踪</h2>
           <div className="grid gap-4 md:grid-cols-2">
@@ -170,6 +231,16 @@ export default async function Year2026Page({ searchParams }: Props) {
               <DailyTaskList date={currentDay} tasks={dailyTasks} />
             </div>
           </div>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Hunter 目标池</h2>
+          <HunterTargetPool targets={hunterTargets} />
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">月度复盘</h2>
+          <MonthlyReviewCard month={currentMonth} review={monthlyReview} />
         </section>
 
         <section className="space-y-4">
