@@ -121,7 +121,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
     };
 
     return (
-        <Card className="w-full border-zinc-800 bg-zinc-900/70">
+        <Card className="flex h-full w-full flex-col border-zinc-800 bg-zinc-900/70">
             <CardHeader className="space-y-3">
                 <div className="flex items-center justify-between">
                     <CardTitle>✅ 每日任务</CardTitle>
@@ -136,8 +136,8 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                     className="w-full max-w-[220px] bg-zinc-950/60 border-zinc-700"
                 />
             </CardHeader>
-            <CardContent className="space-y-3">
-                <div className="space-y-2">
+            <CardContent className="flex flex-1 flex-col space-y-3">
+                <div className="flex-1 space-y-2">
                     {tasks.length === 0 && (
                         <div className="rounded-md border border-dashed border-zinc-700 px-3 py-5 text-center text-sm text-zinc-400">
                             当天还没有任务，先加一条吧。

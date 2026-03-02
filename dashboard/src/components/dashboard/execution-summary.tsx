@@ -37,7 +37,7 @@ export function ExecutionSummary({
             <CardHeader className="pb-2">
                 <CardTitle className="text-base">执行概览</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="grid gap-4 md:grid-cols-3">
                 {items.map((item) => {
                     const progress = getProgress(item.completed, item.total);
 

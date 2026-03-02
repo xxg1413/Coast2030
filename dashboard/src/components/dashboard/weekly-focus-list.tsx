@@ -73,7 +73,7 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
     };
 
     return (
-        <Card className="w-full border-zinc-800 bg-zinc-900/70">
+        <Card className="flex h-full w-full flex-col border-zinc-800 bg-zinc-900/70">
             <CardHeader className="space-y-3">
                 <div className="flex items-center justify-between">
                     <CardTitle>🎯 本周焦点</CardTitle>
@@ -82,8 +82,8 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-                <div className="space-y-2">
+            <CardContent className="flex flex-1 flex-col space-y-3">
+                <div className="flex-1 space-y-2">
                     {tasks.length === 0 && (
                         <div className="rounded-md border border-dashed border-zinc-700 px-3 py-5 text-center text-sm text-zinc-400">
                             本周焦点还是空的，先定 3-5 个最重要动作。

@@ -1,17 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getYearIncome, formatMoney } from "@/lib/api";
+import { Progress } from "@/components/ui/progress";
+import { getYearIncome, getTotalIncome, formatMoney } from "@/lib/api";
+import { COAST_TARGET, YEAR_TARGETS } from "@/lib/targets";
 
 export const dynamic = "force-dynamic";
-
-const YEAR_TARGETS: Record<number, number> = {
-  2026: 3000000,
-  2027: 4000000,
-  2028: 8000000,
-  2029: 15000000,
-  2030: 25000000,
-};
 
 const YEAR_LINKS: Record<number, string | null> = {
   2026: "/2026",
@@ -23,7 +17,11 @@ const YEAR_LINKS: Record<number, string | null> = {
 
 export default async function Home() {
   const years = [2026, 2027, 2028, 2029, 2030];
-  const incomes = await Promise.all(years.map((year) => getYearIncome(year)));
+  const [incomes, lifetimeIncome] = await Promise.all([
+    Promise.all(years.map((year) => getYearIncome(year))),
+    getTotalIncome(),
+  ]);
+  const coastProgress = COAST_TARGET > 0 ? Math.min((lifetimeIncome / COAST_TARGET) * 100, 100) : 0;
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
@@ -44,6 +42,29 @@ export default async function Home() {
               </h1>
             </div>
           </div>
+        </section>
+
+        <section>
+          <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-zinc-950/80">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-sm text-zinc-400">Coast 2030 终局目标</p>
+                  <p className="mt-1 text-2xl font-semibold">{formatMoney(lifetimeIncome)}</p>
+                </div>
+                <div className="rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1 text-xs text-blue-300">
+                  目标 {formatMoney(COAST_TARGET)}
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">整体完成率</span>
+                <span className="font-medium">{coastProgress.toFixed(2)}%</span>
+              </div>
+              <Progress value={coastProgress} className="h-3 bg-zinc-800" indicatorClassName="bg-blue-500" />
+            </CardContent>
+          </Card>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

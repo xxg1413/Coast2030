@@ -5,11 +5,8 @@ import {
   getBeijingCurrentDate,
   getBeijingCurrentYearMonth,
   getAvailableMonths,
-  getCoreMetrics,
   getDailyTasks,
-  getHunterTargets,
   getIncomeComposition,
-  getMonthlyReview,
   getMonthlyTasks,
   getStructuredWeeklyFocus,
   getTotalIncome,
@@ -25,11 +22,7 @@ import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
 import { ExecutionSummary } from "@/components/dashboard/execution-summary";
-import { MonthlyReviewCard } from "@/components/dashboard/monthly-review-card";
-import { HunterTargetPool } from "@/components/dashboard/hunter-target-pool";
-import { CoreMetricsGrid } from "@/components/dashboard/core-metrics-grid";
-import { HunterPipelineSummary } from "@/components/dashboard/hunter-pipeline-summary";
-import { PendingMilestonesCard } from "@/components/dashboard/pending-milestones-card";
+import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -78,24 +71,21 @@ export default async function Year2026Page({ searchParams }: Props) {
         ? params.taskMonth
         : currentMonth;
 
-  const [weeklyFocus, hunterTargets, coreMetrics, currentMonthTasks, monthlyTasks, dailyTasks, monthlyReview, transactions, lifetimeIncome, monthlyIncome, yearIncome, composition] =
+  const [weeklyFocus, monthlyTasks, dailyTasks, transactions, monthlyIncome, yearIncome, composition] =
     await Promise.all([
       getStructuredWeeklyFocus(),
-      getHunterTargets(),
-      getCoreMetrics(currentMonth),
-      getMonthlyTasks(currentMonth),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
-      getMonthlyReview(currentMonth),
       getTransactions(currentMonth),
-      getTotalIncome(),
       getTotalIncome(currentMonth),
       getYearIncome(2026),
       getIncomeComposition(currentMonth),
     ]);
 
-  const yearTarget = 3000000;
+  const yearTarget = YEAR_TARGETS[2026] ?? 0;
+  const monthTarget = getMonthlyTarget(2026, currentMonth);
   const annualProgress = Math.min((yearIncome / yearTarget) * 100, 100);
+  const monthlyProgress = monthTarget > 0 ? Math.min((monthlyIncome / monthTarget) * 100, 100) : 0;
   const weeklyCompleted = weeklyFocus.tasks.filter((task) => task.completed).length;
   const monthlyCompleted = monthlyTasks.filter((task) => task.completed).length;
   const dailyCompleted = dailyTasks.filter((task) => task.completed).length;
@@ -136,7 +126,7 @@ export default async function Year2026Page({ searchParams }: Props) {
 
         <section className="grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <RetirementProgress year={2026} yearIncome={yearIncome} lifetimeIncome={lifetimeIncome} />
+            <RetirementProgress year={2026} yearIncome={yearIncome} />
           </div>
           <div className="lg:col-span-7">
             <Card className="h-full border-zinc-800 bg-zinc-900/60">
@@ -144,10 +134,15 @@ export default async function Year2026Page({ searchParams }: Props) {
                 <CardTitle className="text-base">收入总览</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
                     <p className="text-xs text-zinc-500">本月收入</p>
                     <p className="mt-1 text-lg font-semibold">{formatMoney(monthlyIncome)}</p>
+                  </div>
+                  <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
+                    <p className="text-xs text-zinc-500">月度目标</p>
+                    <p className="mt-1 text-lg font-semibold">{formatMoney(monthTarget)}</p>
+                    <p className="mt-1 text-xs text-zinc-500">达成率 {monthlyProgress.toFixed(1)}%</p>
                   </div>
                   <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
                     <p className="text-xs text-zinc-500">年度累计</p>
@@ -180,67 +175,33 @@ export default async function Year2026Page({ searchParams }: Props) {
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-4">
-            <ExecutionSummary
-              weekly={{
-                label: "本周焦点",
-                completed: weeklyCompleted,
-                total: weeklyFocus.tasks.length,
-                accentClassName: "bg-blue-500",
-              }}
-              monthly={{
-                label: "本月关键点",
-                completed: monthlyCompleted,
-                total: monthlyTasks.length,
-                accentClassName: "bg-amber-500",
-              }}
-              daily={{
-                label: "当日任务",
-                completed: dailyCompleted,
-                total: dailyTasks.length,
-                accentClassName: "bg-emerald-500",
-              }}
-            />
-          </div>
-          <div className="lg:col-span-8">
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">执行与任务</h2>
+          <ExecutionSummary
+            weekly={{
+              label: "本周焦点",
+              completed: weeklyCompleted,
+              total: weeklyFocus.tasks.length,
+              accentClassName: "bg-blue-500",
+            }}
+            monthly={{
+              label: "本月关键点",
+              completed: monthlyCompleted,
+              total: monthlyTasks.length,
+              accentClassName: "bg-amber-500",
+            }}
+            daily={{
+              label: "每日任务",
+              completed: dailyCompleted,
+              total: dailyTasks.length,
+              accentClassName: "bg-emerald-500",
+            }}
+          />
+          <div className="grid gap-4 xl:grid-cols-3">
             <WeeklyFocusList tasks={weeklyFocus.tasks} />
+            <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
+            <DailyTaskList date={currentDay} tasks={dailyTasks} />
           </div>
-        </section>
-
-        <section className="space-y-4">
-          <CoreMetricsGrid metrics={coreMetrics} />
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <HunterPipelineSummary targets={hunterTargets} />
-          </div>
-          <div className="lg:col-span-7">
-            <PendingMilestonesCard month={currentMonth} tasks={currentMonthTasks} />
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">任务跟踪</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
-            </div>
-            <div>
-              <DailyTaskList date={currentDay} tasks={dailyTasks} />
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Hunter 目标池</h2>
-          <HunterTargetPool targets={hunterTargets} />
-        </section>
-
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">月度复盘</h2>
-          <MonthlyReviewCard month={currentMonth} review={monthlyReview} />
         </section>
 
         <section className="space-y-4">

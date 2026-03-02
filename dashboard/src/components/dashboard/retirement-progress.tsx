@@ -1,18 +1,16 @@
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { YEAR_TARGETS } from "@/lib/targets";
 
 interface RetirementProgressProps {
     year: number;
     yearIncome: number;
-    lifetimeIncome: number;
 }
 
-export function RetirementProgress({ year, yearIncome, lifetimeIncome }: RetirementProgressProps) {
-    const yearTarget = 3000000;
-    const coastTarget = 5000000;
+export function RetirementProgress({ year, yearIncome }: RetirementProgressProps) {
+    const yearTarget = YEAR_TARGETS[year] ?? 0;
 
     const yearPercentage = Math.min((yearIncome / yearTarget) * 100, 100);
-    const coastPercentage = Math.min((lifetimeIncome / coastTarget) * 100, 100);
 
     return (
         <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-zinc-950/80">
@@ -35,17 +33,6 @@ export function RetirementProgress({ year, yearIncome, lifetimeIncome }: Retirem
                         <span className="font-medium">{yearPercentage.toFixed(2)}%</span>
                     </div>
                     <Progress value={yearPercentage} className="h-3 bg-zinc-800" indicatorClassName="bg-emerald-500" />
-                </div>
-
-                <div className="border-t border-zinc-800 pt-4">
-                    <div className="mb-2 flex items-center justify-between text-xs">
-                        <span className="text-zinc-400">Coast 2030 终局目标</span>
-                        <span className="text-zinc-300">{coastPercentage.toFixed(2)}%</span>
-                    </div>
-                    <Progress value={coastPercentage} className="h-1.5 bg-zinc-900" indicatorClassName="bg-blue-500" />
-                    <p className="mt-2 text-[11px] text-zinc-500">
-                        全部累计 ¥{lifetimeIncome.toLocaleString()} / 目标 ¥{coastTarget.toLocaleString()}
-                    </p>
                 </div>
             </CardContent>
         </Card>
