@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { getYearIncome, getTotalIncome, formatMoney } from "@/lib/api";
-import { COAST_TARGET, YEAR_TARGETS } from "@/lib/targets";
+import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
+import { getAssetSnapshots, getBeijingCurrentDate, getYearIncome, formatMoney } from "@/lib/api";
+import { NET_WORTH_TARGET_2030, YEAR_TARGETS } from "@/lib/targets";
 
 export const dynamic = "force-dynamic";
 
@@ -15,13 +15,15 @@ const YEAR_LINKS: Record<number, string | null> = {
   2030: null,
 };
 
+const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
+const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
+
 export default async function Home() {
   const years = [2026, 2027, 2028, 2029, 2030];
-  const [incomes, lifetimeIncome] = await Promise.all([
+  const [incomes, assetSnapshots] = await Promise.all([
     Promise.all(years.map((year) => getYearIncome(year))),
-    getTotalIncome(),
+    getAssetSnapshots(6),
   ]);
-  const coastProgress = COAST_TARGET > 0 ? Math.min((lifetimeIncome / COAST_TARGET) * 100, 100) : 0;
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
@@ -44,28 +46,11 @@ export default async function Home() {
           </div>
         </section>
 
-        <section>
-          <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-zinc-950/80">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <p className="text-sm text-zinc-400">Coast 2030 终局目标</p>
-                  <p className="mt-1 text-2xl font-semibold">{formatMoney(lifetimeIncome)}</p>
-                </div>
-                <div className="rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1 text-xs text-blue-300">
-                  目标 {formatMoney(COAST_TARGET)}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-400">整体完成率</span>
-                <span className="font-medium">{coastProgress.toFixed(2)}%</span>
-              </div>
-              <Progress value={coastProgress} className="h-3 bg-zinc-800" indicatorClassName="bg-blue-500" />
-            </CardContent>
-          </Card>
-        </section>
+        <AssetProgressCard
+          snapshots={assetSnapshots}
+          target={NET_WORTH_TARGET_2030}
+          defaultDate={getBeijingCurrentDate()}
+        />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {years.map((year, index) => {
@@ -97,6 +82,44 @@ export default async function Home() {
               </Link>
             );
           })}
+        </section>
+
+        <section className="space-y-3">
+          <div>
+            <p className="text-sm text-zinc-400">应用入口</p>
+            <h2 className="mt-1 text-2xl font-semibold">内容与项目工作台</h2>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <a href={AIBOUNTY_URL} className="block">
+              <Card className="h-full border-zinc-800 bg-zinc-900/70 hover:border-zinc-700 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span>AIBounty Plan</span>
+                    <span className="text-xs text-emerald-300">Cloudflare</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-zinc-300">漏洞挖掘计划、目标池、赏金记录与回款看板。</p>
+                  <p className="text-zinc-500">独立部署，作为 Hunter 路线执行系统。</p>
+                </CardContent>
+              </Card>
+            </a>
+
+            <a href={AI_NOTES_URL} className="block">
+              <Card className="h-full border-zinc-800 bg-zinc-900/70 hover:border-zinc-700 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span>AI Notes</span>
+                    <span className="text-xs text-amber-300">Cloudflare</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-zinc-300">统一管理 AI 资讯、YouTube 提纲和内容资产。</p>
+                  <p className="text-zinc-500">独立部署，作为内容中台与笔记后台。</p>
+                </CardContent>
+              </Card>
+            </a>
+          </div>
         </section>
       </div>
     </main>

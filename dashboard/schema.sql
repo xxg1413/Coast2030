@@ -82,6 +82,17 @@ CREATE TABLE IF NOT EXISTS auth_login_attempts (
   attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS asset_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  snapshot_date TEXT NOT NULL,
+  total_assets REAL NOT NULL DEFAULT 0,
+  total_liabilities REAL NOT NULL DEFAULT 0,
+  net_worth REAL NOT NULL DEFAULT 0,
+  notes TEXT DEFAULT '',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_monthly_milestones_year_month ON monthly_milestones(year, month);
@@ -90,3 +101,4 @@ CREATE INDEX IF NOT EXISTS idx_monthly_reviews_year_month ON monthly_reviews(yea
 CREATE INDEX IF NOT EXISTS idx_hunter_targets_priority_status ON hunter_targets(priority, status);
 CREATE INDEX IF NOT EXISTS idx_hunter_targets_last_action_date ON hunter_targets(last_action_date);
 CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_ip_time ON auth_login_attempts(ip, attempted_at);
+CREATE INDEX IF NOT EXISTS idx_asset_snapshots_snapshot_date ON asset_snapshots(snapshot_date DESC);

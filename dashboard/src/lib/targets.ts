@@ -1,16 +1,22 @@
 export const COAST_TARGET = 5000000;
+// 终局目标当前值手动维护，不跟随收入流水自动统计。
+export const COAST_CURRENT = 1700;
+export const NET_WORTH_TARGET_2030 = 10000000;
 
 export const YEAR_TARGETS: Record<number, number> = {
-  2026: 3000000,
-  2027: 4000000,
-  2028: 8000000,
-  2029: 15000000,
-  2030: 25000000,
+  2026: 2000000,
+  2027: 3000000,
+  2028: 5000000,
+  2029: 10000000,
+  2030: 20000000,
 };
 
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;
 const MONTHLY_TARGET_ROUNDING_UNIT = 1000;
+const CUSTOM_MONTHLY_TARGETS: Partial<Record<number, number[]>> = {
+  2026: [0, 0, 0, 50000, 70000, 80000, 100000, 150000, 180000, 300000, 420000, 650000],
+};
 
 function buildMonthlyTargets(yearTarget: number): number[] {
   if (yearTarget <= 0) {
@@ -45,10 +51,19 @@ function buildMonthlyTargets(yearTarget: number): number[] {
 }
 
 export function getMonthlyTarget(year: number, yearMonth: string): number {
-  const yearTarget = YEAR_TARGETS[year] ?? 0;
   const monthPart = Number(yearMonth.split("-")[1]);
 
-  if (!Number.isInteger(monthPart) || monthPart < 1 || monthPart > 12 || yearTarget <= 0) {
+  if (!Number.isInteger(monthPart) || monthPart < 1 || monthPart > 12) {
+    return 0;
+  }
+
+  const customTargets = CUSTOM_MONTHLY_TARGETS[year];
+  if (customTargets) {
+    return customTargets[monthPart - 1] ?? 0;
+  }
+
+  const yearTarget = YEAR_TARGETS[year] ?? 0;
+  if (yearTarget <= 0) {
     return 0;
   }
 

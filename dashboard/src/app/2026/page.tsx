@@ -25,6 +25,8 @@ import { ExecutionSummary } from "@/components/dashboard/execution-summary";
 import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
+const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
 
 function getCompositionBarClass(type: string): string {
   switch (type) {
@@ -60,8 +62,11 @@ interface Props {
 
 export default async function Year2026Page({ searchParams }: Props) {
   const params = await searchParams;
-  const availableMonths = await getAvailableMonths();
-  const fallbackMonth = availableMonths[0] || getBeijingCurrentYearMonth();
+  const availableMonths = await getAvailableMonths(2026);
+  const currentCalendarMonth = getBeijingCurrentYearMonth();
+  const fallbackMonth = availableMonths.includes(currentCalendarMonth)
+    ? currentCalendarMonth
+    : availableMonths[0] || currentCalendarMonth;
   const currentMonth = params.month && availableMonths.includes(params.month) ? params.month : fallbackMonth;
   const currentDay = params.day && DATE_REGEX.test(params.day) ? params.day : getBeijingCurrentDate();
   const currentTaskMonth =
@@ -112,7 +117,13 @@ export default async function Year2026Page({ searchParams }: Props) {
             </div>
             <div className="flex gap-4">
               <a
-                href="https://aibounty.pxiaoer.blog/"
+                href={AI_NOTES_URL}
+                className="text-sm text-amber-300 hover:text-amber-100 underline underline-offset-4"
+              >
+                📝 AI Notes
+              </a>
+              <a
+                href={AIBOUNTY_URL}
                 className="text-sm text-emerald-300 hover:text-emerald-100 underline underline-offset-4"
               >
                 🤖 AIBounty

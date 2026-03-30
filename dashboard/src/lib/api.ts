@@ -6,6 +6,10 @@ const YEAR_MONTH_REGEX = /^(\d{4})-(0[1-9]|1[0-2])$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const BEIJING_TIME_ZONE = "Asia/Shanghai";
 const INCOME_TYPES = ["Hunter", "SaaS", "Media", "Other"] as const;
+const AI_NOTES_SYNC_URL = process.env.AI_NOTES_SYNC_URL || "https://pxiaoer-ai-notes.openbot.workers.dev";
+const AI_NOTES_SYNC_PASSWORD = process.env.AI_NOTES_SYNC_PASSWORD || "";
+const AIBOUNTY_SYNC_URL = process.env.AIBOUNTY_SYNC_URL || "https://aibounty-plan.openbot.workers.dev";
+const AIBOUNTY_SYNC_PASSWORD = process.env.AIBOUNTY_SYNC_PASSWORD || "";
 const YEAR_TARGETS = {
     cashFlow: 3000000,
     saas: 1750000,
@@ -702,10 +706,125 @@ export async function deleteDailyTask(id: string): Promise<boolean> {
     return true;
 }
 
+// --- Asset Snapshots ---
+
+async function ensureAssetSnapshotsTable() {
+    const db = await getDB();
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS asset_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_date TEXT NOT NULL,
+            total_assets REAL NOT NULL DEFAULT 0,
+            total_liabilities REAL NOT NULL DEFAULT 0,
+            net_worth REAL NOT NULL DEFAULT 0,
+            notes TEXT DEFAULT '',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_asset_snapshots_snapshot_date ON asset_snapshots(snapshot_date DESC);
+    `);
+}
+
+export interface AssetSnapshot {
+    id: string;
+    snapshotDate: string;
+    totalAssets: number;
+    totalLiabilities: number;
+    netWorth: number;
+    notes: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface AssetSnapshotInput {
+    snapshotDate: string;
+    totalAssets: number;
+    totalLiabilities: number;
+    netWorth?: number;
+    notes?: string;
+}
+
+export async function getAssetSnapshots(limit = 6): Promise<AssetSnapshot[]> {
+    await ensureAssetSnapshotsTable();
+    const db = await getDB();
+    const safeLimit = Math.max(1, Math.min(Math.floor(limit), 24));
+    const result = await db
+        .prepare(`
+            SELECT id, snapshot_date, total_assets, total_liabilities, net_worth, notes, created_at, updated_at
+            FROM asset_snapshots
+            ORDER BY snapshot_date DESC, id DESC
+            LIMIT ?
+        `)
+        .bind(safeLimit)
+        .all<{
+            id: number;
+            snapshot_date: string;
+            total_assets: number;
+            total_liabilities: number;
+            net_worth: number;
+            notes: string;
+            created_at: string;
+            updated_at: string;
+        }>();
+
+    return result.results.map((row) => ({
+        id: String(row.id),
+        snapshotDate: row.snapshot_date,
+        totalAssets: Number(row.total_assets || 0),
+        totalLiabilities: Number(row.total_liabilities || 0),
+        netWorth: Number(row.net_worth || 0),
+        notes: row.notes || "",
+        createdAt: row.created_at || "",
+        updatedAt: row.updated_at || "",
+    }));
+}
+
+export async function addAssetSnapshot(input: AssetSnapshotInput): Promise<boolean> {
+    await ensureAssetSnapshotsTable();
+    const snapshotDate = normalizeDate(input.snapshotDate);
+    const totalAssets = Number(input.totalAssets || 0);
+    const totalLiabilities = Number(input.totalLiabilities || 0);
+    const netWorthInput = input.netWorth;
+    const netWorth = Number.isFinite(Number(netWorthInput))
+        ? Number(netWorthInput)
+        : totalAssets - totalLiabilities;
+
+    if (!snapshotDate || !Number.isFinite(totalAssets) || !Number.isFinite(totalLiabilities) || !Number.isFinite(netWorth)) {
+        return false;
+    }
+
+    const db = await getDB();
+    await db
+        .prepare(`
+            INSERT INTO asset_snapshots (snapshot_date, total_assets, total_liabilities, net_worth, notes, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `)
+        .bind(
+            snapshotDate,
+            totalAssets,
+            totalLiabilities,
+            netWorth,
+            String(input.notes || "").trim(),
+        )
+        .run();
+    return true;
+}
+
 // --- Finance ---
 
 export interface Transaction {
-    id: number;
+    id: string;
+    date: string;
+    type: string;
+    source: string;
+    project: string;
+    amount: number;
+    memo: string;
+    deletable: boolean;
+}
+
+export interface LocalTransactionInput {
     date: string;
     type: string;
     project: string;
@@ -722,30 +841,189 @@ export interface Metric {
     trend?: string;
 }
 
-async function getMonthlyIncomeByType(month: string, type?: IncomeType): Promise<number> {
+interface AiNotesStateResponse {
+    revenues?: Array<{
+        id: string;
+        recordDate: string;
+        amount: number;
+        category: string;
+        isSettled?: boolean;
+        notes?: string;
+        platformLabel?: string;
+    }>;
+}
+
+interface AIBountyExportResponse {
+    state?: {
+        vulns?: Array<{
+            id: string;
+            title: string;
+            target: string;
+            status: string;
+            expectedBounty?: number;
+            receivedBounty: number;
+            submittedAt?: string;
+            updatedAt?: string;
+            notes?: string;
+        }>;
+    };
+}
+
+let externalTransactionsCache: { expiresAt: number; items: Transaction[] } | null = null;
+
+function getMonthFromDate(date: string): string | undefined {
+    return DATE_REGEX.test(date) ? date.slice(0, 7) : undefined;
+}
+
+function normalizeSyncDate(input?: string): string {
+    const candidate = String(input || "").slice(0, 10);
+    return DATE_REGEX.test(candidate) ? candidate : getCurrentDate();
+}
+
+function buildAuthCookie(rawCookie: string | null): string {
+    return String(rawCookie || "").split(";")[0] || "";
+}
+
+async function loginAndFetchJson<T>(baseUrl: string, password: string, path: string): Promise<T | null> {
+    if (!baseUrl || !password) return null;
+
+    try {
+        const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ password }),
+            cache: "no-store",
+        });
+        if (!loginResponse.ok) return null;
+
+        const cookie = buildAuthCookie(loginResponse.headers.get("set-cookie"));
+        if (!cookie) return null;
+
+        const response = await fetch(`${baseUrl}${path}`, {
+            headers: { cookie },
+            cache: "no-store",
+        });
+        if (!response.ok) return null;
+        return await response.json() as T;
+    } catch {
+        return null;
+    }
+}
+
+async function getLocalTransactions(): Promise<Transaction[]> {
     const db = await getDB();
-    let query = "SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE strftime('%Y-%m', date) = ?";
-    const params: Array<string> = [month];
-    if (type) {
-        query += " AND type = ?";
-        params.push(type);
+    const result = await db.prepare("SELECT * FROM transactions ORDER BY date DESC").all<{
+        id: number;
+        date: string;
+        type: string;
+        project: string;
+        amount: number;
+        memo: string;
+    }>();
+
+    return result.results.map((row) => ({
+        id: String(row.id),
+        date: row.date,
+        type: row.type,
+        source: "Coast2030",
+        project: row.project,
+        amount: Number(row.amount || 0),
+        memo: row.memo || "",
+        deletable: true,
+    }));
+}
+
+function buildAiNotesTransactions(payload: AiNotesStateResponse | null): Transaction[] {
+    return (payload?.revenues || []).map((item) => ({
+        id: `ainote:${item.id}`,
+        date: normalizeSyncDate(item.recordDate),
+        type: "Media",
+        source: "AI Notes",
+        project: item.platformLabel || "AI Notes",
+        amount: Number(item.amount || 0),
+        memo: [item.category || "未分类", item.isSettled ? "已到账" : "未到账", item.notes || ""]
+            .filter(Boolean)
+            .join(" · "),
+        deletable: false,
+    }));
+}
+
+function buildAIBountyTransactions(payload: AIBountyExportResponse | null): Transaction[] {
+    return (payload?.state?.vulns || [])
+        .filter((item) => Number(item.receivedBounty || 0) > 0 || Number(item.expectedBounty || 0) > 0)
+        .map((item) => {
+            const received = Number(item.receivedBounty || 0);
+            const expected = Number(item.expectedBounty || 0);
+            const amount = received > 0 ? received : expected;
+            const payoutState = received > 0 ? "已到账" : "未到账";
+
+            return {
+            id: `aibounty:${item.id}`,
+            date: normalizeSyncDate(item.submittedAt || item.updatedAt),
+            type: "Hunter",
+            source: "AIBounty",
+            project: item.target || item.title || "AIBounty",
+            amount,
+            memo: [item.title || "", payoutState, item.status ? `状态 ${item.status}` : "", item.notes || ""]
+                .filter(Boolean)
+                .join(" · "),
+            deletable: false,
+        };
+    });
+}
+
+async function getExternalTransactions(): Promise<Transaction[]> {
+    if (externalTransactionsCache && externalTransactionsCache.expiresAt > Date.now()) {
+        return externalTransactionsCache.items;
     }
 
-    const result = await db.prepare(query).bind(...params).first<{ total: number }>();
-    return Number(result?.total || 0);
+    const [aiNotes, aiBounty] = await Promise.all([
+        loginAndFetchJson<AiNotesStateResponse>(AI_NOTES_SYNC_URL, AI_NOTES_SYNC_PASSWORD, "/api/state"),
+        loginAndFetchJson<AIBountyExportResponse>(AIBOUNTY_SYNC_URL, AIBOUNTY_SYNC_PASSWORD, "/api/export"),
+    ]);
+
+    const items = [...buildAiNotesTransactions(aiNotes), ...buildAIBountyTransactions(aiBounty)];
+    externalTransactionsCache = {
+        items,
+        expiresAt: Date.now() + 30_000,
+    };
+    return items;
+}
+
+async function getUnifiedTransactions(): Promise<Transaction[]> {
+    const [localTransactions, externalTransactions] = await Promise.all([
+        getLocalTransactions(),
+        getExternalTransactions(),
+    ]);
+
+    return [...localTransactions, ...externalTransactions].sort((left, right) => {
+        const dateCompare = right.date.localeCompare(left.date);
+        if (dateCompare !== 0) return dateCompare;
+        return right.id.localeCompare(left.id);
+    });
+}
+
+function filterTransactions(transactions: Transaction[], options: { month?: string; year?: number; type?: IncomeType }): Transaction[] {
+    return transactions.filter((transaction) => {
+        if (options.month && getMonthFromDate(transaction.date) !== options.month) return false;
+        if (options.year && !transaction.date.startsWith(`${options.year}-`)) return false;
+        if (options.type && transaction.type !== options.type) return false;
+        return true;
+    });
+}
+
+function sumTransactions(transactions: Transaction[]): number {
+    return transactions.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+}
+
+async function getMonthlyIncomeByType(month: string, type?: IncomeType): Promise<number> {
+    const transactions = await getUnifiedTransactions();
+    return sumTransactions(filterTransactions(transactions, { month, type }));
 }
 
 export async function getYearIncome(year: number, type?: IncomeType): Promise<number> {
-    const db = await getDB();
-    let query = "SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE strftime('%Y', date) = ?";
-    const params: Array<string> = [String(year)];
-    if (type) {
-        query += " AND type = ?";
-        params.push(type);
-    }
-
-    const result = await db.prepare(query).bind(...params).first<{ total: number }>();
-    return Number(result?.total || 0);
+    const transactions = await getUnifiedTransactions();
+    return sumTransactions(filterTransactions(transactions, { year, type }));
 }
 
 export async function getCoreMetrics(month?: string): Promise<Metric[]> {
@@ -818,22 +1096,12 @@ export async function getCoreMetrics(month?: string): Promise<Metric[]> {
 }
 
 export async function getTransactions(month?: string): Promise<Transaction[]> {
-    const db = await getDB();
-    let query = "SELECT * FROM transactions";
-    const params: Array<string> = [];
     const normalizedMonth = normalizeYearMonth(month);
-
-    if (normalizedMonth) {
-        query += " WHERE strftime('%Y-%m', date) = ?";
-        params.push(normalizedMonth);
-    }
-
-    query += " ORDER BY date DESC";
-    const result = await db.prepare(query).bind(...params).all<Transaction>();
-    return result.results;
+    const transactions = await getUnifiedTransactions();
+    return filterTransactions(transactions, { month: normalizedMonth });
 }
 
-export async function addTransaction(transaction: Omit<Transaction, "id">): Promise<boolean> {
+export async function addTransaction(transaction: LocalTransactionInput): Promise<boolean> {
     const db = await getDB();
     await db
         .prepare("INSERT INTO transactions (date, type, project, amount, memo) VALUES (?, ?, ?, ?, ?)")
@@ -849,18 +1117,9 @@ export async function deleteTransaction(id: number): Promise<boolean> {
 }
 
 export async function getTotalIncome(month?: string): Promise<number> {
-    const db = await getDB();
-    let query = "SELECT SUM(amount) as total FROM transactions";
-    const params: Array<string> = [];
     const normalizedMonth = normalizeYearMonth(month);
-
-    if (normalizedMonth) {
-        query += " WHERE strftime('%Y-%m', date) = ?";
-        params.push(normalizedMonth);
-    }
-
-    const result = await db.prepare(query).bind(...params).first<{ total: number }>();
-    return Number(result?.total || 0);
+    const transactions = await getUnifiedTransactions();
+    return sumTransactions(filterTransactions(transactions, { month: normalizedMonth }));
 }
 
 export interface IncomeCompositionItem {
@@ -871,16 +1130,13 @@ export interface IncomeCompositionItem {
 
 export async function getIncomeComposition(month?: string): Promise<IncomeCompositionItem[]> {
     const targetMonth = normalizeYearMonth(month) || getCurrentYearMonth();
-    const total = await getTotalIncome(targetMonth);
-    const db = await getDB();
-
-    const rows = await db
-        .prepare("SELECT type, COALESCE(SUM(amount), 0) AS total FROM transactions WHERE strftime('%Y-%m', date) = ? GROUP BY type")
-        .bind(targetMonth)
-        .all<{ type: string; total: number }>();
-
+    const transactions = filterTransactions(await getUnifiedTransactions(), { month: targetMonth });
+    const total = sumTransactions(transactions);
     const byType = new Map<string, number>();
-    rows.results.forEach((row) => byType.set(row.type, Number(row.total || 0)));
+
+    for (const transaction of transactions) {
+        byType.set(transaction.type, (byType.get(transaction.type) || 0) + Number(transaction.amount || 0));
+    }
 
     return INCOME_TYPES.map((type) => {
         const amount = byType.get(type) || 0;
@@ -950,7 +1206,7 @@ export async function deleteMonthlyTask(id: string): Promise<boolean> {
     return true;
 }
 
-export async function getAvailableMonths(): Promise<string[]> {
+export async function getAvailableMonths(year?: number): Promise<string[]> {
     await ensureMonthlyReviewsTable();
     const db = await getDB();
     const result = await db
@@ -969,11 +1225,25 @@ export async function getAvailableMonths(): Promise<string[]> {
         .all<{ month_key: string }>();
 
     const months = result.results.map((item) => item.month_key);
+    for (const transaction of await getExternalTransactions()) {
+        const monthKey = getMonthFromDate(transaction.date);
+        if (monthKey && !months.includes(monthKey)) months.push(monthKey);
+    }
     const currentMonth = getCurrentYearMonth();
     if (!months.includes(currentMonth)) {
         months.push(currentMonth);
-        months.sort((a, b) => b.localeCompare(a));
     }
+
+    if (Number.isInteger(year) && year) {
+        for (let month = 1; month <= 12; month += 1) {
+            const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+            if (!months.includes(monthKey)) {
+                months.push(monthKey);
+            }
+        }
+    }
+
+    months.sort((a, b) => b.localeCompare(a));
 
     return months;
 }

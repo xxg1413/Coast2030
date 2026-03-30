@@ -15,12 +15,14 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Trash2 } from "lucide-react";
 
 interface Transaction {
-    id: number;
+    id: string;
     date: string;
     type: string;
+    source: string;
     project: string;
     amount: number;
     memo: string;
+    deletable: boolean;
 }
 
 function getTypeBadgeClass(type: string): string {
@@ -53,9 +55,10 @@ function getTypeLabel(type: string): string {
 
 export function TransactionList({ transactions, month }: { transactions: Transaction[]; month: string }) {
     const router = useRouter();
-    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string, deletable: boolean) => {
+        if (!deletable) return;
         setDeletingId(id);
         try {
             await fetch("/api/revenue/delete", {
@@ -83,6 +86,7 @@ export function TransactionList({ transactions, month }: { transactions: Transac
                             <TableRow>
                                 <TableHead className="w-[100px]">日期</TableHead>
                                 <TableHead>类型</TableHead>
+                                <TableHead>来源</TableHead>
                                 <TableHead>项目</TableHead>
                                 <TableHead>备注</TableHead>
                                 <TableHead className="text-right">金额</TableHead>
@@ -92,7 +96,7 @@ export function TransactionList({ transactions, month }: { transactions: Transac
                         <TableBody>
                             {transactions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                                    <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                                         {month} 暂无收入 (加油!)
                                     </TableCell>
                                 </TableRow>
@@ -105,23 +109,28 @@ export function TransactionList({ transactions, month }: { transactions: Transac
                                                 {getTypeLabel(t.type)}
                                             </span>
                                         </TableCell>
+                                        <TableCell className="whitespace-nowrap text-zinc-400">{t.source}</TableCell>
                                         <TableCell className="whitespace-nowrap">{t.project}</TableCell>
                                         <TableCell className="text-muted-foreground min-w-[150px]">{t.memo}</TableCell>
                                         <TableCell className="text-right font-bold whitespace-nowrap">+¥{t.amount.toLocaleString()}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                                onClick={() => handleDelete(t.id)}
-                                                disabled={deletingId === t.id}
-                                            >
-                                                {deletingId === t.id ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Trash2 className="h-4 w-4" />
-                                                )}
-                                            </Button>
+                                            {t.deletable ? (
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                    onClick={() => handleDelete(t.id, t.deletable)}
+                                                    disabled={deletingId === t.id}
+                                                >
+                                                    {deletingId === t.id ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            ) : (
+                                                <span className="text-xs text-zinc-500">同步</span>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))

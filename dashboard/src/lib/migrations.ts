@@ -114,6 +114,24 @@ const MIGRATIONS: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_hunter_targets_last_action_date ON hunter_targets(last_action_date);
         `,
     },
+    {
+        version: 5,
+        name: 'create_asset_snapshots',
+        sql: `
+            CREATE TABLE IF NOT EXISTS asset_snapshots (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              snapshot_date TEXT NOT NULL,
+              total_assets REAL NOT NULL DEFAULT 0,
+              total_liabilities REAL NOT NULL DEFAULT 0,
+              net_worth REAL NOT NULL DEFAULT 0,
+              notes TEXT DEFAULT '',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_asset_snapshots_snapshot_date ON asset_snapshots(snapshot_date DESC);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {
