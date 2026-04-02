@@ -121,11 +121,11 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
     };
 
     return (
-        <Card className="flex h-full w-full flex-col border-zinc-800 bg-zinc-900/70">
+        <Card className="flex h-full w-full flex-col border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
             <CardHeader className="space-y-3">
                 <div className="flex items-center justify-between">
                     <CardTitle>✅ 每日任务</CardTitle>
-                    <div className="text-xs text-zinc-400">
+                    <div className="text-xs text-stone-500">
                         {completedCount}/{tasks.length} 完成
                     </div>
                 </div>
@@ -133,13 +133,13 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                     type="date"
                     value={date}
                     onChange={(event) => handleDateChange(event.target.value)}
-                    className="w-full max-w-[220px] bg-zinc-950/60 border-zinc-700"
+                    className="w-full max-w-[220px] bg-white border-stone-200"
                 />
             </CardHeader>
             <CardContent className="flex flex-1 flex-col space-y-3">
                 <div className="flex-1 space-y-2">
                     {tasks.length === 0 && (
-                        <div className="rounded-md border border-dashed border-zinc-700 px-3 py-5 text-center text-sm text-zinc-400">
+                        <div className="rounded-md border border-dashed border-stone-300 px-3 py-5 text-center text-sm text-stone-500">
                             当天还没有任务，先加一条吧。
                         </div>
                     )}
@@ -149,7 +149,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                         const disabled = togglingId === task.id || deletingId === task.id || updating;
 
                         return (
-                            <div key={task.id} className="rounded-md border border-zinc-800 bg-zinc-950/40 px-3 py-2">
+                            <div key={task.id} className="rounded-md border border-stone-200 bg-[#fffaf1] px-3 py-2">
                                 <div className="flex items-start gap-2">
                                     <Checkbox
                                         id={`daily-${task.id}`}
@@ -164,12 +164,12 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                                             <Input
                                                 value={editingText}
                                                 onChange={(event) => setEditingText(event.target.value)}
-                                                className="h-8 bg-zinc-900"
+                                                className="h-8 bg-white"
                                             />
                                         ) : (
                                             <label
                                                 htmlFor={`daily-${task.id}`}
-                                                className={`block text-sm ${task.completed ? "line-through text-zinc-500" : "text-zinc-100"}`}
+                                                className={`block text-sm ${task.completed ? "line-through text-stone-400" : "text-stone-900"}`}
                                             >
                                                 {task.text}
                                             </label>
@@ -220,12 +220,12 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                     })}
                 </div>
 
-                <div className="flex items-center gap-2 pt-2 border-t border-zinc-800">
+                <div className="flex items-center gap-2 pt-2 border-t border-stone-200">
                     <Input
                         value={newTask}
                         onChange={(event) => setNewTask(event.target.value)}
                         onKeyDown={(event) => event.key === "Enter" && handleAdd()}
-                        className="bg-zinc-950/60"
+                        className="bg-white"
                     />
                     <Button size="icon" onClick={handleAdd} disabled={adding}>
                         {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

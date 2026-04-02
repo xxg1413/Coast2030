@@ -27,6 +27,7 @@ import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
 const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
+const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
 
 function getCompositionBarClass(type: string): string {
   switch (type) {
@@ -96,9 +97,9 @@ export default async function Year2026Page({ searchParams }: Props) {
   const dailyCompleted = dailyTasks.filter((task) => task.completed).length;
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
+    <main className="min-h-screen text-stone-900 p-4 md:p-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <section className="rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-900 via-zinc-900/70 to-zinc-950 p-5 md:p-6">
+        <section className="rounded-[2rem] border border-stone-200 bg-white/80 p-5 shadow-[0_24px_80px_rgba(72,50,22,0.10)] backdrop-blur md:p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="flex items-center gap-4">
               <Image
@@ -106,29 +107,35 @@ export default async function Year2026Page({ searchParams }: Props) {
                 alt="Coast2030 Logo"
                 width={52}
                 height={52}
-                className="h-12 w-12 rounded-xl border border-zinc-700/80"
+                className="h-12 w-12 rounded-xl border border-stone-200 bg-white"
               />
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Coast2030</p>
-                <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">
+                <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Coast2030</p>
+                <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent">
                   2026个人计划
                 </h1>
               </div>
             </div>
             <div className="flex gap-4">
               <a
+                href={PRODUCT_LAB_URL}
+                className="text-sm text-cyan-700 hover:text-cyan-900 underline underline-offset-4"
+              >
+                🧪 Product Lab
+              </a>
+              <a
                 href={AI_NOTES_URL}
-                className="text-sm text-amber-300 hover:text-amber-100 underline underline-offset-4"
+                className="text-sm text-amber-700 hover:text-amber-900 underline underline-offset-4"
               >
                 📝 AI Notes
               </a>
               <a
                 href={AIBOUNTY_URL}
-                className="text-sm text-emerald-300 hover:text-emerald-100 underline underline-offset-4"
+                className="text-sm text-emerald-700 hover:text-emerald-900 underline underline-offset-4"
               >
                 🤖 AIBounty
               </a>
-              <Link href="/" className="text-sm text-zinc-300 hover:text-white underline underline-offset-4">
+              <Link href="/" className="text-sm text-stone-600 hover:text-stone-900 underline underline-offset-4">
                 返回年度主页
               </Link>
             </div>
@@ -140,27 +147,27 @@ export default async function Year2026Page({ searchParams }: Props) {
             <RetirementProgress year={2026} yearIncome={yearIncome} />
           </div>
           <div className="lg:col-span-7">
-            <Card className="h-full border-zinc-800 bg-zinc-900/60">
+            <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">收入总览</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                    <p className="text-xs text-zinc-500">本月收入</p>
+                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                    <p className="text-xs text-stone-500">本月收入</p>
                     <p className="mt-1 text-lg font-semibold">{formatMoney(monthlyIncome)}</p>
                   </div>
-                  <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                    <p className="text-xs text-zinc-500">月度目标</p>
+                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                    <p className="text-xs text-stone-500">月度目标</p>
                     <p className="mt-1 text-lg font-semibold">{formatMoney(monthTarget)}</p>
-                    <p className="mt-1 text-xs text-zinc-500">达成率 {monthlyProgress.toFixed(1)}%</p>
+                    <p className="mt-1 text-xs text-stone-500">达成率 {monthlyProgress.toFixed(1)}%</p>
                   </div>
-                  <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                    <p className="text-xs text-zinc-500">年度累计</p>
+                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                    <p className="text-xs text-stone-500">年度累计</p>
                     <p className="mt-1 text-lg font-semibold">{formatMoney(yearIncome)}</p>
                   </div>
-                  <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                    <p className="text-xs text-zinc-500">年度进度</p>
+                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                    <p className="text-xs text-stone-500">年度进度</p>
                     <p className="mt-1 text-lg font-semibold">{annualProgress.toFixed(1)}%</p>
                   </div>
                 </div>
@@ -168,12 +175,12 @@ export default async function Year2026Page({ searchParams }: Props) {
                 {composition.map((item) => (
                   <div key={item.type} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-300">{getIncomeTypeLabel(item.type)}</span>
-                      <span className="text-zinc-400">
+                      <span className="text-stone-700">{getIncomeTypeLabel(item.type)}</span>
+                      <span className="text-stone-500">
                         {formatMoney(item.amount)} · {item.percentage.toFixed(1)}%
                       </span>
                     </div>
-                    <div className="h-2 rounded bg-zinc-800">
+                    <div className="h-2 rounded bg-stone-200">
                       <div
                         className={`h-2 rounded ${getCompositionBarClass(item.type)}`}
                         style={{ width: `${Math.max(item.percentage, 2)}%` }}

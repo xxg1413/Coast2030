@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   type TEXT NOT NULL, -- 'SaaS', 'Hunter', 'Media', 'Other'
   project TEXT,
   amount REAL NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'CNY',
+  fx_rate REAL NOT NULL DEFAULT 1,
+  original_amount REAL NOT NULL DEFAULT 0,
   memo TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

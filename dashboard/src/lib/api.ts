@@ -10,6 +10,9 @@ const AI_NOTES_SYNC_URL = process.env.AI_NOTES_SYNC_URL || "https://pxiaoer-ai-n
 const AI_NOTES_SYNC_PASSWORD = process.env.AI_NOTES_SYNC_PASSWORD || "";
 const AIBOUNTY_SYNC_URL = process.env.AIBOUNTY_SYNC_URL || "https://aibounty-plan.openbot.workers.dev";
 const AIBOUNTY_SYNC_PASSWORD = process.env.AIBOUNTY_SYNC_PASSWORD || "";
+const PRODUCT_LAB_SYNC_URL = process.env.PRODUCT_LAB_SYNC_URL || "https://pxiaoer-product-lab.openbot.workers.dev";
+const PRODUCT_LAB_SYNC_PASSWORD = process.env.PRODUCT_LAB_SYNC_PASSWORD || "";
+const USD_CNY_RATE = Number(process.env.USD_CNY_RATE || 6);
 const YEAR_TARGETS = {
     cashFlow: 3000000,
     saas: 1750000,
@@ -18,6 +21,7 @@ const YEAR_TARGETS = {
 } as const;
 
 type IncomeType = (typeof INCOME_TYPES)[number];
+export type CurrencyCode = "CNY" | "USD";
 
 function resolveProjectPath(...segments: string[]): string {
     return path.resolve(process.cwd(), "..", ...segments);
@@ -820,6 +824,9 @@ export interface Transaction {
     source: string;
     project: string;
     amount: number;
+    originalAmount: number;
+    currency: CurrencyCode;
+    fxRate: number;
     memo: string;
     deletable: boolean;
 }
@@ -829,6 +836,8 @@ export interface LocalTransactionInput {
     type: string;
     project: string;
     amount: number;
+    currency?: CurrencyCode;
+    fxRate?: number;
     memo: string;
 }
 
@@ -867,6 +876,39 @@ interface AIBountyExportResponse {
             notes?: string;
         }>;
     };
+}
+
+interface ProductLabStateResponse {
+    revenues?: Array<{
+        id: string;
+        recordDate: string;
+        amount: number;
+        category?: string;
+        isSettled?: boolean;
+        notes?: string;
+        productLabel?: string;
+    }>;
+}
+
+function normalizeCurrencyCode(value?: string): CurrencyCode {
+    return value === "USD" ? "USD" : "CNY";
+}
+
+function normalizeFxRate(currency: CurrencyCode, input?: number): number {
+    if (currency === "USD") {
+        const parsed = Number(input);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : USD_CNY_RATE;
+    }
+    return 1;
+}
+
+function roundMoney(value: number): number {
+    return Number((Number(value) || 0).toFixed(2));
+}
+
+function convertToCny(originalAmount: number, currency: CurrencyCode, fxRate: number): number {
+    if (currency === "USD") return roundMoney(originalAmount * fxRate);
+    return roundMoney(originalAmount);
 }
 
 let externalTransactionsCache: { expiresAt: number; items: Transaction[] } | null = null;
@@ -918,6 +960,9 @@ async function getLocalTransactions(): Promise<Transaction[]> {
         type: string;
         project: string;
         amount: number;
+        currency?: string;
+        fx_rate?: number;
+        original_amount?: number;
         memo: string;
     }>();
 
@@ -927,7 +972,10 @@ async function getLocalTransactions(): Promise<Transaction[]> {
         type: row.type,
         source: "Coast2030",
         project: row.project,
-        amount: Number(row.amount || 0),
+        amount: roundMoney(row.amount || 0),
+        originalAmount: roundMoney(row.original_amount || row.amount || 0),
+        currency: normalizeCurrencyCode(row.currency),
+        fxRate: normalizeFxRate(normalizeCurrencyCode(row.currency), Number(row.fx_rate || 1)),
         memo: row.memo || "",
         deletable: true,
     }));
@@ -940,7 +988,10 @@ function buildAiNotesTransactions(payload: AiNotesStateResponse | null): Transac
         type: "Media",
         source: "AI Notes",
         project: item.platformLabel || "AI Notes",
-        amount: Number(item.amount || 0),
+        amount: roundMoney(item.amount || 0),
+        originalAmount: roundMoney(item.amount || 0),
+        currency: "CNY",
+        fxRate: 1,
         memo: [item.category || "未分类", item.isSettled ? "已到账" : "未到账", item.notes || ""]
             .filter(Boolean)
             .join(" · "),
@@ -963,8 +1014,32 @@ function buildAIBountyTransactions(payload: AIBountyExportResponse | null): Tran
             type: "Hunter",
             source: "AIBounty",
             project: item.target || item.title || "AIBounty",
-            amount,
+            amount: roundMoney(amount),
+            originalAmount: roundMoney(amount),
+            currency: "CNY",
+            fxRate: 1,
             memo: [item.title || "", payoutState, item.status ? `状态 ${item.status}` : "", item.notes || ""]
+                .filter(Boolean)
+                .join(" · "),
+            deletable: false,
+        };
+    });
+}
+
+function buildProductLabTransactions(payload: ProductLabStateResponse | null): Transaction[] {
+    return (payload?.revenues || []).map((item) => {
+        const originalAmount = roundMoney(item.amount || 0);
+        return {
+            id: `productlab:${item.id}`,
+            date: normalizeSyncDate(item.recordDate),
+            type: "SaaS",
+            source: "Product Lab",
+            project: item.productLabel || "Product Lab",
+            amount: convertToCny(originalAmount, "USD", USD_CNY_RATE),
+            originalAmount,
+            currency: "USD",
+            fxRate: USD_CNY_RATE,
+            memo: [item.category || "未分类", item.isSettled ? "已到账" : "未到账", item.notes || ""]
                 .filter(Boolean)
                 .join(" · "),
             deletable: false,
@@ -977,12 +1052,17 @@ async function getExternalTransactions(): Promise<Transaction[]> {
         return externalTransactionsCache.items;
     }
 
-    const [aiNotes, aiBounty] = await Promise.all([
+    const [aiNotes, aiBounty, productLab] = await Promise.all([
         loginAndFetchJson<AiNotesStateResponse>(AI_NOTES_SYNC_URL, AI_NOTES_SYNC_PASSWORD, "/api/state"),
         loginAndFetchJson<AIBountyExportResponse>(AIBOUNTY_SYNC_URL, AIBOUNTY_SYNC_PASSWORD, "/api/export"),
+        loginAndFetchJson<ProductLabStateResponse>(PRODUCT_LAB_SYNC_URL, PRODUCT_LAB_SYNC_PASSWORD, "/api/state"),
     ]);
 
-    const items = [...buildAiNotesTransactions(aiNotes), ...buildAIBountyTransactions(aiBounty)];
+    const items = [
+        ...buildAiNotesTransactions(aiNotes),
+        ...buildAIBountyTransactions(aiBounty),
+        ...buildProductLabTransactions(productLab),
+    ];
     externalTransactionsCache = {
         items,
         expiresAt: Date.now() + 30_000,
@@ -1103,9 +1183,14 @@ export async function getTransactions(month?: string): Promise<Transaction[]> {
 
 export async function addTransaction(transaction: LocalTransactionInput): Promise<boolean> {
     const db = await getDB();
+    const currency = normalizeCurrencyCode(transaction.currency);
+    const fxRate = normalizeFxRate(currency, transaction.fxRate);
+    const originalAmount = roundMoney(transaction.amount);
+    const amount = convertToCny(originalAmount, currency, fxRate);
+
     await db
-        .prepare("INSERT INTO transactions (date, type, project, amount, memo) VALUES (?, ?, ?, ?, ?)")
-        .bind(transaction.date, transaction.type, transaction.project, transaction.amount, transaction.memo)
+        .prepare("INSERT INTO transactions (date, type, project, amount, currency, fx_rate, original_amount, memo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+        .bind(transaction.date, transaction.type, transaction.project, amount, currency, fxRate, originalAmount, transaction.memo)
         .run();
     return true;
 }

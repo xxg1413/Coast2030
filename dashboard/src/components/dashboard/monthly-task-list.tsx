@@ -85,13 +85,13 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
     };
 
     return (
-        <Card className="w-full h-full flex flex-col">
+        <Card className="w-full h-full flex flex-col border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
             <CardHeader className="space-y-3">
                 <CardTitle>📅 本月关键点</CardTitle>
                 <select
                     value={month}
                     onChange={(event) => handleMonthChange(event.target.value)}
-                    className="h-9 w-full max-w-[220px] rounded-md border border-zinc-700 bg-zinc-950/60 px-3 text-sm text-zinc-100 outline-none focus:ring-2 focus:ring-zinc-500"
+                    className="h-9 w-full max-w-[220px] rounded-md border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none focus:ring-2 focus:ring-stone-300"
                 >
                     <option value="all">全部月份</option>
                     {months.map((item) => (
@@ -115,7 +115,7 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
                                 />
                                 <label
                                     htmlFor={`monthly-${task.id}`}
-                                    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${task.completed ? "line-through text-muted-foreground" : ""
+                                    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${task.completed ? "line-through text-stone-400" : "text-stone-900"
                                         }`}
                                 >
                                     {task.text}
@@ -133,7 +133,7 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
                         </div>
                     ))}
                     {tasks.length === 0 && (
-                        <p className="text-sm text-muted-foreground">本月暂无关键点。</p>
+                        <p className="text-sm text-stone-500">本月暂无关键点。</p>
                     )}
                 </div>
 
@@ -141,7 +141,7 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
                     <Input
                         value={newTask}
                         onChange={(e) => setNewTask(e.target.value)}
-                        className="bg-zinc-950/50"
+                        className="bg-white"
                         disabled={isAllMonths}
                         placeholder={isAllMonths ? "请先选择具体月份再新增" : ""}
                     />

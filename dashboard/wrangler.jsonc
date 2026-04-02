@@ -6,7 +6,10 @@
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	"vars": {
 		"AI_NOTES_SYNC_URL": "https://pxiaoer-ai-notes.openbot.workers.dev",
-		"AIBOUNTY_SYNC_URL": "https://aibounty-plan.openbot.workers.dev"
+		"AIBOUNTY_SYNC_URL": "https://aibounty-plan.openbot.workers.dev",
+		"PRODUCT_LAB_SYNC_URL": "https://pxiaoer-product-lab.openbot.workers.dev",
+		"NEXT_PUBLIC_PRODUCT_LAB_URL": "https://productlab.pxiaoer.blog/",
+		"USD_CNY_RATE": "6"
 	},
 	"assets": {
 		"directory": ".open-next/assets",

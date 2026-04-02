@@ -73,11 +73,11 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
     };
 
     return (
-        <Card className="flex h-full w-full flex-col border-zinc-800 bg-zinc-900/70">
+        <Card className="flex h-full w-full flex-col border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
             <CardHeader className="space-y-3">
                 <div className="flex items-center justify-between">
                     <CardTitle>🎯 本周焦点</CardTitle>
-                    <div className="text-xs text-zinc-400">
+                    <div className="text-xs text-stone-500">
                         {completedCount}/{tasks.length} 完成
                     </div>
                 </div>
@@ -85,7 +85,7 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
             <CardContent className="flex flex-1 flex-col space-y-3">
                 <div className="flex-1 space-y-2">
                     {tasks.length === 0 && (
-                        <div className="rounded-md border border-dashed border-zinc-700 px-3 py-5 text-center text-sm text-zinc-400">
+                        <div className="rounded-md border border-dashed border-stone-300 px-3 py-5 text-center text-sm text-stone-500">
                             本周焦点还是空的，先定 3-5 个最重要动作。
                         </div>
                     )}
@@ -94,7 +94,7 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
                         const disabled = toggling === task.id || deleting === task.id;
 
                         return (
-                            <div key={task.id} className="flex items-start justify-between gap-3 rounded-md border border-zinc-800 bg-zinc-950/40 px-3 py-2">
+                            <div key={task.id} className="flex items-start justify-between gap-3 rounded-md border border-stone-200 bg-[#fffaf1] px-3 py-2">
                                 <div className="flex items-start gap-2">
                                     <Checkbox
                                         id={`weekly-${task.id}`}
@@ -105,7 +105,7 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
                                     />
                                     <label
                                         htmlFor={`weekly-${task.id}`}
-                                        className={`text-sm ${task.completed ? "line-through text-zinc-500" : "text-zinc-100"}`}
+                                        className={`text-sm ${task.completed ? "line-through text-stone-400" : "text-stone-900"}`}
                                     >
                                         {task.text}
                                     </label>
@@ -125,12 +125,12 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
                     })}
                 </div>
 
-                <div className="flex items-center gap-2 border-t border-zinc-800 pt-2">
+                <div className="flex items-center gap-2 border-t border-stone-200 pt-2">
                     <Input
                         value={newTask}
                         onChange={(event) => setNewTask(event.target.value)}
                         onKeyDown={(event) => event.key === "Enter" && handleAdd()}
-                        className="bg-zinc-950/60"
+                        className="bg-white"
                         placeholder="新增本周焦点"
                     />
                     <Button size="icon" onClick={handleAdd} disabled={adding}>

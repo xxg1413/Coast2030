@@ -132,6 +132,24 @@ const MIGRATIONS: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_asset_snapshots_snapshot_date ON asset_snapshots(snapshot_date DESC);
         `,
     },
+    {
+        version: 6,
+        name: 'add_transaction_currency_fields',
+        sql: `
+            ALTER TABLE transactions ADD COLUMN currency TEXT NOT NULL DEFAULT 'CNY';
+            ALTER TABLE transactions ADD COLUMN fx_rate REAL NOT NULL DEFAULT 1;
+            ALTER TABLE transactions ADD COLUMN original_amount REAL NOT NULL DEFAULT 0;
+
+            UPDATE transactions
+            SET
+              currency = COALESCE(NULLIF(currency, ''), 'CNY'),
+              fx_rate = CASE WHEN COALESCE(fx_rate, 0) <= 0 THEN 1 ELSE fx_rate END,
+              original_amount = CASE
+                WHEN COALESCE(original_amount, 0) <= 0 THEN amount
+                ELSE original_amount
+              END;
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

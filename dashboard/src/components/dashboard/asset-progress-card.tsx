@@ -127,18 +127,18 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
     };
 
     return (
-        <Card className="border-zinc-800 bg-gradient-to-br from-zinc-900/90 via-zinc-900/70 to-zinc-950/80">
+        <Card className="border-stone-200 bg-white/80 shadow-[0_18px_50px_rgba(84,61,31,0.10)]">
             <CardHeader className="pb-3">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
-                        <p className="text-sm text-zinc-400">2030 资产目标进度</p>
+                        <p className="text-sm text-stone-500">2030 资产目标进度</p>
                         <CardTitle className="mt-1 text-2xl">{formatMoney(currentNetWorth)}</CardTitle>
-                        <p className="mt-2 text-sm text-zinc-500">
+                        <p className="mt-2 text-sm text-stone-500">
                             {latest ? `最新快照 ${latest.snapshotDate}` : "还没有资产快照，先录入第一条。"}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1 text-xs text-blue-300">
+                        <div className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-700">
                             目标 {formatMoney(target)}
                         </div>
                         <Dialog open={open} onOpenChange={setOpen}>
@@ -192,7 +192,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
                                             placeholder="例如：20000"
                                         />
                                     </div>
-                                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 text-sm text-zinc-300">
+                                    <div className="rounded-lg border border-stone-200 bg-[#fffaf1] p-3 text-sm text-stone-700">
                                         当前净资产预览：{formatMoney(Number(totalAssets || 0) - Number(totalLiabilities || 0))}
                                     </div>
                                     <div className="grid gap-2">
@@ -222,44 +222,44 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
             </CardHeader>
             <CardContent className="space-y-5">
                 <div className="grid gap-3 md:grid-cols-4">
-                    <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                        <p className="text-xs text-zinc-500">当前净资产</p>
+                    <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                        <p className="text-xs text-stone-500">当前净资产</p>
                         <p className="mt-1 text-lg font-semibold">{formatMoney(currentNetWorth)}</p>
                     </div>
-                    <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                        <p className="text-xs text-zinc-500">总资产</p>
+                    <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                        <p className="text-xs text-stone-500">总资产</p>
                         <p className="mt-1 text-lg font-semibold">{formatMoney(currentAssets)}</p>
                     </div>
-                    <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                        <p className="text-xs text-zinc-500">总负债</p>
+                    <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                        <p className="text-xs text-stone-500">总负债</p>
                         <p className="mt-1 text-lg font-semibold">{formatMoney(currentLiabilities)}</p>
                     </div>
-                    <div className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3">
-                        <p className="text-xs text-zinc-500">距离目标</p>
+                    <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
+                        <p className="text-xs text-stone-500">距离目标</p>
                         <p className="mt-1 text-lg font-semibold">{formatMoney(gap)}</p>
                     </div>
                 </div>
 
                 <div>
                     <div className="mb-2 flex items-center justify-between text-sm">
-                        <span className="text-zinc-400">目标完成率</span>
+                        <span className="text-stone-500">目标完成率</span>
                         <span className="font-medium">{progress.toFixed(2)}%</span>
                     </div>
-                    <Progress value={progress} className="h-3 bg-zinc-800" indicatorClassName="bg-blue-500" />
+                    <Progress value={progress} className="h-3 bg-stone-200" indicatorClassName="bg-blue-500" />
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+                    <div className="rounded-lg border border-stone-200 bg-[#fffaf1] p-4">
                         <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-medium text-zinc-100">净资产趋势</p>
-                            <span className={`text-sm ${delta >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                            <p className="text-sm font-medium text-stone-900">净资产趋势</p>
+                            <span className={`text-sm ${delta >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
                                 {latest && previous ? `${delta >= 0 ? "+" : ""}${formatMoney(delta)}` : "暂无对比"}
                             </span>
                         </div>
                         <div className="mt-4">
                             {chartCoordinates.length >= 2 ? (
                                 <div className="space-y-3">
-                                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
+                                    <div className="rounded-lg border border-stone-200 bg-white p-3">
                                         <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-44 w-full overflow-visible">
                                             <defs>
                                                 <linearGradient id="net-worth-line" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -267,7 +267,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
                                                     <stop offset="100%" stopColor="#34d399" />
                                                 </linearGradient>
                                             </defs>
-                                            <line x1="0" y1={chartHeight - 12} x2={chartWidth} y2={chartHeight - 12} stroke="#27272a" strokeWidth="1" />
+                                            <line x1="0" y1={chartHeight - 12} x2={chartWidth} y2={chartHeight - 12} stroke="#d6cec2" strokeWidth="1" />
                                             <path
                                                 d={chartPath}
                                                 fill="none"
@@ -278,45 +278,45 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
                                             />
                                             {chartCoordinates.map((point) => (
                                                 <g key={point.id}>
-                                                    <circle cx={point.x} cy={point.y} r="4.5" fill="#18181b" stroke="#60a5fa" strokeWidth="2" />
+                                                    <circle cx={point.x} cy={point.y} r="4.5" fill="#fffaf1" stroke="#60a5fa" strokeWidth="2" />
                                                 </g>
                                             ))}
                                         </svg>
                                     </div>
-                                    <div className="flex items-start justify-between gap-2 text-xs text-zinc-500">
+                                    <div className="flex items-start justify-between gap-2 text-xs text-stone-500">
                                         {chartCoordinates.map((point) => (
                                             <div key={point.id} className="min-w-0 flex-1 text-center">
                                                 <div>{point.label}</div>
-                                                <div className="mt-1 text-zinc-400">{formatMoney(point.value)}</div>
+                                                <div className="mt-1 text-stone-700">{formatMoney(point.value)}</div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             ) : (
-                                <div className="rounded-md border border-dashed border-zinc-800 px-3 py-10 text-sm text-zinc-500">
+                                <div className="rounded-md border border-dashed border-stone-300 px-3 py-10 text-sm text-stone-500">
                                     至少需要两条资产快照，才能显示净资产趋势。
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
-                        <p className="text-sm font-medium text-zinc-100">最近快照</p>
+                    <div className="rounded-lg border border-stone-200 bg-[#fffaf1] p-4">
+                        <p className="text-sm font-medium text-stone-900">最近快照</p>
                         <div className="mt-3 space-y-2">
                             {snapshots.length ? (
                                 snapshots.map((snapshot) => (
-                                    <div key={snapshot.id} className="rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm">
+                                    <div key={snapshot.id} className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm">
                                         <div className="flex items-center justify-between gap-3">
-                                            <span className="text-zinc-300">{snapshot.snapshotDate}</span>
-                                            <span className="font-medium text-zinc-100">{formatMoney(snapshot.netWorth)}</span>
+                                            <span className="text-stone-700">{snapshot.snapshotDate}</span>
+                                            <span className="font-medium text-stone-900">{formatMoney(snapshot.netWorth)}</span>
                                         </div>
                                         {snapshot.notes ? (
-                                            <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{snapshot.notes}</div>
+                                            <div className="mt-1 line-clamp-2 text-xs text-stone-500">{snapshot.notes}</div>
                                         ) : null}
                                     </div>
                                 ))
                             ) : (
-                                <div className="rounded-md border border-dashed border-zinc-800 px-3 py-6 text-sm text-zinc-500">
+                                <div className="rounded-md border border-dashed border-stone-300 px-3 py-6 text-sm text-stone-500">
                                     还没有资产快照。
                                 </div>
                             )}

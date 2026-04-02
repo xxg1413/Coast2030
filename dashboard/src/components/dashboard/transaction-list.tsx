@@ -21,20 +21,36 @@ interface Transaction {
     source: string;
     project: string;
     amount: number;
+    originalAmount: number;
+    currency: "CNY" | "USD";
+    fxRate: number;
     memo: string;
     deletable: boolean;
+}
+
+function formatOriginalAmount(transaction: Transaction): string {
+    const formatter = new Intl.NumberFormat(transaction.currency === "USD" ? "en-US" : "zh-CN", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    });
+    return `${transaction.currency === "USD" ? "$" : "¥"}${formatter.format(transaction.originalAmount)}`;
+}
+
+function formatConvertedAmount(transaction: Transaction): string | null {
+    if (transaction.currency === "CNY") return null;
+    return `≈ ¥${transaction.amount.toLocaleString("zh-CN", { maximumFractionDigits: 2 })} · 汇率 ${transaction.fxRate}`;
 }
 
 function getTypeBadgeClass(type: string): string {
     switch (type) {
         case "Hunter":
-            return "bg-blue-500/20 text-blue-400";
+            return "bg-blue-100 text-blue-700";
         case "SaaS":
-            return "bg-emerald-500/20 text-emerald-400";
+            return "bg-emerald-100 text-emerald-700";
         case "Media":
-            return "bg-amber-500/20 text-amber-400";
+            return "bg-amber-100 text-amber-700";
         default:
-            return "bg-zinc-500/20 text-zinc-300";
+            return "bg-stone-100 text-stone-600";
     }
 }
 
@@ -75,7 +91,7 @@ export function TransactionList({ transactions, month }: { transactions: Transac
     };
 
     return (
-        <Card className="w-full">
+        <Card className="w-full border-stone-200 bg-white/80 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
             <CardHeader>
                 <CardTitle>💰 {month} 收入明细</CardTitle>
             </CardHeader>
@@ -84,19 +100,19 @@ export function TransactionList({ transactions, month }: { transactions: Transac
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[100px]">日期</TableHead>
+                                <TableHead className="w-[100px] text-stone-500">日期</TableHead>
                                 <TableHead>类型</TableHead>
                                 <TableHead>来源</TableHead>
                                 <TableHead>项目</TableHead>
                                 <TableHead>备注</TableHead>
-                                <TableHead className="text-right">金额</TableHead>
-                                <TableHead className="text-right">操作</TableHead>
+                                <TableHead className="text-right text-stone-500">金额</TableHead>
+                                <TableHead className="text-right text-stone-500">操作</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {transactions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
+                                    <TableCell colSpan={7} className="h-24 text-center text-stone-500">
                                         {month} 暂无收入 (加油!)
                                     </TableCell>
                                 </TableRow>
@@ -109,10 +125,15 @@ export function TransactionList({ transactions, month }: { transactions: Transac
                                                 {getTypeLabel(t.type)}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="whitespace-nowrap text-zinc-400">{t.source}</TableCell>
+                                        <TableCell className="whitespace-nowrap text-stone-500">{t.source}</TableCell>
                                         <TableCell className="whitespace-nowrap">{t.project}</TableCell>
-                                        <TableCell className="text-muted-foreground min-w-[150px]">{t.memo}</TableCell>
-                                        <TableCell className="text-right font-bold whitespace-nowrap">+¥{t.amount.toLocaleString()}</TableCell>
+                                        <TableCell className="min-w-[150px] text-stone-500">{t.memo}</TableCell>
+                                        <TableCell className="text-right whitespace-nowrap">
+                                            <div className="font-bold text-stone-900">+{formatOriginalAmount(t)}</div>
+                                            {formatConvertedAmount(t) ? (
+                                                <div className="text-xs font-normal text-stone-500">{formatConvertedAmount(t)}</div>
+                                            ) : null}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             {t.deletable ? (
                                                 <Button
@@ -129,7 +150,7 @@ export function TransactionList({ transactions, month }: { transactions: Transac
                                                     )}
                                                 </Button>
                                             ) : (
-                                                <span className="text-xs text-zinc-500">同步</span>
+                                                <span className="text-xs text-stone-500">同步</span>
                                             )}
                                         </TableCell>
                                     </TableRow>

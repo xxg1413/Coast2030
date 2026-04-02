@@ -33,7 +33,7 @@ export function ExecutionSummary({
     const items = [weekly, monthly, daily];
 
     return (
-        <Card className="border-zinc-800 bg-zinc-900/60">
+        <Card className="border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
             <CardHeader className="pb-2">
                 <CardTitle className="text-base">执行概览</CardTitle>
             </CardHeader>
@@ -42,22 +42,22 @@ export function ExecutionSummary({
                     const progress = getProgress(item.completed, item.total);
 
                     return (
-                        <div key={item.label} className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
+                        <div key={item.label} className="space-y-2 rounded-lg border border-stone-200 bg-[#fffaf1] p-3">
                             <div className="flex items-center justify-between gap-2">
                                 <div>
-                                    <div className="text-sm font-medium text-zinc-100">{item.label}</div>
-                                    <div className="text-xs text-zinc-400">
+                                    <div className="text-sm font-medium text-stone-900">{item.label}</div>
+                                    <div className="text-xs text-stone-500">
                                         {item.completed}/{item.total} 完成
                                     </div>
                                 </div>
-                                <Badge variant="outline" className="border-zinc-700 text-zinc-300">
+                                <Badge variant="outline" className="border-stone-200 bg-white text-stone-600">
                                     {getStatusLabel(item.completed, item.total)}
                                 </Badge>
                             </div>
 
                             <Progress
                                 value={progress}
-                                className="h-2 bg-zinc-800"
+                                className="h-2 bg-stone-200"
                                 indicatorClassName={item.accentClassName}
                             />
                         </div>

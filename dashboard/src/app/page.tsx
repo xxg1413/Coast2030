@@ -17,6 +17,7 @@ const YEAR_LINKS: Record<number, string | null> = {
 
 const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
 const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
+const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
 
 export default async function Home() {
   const years = [2026, 2027, 2028, 2029, 2030];
@@ -26,20 +27,20 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100 p-4 md:p-8">
+    <main className="min-h-screen text-stone-900 p-4 md:p-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <section className="rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-900 via-zinc-900/70 to-zinc-950 p-6">
+        <section className="rounded-[2rem] border border-stone-200 bg-white/80 p-6 shadow-[0_24px_80px_rgba(72,50,22,0.10)] backdrop-blur">
           <div className="flex items-center gap-4">
             <Image
               src="/coast-logo.svg"
               alt="Coast2030 Logo"
               width={52}
               height={52}
-              className="h-12 w-12 rounded-xl border border-zinc-700/80"
+              className="h-12 w-12 rounded-xl border border-stone-200 bg-white"
             />
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Coast2030</p>
-              <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">
+              <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Coast2030</p>
+              <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent">
                 P小二的5年退休计划
               </h1>
             </div>
@@ -60,17 +61,17 @@ export default async function Home() {
             const link = YEAR_LINKS[year];
 
             const card = (
-              <Card className="h-full border-zinc-800 bg-zinc-900/70 hover:border-zinc-700 transition-colors">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <span>{year}</span>
-                    <span className="text-xs text-zinc-400">{link ? "已开启" : "待开启"}</span>
+                    <span className="text-xs text-stone-500">{link ? "已开启" : "待开启"}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p className="text-zinc-300">年累计：{formatMoney(income)}</p>
-                  <p className="text-zinc-400">年度目标：{formatMoney(target)}</p>
-                  <p className="text-zinc-500">完成度：{progress.toFixed(1)}%</p>
+                  <p className="text-stone-800">年累计：{formatMoney(income)}</p>
+                  <p className="text-stone-600">年度目标：{formatMoney(target)}</p>
+                  <p className="text-stone-500">完成度：{progress.toFixed(1)}%</p>
                 </CardContent>
               </Card>
             );
@@ -86,36 +87,51 @@ export default async function Home() {
 
         <section className="space-y-3">
           <div>
-            <p className="text-sm text-zinc-400">应用入口</p>
+            <p className="text-sm text-stone-500">应用入口</p>
             <h2 className="mt-1 text-2xl font-semibold">内容与项目工作台</h2>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <a href={AIBOUNTY_URL} className="block">
-              <Card className="h-full border-zinc-800 bg-zinc-900/70 hover:border-zinc-700 transition-colors">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <a href={PRODUCT_LAB_URL} className="block">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
-                    <span>AIBounty Plan</span>
-                    <span className="text-xs text-emerald-300">Cloudflare</span>
+                    <span>Product Lab</span>
+                    <span className="text-xs text-cyan-700">Cloudflare</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p className="text-zinc-300">漏洞挖掘计划、目标池、赏金记录与回款看板。</p>
-                  <p className="text-zinc-500">独立部署，作为 Hunter 路线执行系统。</p>
+                  <p className="text-stone-800">SaaS 目标、功能路线图、推广计划、指标快照与收入管理。</p>
+                  <p className="text-stone-500">独立部署，作为产品实验与营收验证中台。</p>
+                </CardContent>
+              </Card>
+            </a>
+
+            <a href={AIBOUNTY_URL} className="block">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <span>AIBounty Plan</span>
+                    <span className="text-xs text-emerald-700">Cloudflare</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="text-stone-800">漏洞挖掘计划、目标池、赏金记录与回款看板。</p>
+                  <p className="text-stone-500">独立部署，作为 Hunter 路线执行系统。</p>
                 </CardContent>
               </Card>
             </a>
 
             <a href={AI_NOTES_URL} className="block">
-              <Card className="h-full border-zinc-800 bg-zinc-900/70 hover:border-zinc-700 transition-colors">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <span>AI Notes</span>
-                    <span className="text-xs text-amber-300">Cloudflare</span>
+                    <span className="text-xs text-amber-700">Cloudflare</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p className="text-zinc-300">统一管理 AI 资讯、YouTube 提纲和内容资产。</p>
-                  <p className="text-zinc-500">独立部署，作为内容中台与笔记后台。</p>
+                  <p className="text-stone-800">统一管理 AI 资讯、YouTube 提纲和内容资产。</p>
+                  <p className="text-stone-500">独立部署，作为内容中台与笔记后台。</p>
                 </CardContent>
               </Card>
             </a>
