@@ -1,5 +1,4 @@
-import Link from "next/link";
-import Image from "next/image";
+import { PageHeader } from "@/components/dashboard/page-header";
 import {
   formatMoney,
   getBeijingCurrentDate,
@@ -22,40 +21,14 @@ import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
 import { ExecutionSummary } from "@/components/dashboard/execution-summary";
+import { getIncomeTypeConfig } from "@/lib/income-types";
 import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
+import { TrendingUp } from "lucide-react";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
 const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
 const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
-
-function getCompositionBarClass(type: string): string {
-  switch (type) {
-    case "Hunter":
-      return "bg-blue-500";
-    case "SaaS":
-      return "bg-emerald-500";
-    case "Media":
-      return "bg-amber-500";
-    default:
-      return "bg-zinc-500";
-  }
-}
-
-function getIncomeTypeLabel(type: string): string {
-  switch (type) {
-    case "Hunter":
-      return "漏洞挖掘";
-    case "SaaS":
-      return "SaaS";
-    case "Media":
-      return "自媒体";
-    case "Other":
-      return "其他";
-    default:
-      return type;
-  }
-}
 
 interface Props {
   searchParams: Promise<{ month?: string; day?: string; taskMonth?: string }>;
@@ -99,95 +72,73 @@ export default async function Year2026Page({ searchParams }: Props) {
   return (
     <main className="min-h-screen text-stone-900 p-4 md:p-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <section className="rounded-[2rem] border border-stone-200 bg-white/80 p-5 shadow-[0_24px_80px_rgba(72,50,22,0.10)] backdrop-blur md:p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="flex items-center gap-4">
-              <Image
-                src="/coast-logo.svg"
-                alt="Coast2030 Logo"
-                width={52}
-                height={52}
-                className="h-12 w-12 rounded-xl border border-stone-200 bg-white"
-              />
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Coast2030</p>
-                <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent">
-                  2026个人计划
-                </h1>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <a
-                href={PRODUCT_LAB_URL}
-                className="text-sm text-cyan-700 hover:text-cyan-900 underline underline-offset-4"
-              >
-                🧪 Product Lab
-              </a>
-              <a
-                href={AI_NOTES_URL}
-                className="text-sm text-amber-700 hover:text-amber-900 underline underline-offset-4"
-              >
-                📝 AI Notes
-              </a>
-              <a
-                href={AIBOUNTY_URL}
-                className="text-sm text-emerald-700 hover:text-emerald-900 underline underline-offset-4"
-              >
-                🤖 AIBounty
-              </a>
-              <Link href="/" className="text-sm text-stone-600 hover:text-stone-900 underline underline-offset-4">
-                返回年度主页
-              </Link>
-            </div>
-          </div>
-        </section>
+        <PageHeader
+          title="2026个人计划"
+          subtitle="Coast2030"
+          navItems={[
+            { label: "🧪 Product Lab", href: PRODUCT_LAB_URL, variant: "cyan", external: true },
+            { label: "📝 AI Notes", href: AI_NOTES_URL, variant: "amber", external: true },
+            { label: "🤖 AIBounty", href: AIBOUNTY_URL, variant: "emerald", external: true },
+            { label: "← 返回年度主页", href: "/", variant: "default" },
+          ]}
+        />
 
         <section className="grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-5">
             <RetirementProgress year={2026} yearIncome={yearIncome} />
           </div>
           <div className="lg:col-span-7">
-            <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)]">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">收入总览</CardTitle>
+            <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-stone-500" />
+                  收入总览
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
-                    <p className="text-xs text-stone-500">本月收入</p>
-                    <p className="mt-1 text-lg font-semibold">{formatMoney(monthlyIncome)}</p>
-                  </div>
-                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
-                    <p className="text-xs text-stone-500">月度目标</p>
-                    <p className="mt-1 text-lg font-semibold">{formatMoney(monthTarget)}</p>
-                    <p className="mt-1 text-xs text-stone-500">达成率 {monthlyProgress.toFixed(1)}%</p>
-                  </div>
-                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
-                    <p className="text-xs text-stone-500">年度累计</p>
-                    <p className="mt-1 text-lg font-semibold">{formatMoney(yearIncome)}</p>
-                  </div>
-                  <div className="rounded-md border border-stone-200 bg-[#fffaf1] p-3">
-                    <p className="text-xs text-stone-500">年度进度</p>
-                    <p className="mt-1 text-lg font-semibold">{annualProgress.toFixed(1)}%</p>
-                  </div>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                  {[
+                    { label: "本月收入", value: formatMoney(monthlyIncome), sub: null },
+                    { label: "月度目标", value: formatMoney(monthTarget), sub: `达成率 ${monthlyProgress.toFixed(1)}%` },
+                    { label: "年度累计", value: formatMoney(yearIncome), sub: null },
+                    { label: "年度进度", value: `${annualProgress.toFixed(1)}%`, sub: null },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5"
+                    >
+                      <p className="text-xs text-stone-500">{item.label}</p>
+                      <p className="mt-0.5 text-lg font-semibold text-stone-900">{item.value}</p>
+                      {item.sub && <p className="mt-0.5 text-xs text-stone-500">{item.sub}</p>}
+                    </div>
+                  ))}
                 </div>
 
-                {composition.map((item) => (
-                  <div key={item.type} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-stone-700">{getIncomeTypeLabel(item.type)}</span>
-                      <span className="text-stone-500">
-                        {formatMoney(item.amount)} · {item.percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="h-2 rounded bg-stone-200">
-                      <div
-                        className={`h-2 rounded ${getCompositionBarClass(item.type)}`}
-                        style={{ width: `${Math.max(item.percentage, 2)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">收入来源构成</p>
+                  {composition.map((item) => {
+                    const config = getIncomeTypeConfig(item.type);
+                    return (
+                      <div key={item.type} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`h-2 w-2 rounded-full ${config.dotClass}`} />
+                            <span className="text-stone-700">{config.label}</span>
+                          </div>
+                          <span className="text-stone-500">
+                            {formatMoney(item.amount)} · {item.percentage.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="h-2 rounded bg-stone-200 overflow-hidden">
+                          <div
+                            className={`h-2 rounded ${config.barClass}`}
+                            style={{ width: `${Math.max(item.percentage, 2)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           </div>

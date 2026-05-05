@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
 import { getAssetSnapshots, getBeijingCurrentDate, getYearIncome, formatMoney } from "@/lib/api";
 import { NET_WORTH_TARGET_2030, YEAR_TARGETS } from "@/lib/targets";
@@ -29,23 +29,10 @@ export default async function Home() {
   return (
     <main className="min-h-screen text-stone-900 p-4 md:p-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <section className="rounded-[2rem] border border-stone-200 bg-white/80 p-6 shadow-[0_24px_80px_rgba(72,50,22,0.10)] backdrop-blur">
-          <div className="flex items-center gap-4">
-            <Image
-              src="/coast-logo.svg"
-              alt="Coast2030 Logo"
-              width={52}
-              height={52}
-              className="h-12 w-12 rounded-xl border border-stone-200 bg-white"
-            />
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Coast2030</p>
-              <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent">
-                P小二的5年退休计划
-              </h1>
-            </div>
-          </div>
-        </section>
+        <PageHeader
+          title="P小二的5年退休计划"
+          subtitle="Coast2030"
+        />
 
         <AssetProgressCard
           snapshots={assetSnapshots}
@@ -61,17 +48,36 @@ export default async function Home() {
             const link = YEAR_LINKS[year];
 
             const card = (
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <span>{year}</span>
-                    <span className="text-xs text-stone-500">{link ? "已开启" : "待开启"}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      link ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"
+                    }`}>
+                      {link ? "已开启" : "待开启"}
+                    </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <p className="text-stone-800">年累计：{formatMoney(income)}</p>
-                  <p className="text-stone-600">年度目标：{formatMoney(target)}</p>
-                  <p className="text-stone-500">完成度：{progress.toFixed(1)}%</p>
+                  <div className="flex justify-between">
+                    <span className="text-stone-500">年累计</span>
+                    <span className="font-medium text-stone-900">{formatMoney(income)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-stone-500">年度目标</span>
+                    <span className="text-stone-700">{formatMoney(target)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-500">完成度</span>
+                    <span className="text-sm font-medium">{progress.toFixed(1)}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-stone-200 overflow-hidden">
+                    <div
+                      className="h-1.5 rounded-full bg-emerald-500 transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -91,12 +97,12 @@ export default async function Home() {
             <h2 className="mt-1 text-2xl font-semibold">内容与项目工作台</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <a href={PRODUCT_LAB_URL} className="block">
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+            <a href={PRODUCT_LAB_URL} target="_blank" rel="noopener noreferrer" className="block">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <span>Product Lab</span>
-                    <span className="text-xs text-cyan-700">Cloudflare</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">Cloudflare</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
@@ -106,12 +112,12 @@ export default async function Home() {
               </Card>
             </a>
 
-            <a href={AIBOUNTY_URL} className="block">
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+            <a href={AIBOUNTY_URL} target="_blank" rel="noopener noreferrer" className="block">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <span>AIBounty Plan</span>
-                    <span className="text-xs text-emerald-700">Cloudflare</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Cloudflare</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
@@ -121,12 +127,12 @@ export default async function Home() {
               </Card>
             </a>
 
-            <a href={AI_NOTES_URL} className="block">
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_12px_40px_rgba(84,61,31,0.08)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+            <a href={AI_NOTES_URL} target="_blank" rel="noopener noreferrer" className="block">
+              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center justify-between text-lg">
                     <span>AI Notes</span>
-                    <span className="text-xs text-amber-700">Cloudflare</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Cloudflare</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
