@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight, ExternalLink, Target, WalletCards } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
@@ -25,6 +26,62 @@ export default async function Home() {
     Promise.all(years.map((year) => getYearIncome(year))),
     getAssetSnapshots(6),
   ]);
+  const activeYearIncome = incomes[0] || 0;
+  const activeYearTarget = YEAR_TARGETS[2026] || 0;
+  const activeYearProgress = activeYearTarget > 0 ? Math.min((activeYearIncome / activeYearTarget) * 100, 100) : 0;
+  const currentNetWorth = assetSnapshots[0]?.netWorth || 0;
+  const assetProgress = NET_WORTH_TARGET_2030 > 0 ? Math.min((currentNetWorth / NET_WORTH_TARGET_2030) * 100, 100) : 0;
+
+  const actionCards = [
+    {
+      label: "年度执行",
+      title: "进入 2026 今日工作台",
+      meta: `年累计 ${formatMoney(activeYearIncome)} / ${formatMoney(activeYearTarget)}，进度 ${activeYearProgress.toFixed(1)}%。`,
+      href: "/2026",
+      external: false,
+      icon: Target,
+    },
+    {
+      label: "资产节奏",
+      title: "更新净资产快照",
+      meta: `当前净资产 ${formatMoney(currentNetWorth)}，2030 目标完成 ${assetProgress.toFixed(2)}%。`,
+      href: "#asset-progress",
+      external: false,
+      icon: WalletCards,
+    },
+    {
+      label: "项目入口",
+      title: "打开 Product Lab",
+      meta: "产品收入、功能路线图、推广和指标快照集中在这里推进。",
+      href: PRODUCT_LAB_URL,
+      external: true,
+      icon: ExternalLink,
+    },
+  ];
+
+  const apps = [
+    {
+      title: "Product Lab",
+      badge: "产品收入",
+      href: PRODUCT_LAB_URL,
+      description: "SaaS 目标、功能路线图、推广计划、指标快照与收入管理。",
+      next: "看本月产品收入和下一项功能。",
+    },
+    {
+      title: "AIBounty Plan",
+      badge: "赏金回款",
+      href: AIBOUNTY_URL,
+      description: "漏洞挖掘计划、目标池、赏金记录与回款看板。",
+      next: "看今日任务、本月回款缺口和未到账记录。",
+    },
+    {
+      title: "AI Notes",
+      badge: "内容增长",
+      href: AI_NOTES_URL,
+      description: "统一管理 AI 资讯、YouTube 提纲和内容资产。",
+      next: "看本周内容任务、粉丝缺口和内容收入。",
+    },
+  ];
 
   return (
     <main className="min-h-screen text-stone-900 p-4 md:p-8">
@@ -34,11 +91,51 @@ export default async function Home() {
           subtitle="Coast2030"
         />
 
+        <section className="grid gap-3 md:grid-cols-3">
+          {actionCards.map((item, index) => {
+            const Icon = item.icon;
+            const content = (
+              <Card className={`h-full border-stone-200 bg-white/82 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300 ${index === 0 ? "ring-1 ring-emerald-200" : ""}`}>
+                <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">{item.label}</p>
+                      <Icon className="h-4 w-4 text-emerald-700" />
+                    </div>
+                    <h2 className="text-lg font-semibold leading-tight text-stone-950">{item.title}</h2>
+                    <p className="text-sm leading-6 text-stone-600">{item.meta}</p>
+                  </div>
+                  <div className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+                    进入
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+
+            if (item.external) {
+              return (
+                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="block">
+                  {content}
+                </a>
+              );
+            }
+
+            return (
+              <a key={item.label} href={item.href} className="block">
+                {content}
+              </a>
+            );
+          })}
+        </section>
+
+        <div id="asset-progress">
         <AssetProgressCard
           snapshots={assetSnapshots}
           target={NET_WORTH_TARGET_2030}
           defaultDate={getBeijingCurrentDate()}
         />
+        </div>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {years.map((year, index) => {
@@ -97,50 +194,22 @@ export default async function Home() {
             <h2 className="mt-1 text-2xl font-semibold">内容与项目工作台</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <a href={PRODUCT_LAB_URL} target="_blank" rel="noopener noreferrer" className="block">
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <span>Product Lab</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">Cloudflare</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p className="text-stone-800">SaaS 目标、功能路线图、推广计划、指标快照与收入管理。</p>
-                  <p className="text-stone-500">独立部署，作为产品实验与营收验证中台。</p>
-                </CardContent>
-              </Card>
-            </a>
-
-            <a href={AIBOUNTY_URL} target="_blank" rel="noopener noreferrer" className="block">
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <span>AIBounty Plan</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Cloudflare</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p className="text-stone-800">漏洞挖掘计划、目标池、赏金记录与回款看板。</p>
-                  <p className="text-stone-500">独立部署，作为 Hunter 路线执行系统。</p>
-                </CardContent>
-              </Card>
-            </a>
-
-            <a href={AI_NOTES_URL} target="_blank" rel="noopener noreferrer" className="block">
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <span>AI Notes</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Cloudflare</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <p className="text-stone-800">统一管理 AI 资讯、YouTube 提纲和内容资产。</p>
-                  <p className="text-stone-500">独立部署，作为内容中台与笔记后台。</p>
-                </CardContent>
-              </Card>
-            </a>
+            {apps.map((app) => (
+              <a key={app.title} href={app.href} target="_blank" rel="noopener noreferrer" className="block">
+                <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center justify-between gap-3 text-lg">
+                      <span>{app.title}</span>
+                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">{app.badge}</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <p className="text-stone-800">{app.description}</p>
+                    <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-stone-600">{app.next}</p>
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
           </div>
         </section>
       </div>

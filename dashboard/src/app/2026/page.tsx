@@ -23,7 +23,7 @@ import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
 import { ExecutionSummary } from "@/components/dashboard/execution-summary";
 import { getIncomeTypeConfig } from "@/lib/income-types";
 import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
-import { TrendingUp } from "lucide-react";
+import { CalendarCheck, ClipboardList, ExternalLink, TrendingUp, WalletCards } from "lucide-react";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
@@ -68,6 +68,39 @@ export default async function Year2026Page({ searchParams }: Props) {
   const weeklyCompleted = weeklyFocus.tasks.filter((task) => task.completed).length;
   const monthlyCompleted = monthlyTasks.filter((task) => task.completed).length;
   const dailyCompleted = dailyTasks.filter((task) => task.completed).length;
+  const dailyOpen = Math.max(dailyTasks.length - dailyCompleted, 0);
+  const weeklyOpen = Math.max(weeklyFocus.tasks.length - weeklyCompleted, 0);
+  const monthlyOpen = Math.max(monthlyTasks.length - monthlyCompleted, 0);
+  const monthGap = Math.max(monthTarget - monthlyIncome, 0);
+
+  const focusCards = [
+    {
+      label: "今日任务",
+      value: `${dailyOpen} 项未完成`,
+      meta: dailyTasks.length ? `${dailyCompleted}/${dailyTasks.length} 已完成 · ${currentDay}` : "今天还没有任务，先补一条最小行动。",
+      icon: CalendarCheck,
+    },
+    {
+      label: "本周焦点",
+      value: `${weeklyOpen} 项待推进`,
+      meta: weeklyFocus.tasks.length
+        ? `${weeklyCompleted}/${weeklyFocus.tasks.length} 已完成 · 本月还有 ${monthlyOpen} 项关键点`
+        : `本周焦点还没建立 · 本月还有 ${monthlyOpen} 项关键点`,
+      icon: ClipboardList,
+    },
+    {
+      label: "本月收入缺口",
+      value: formatMoney(monthGap),
+      meta: `本月 ${formatMoney(monthlyIncome)} / ${formatMoney(monthTarget)}，达成率 ${monthlyProgress.toFixed(1)}%。`,
+      icon: WalletCards,
+    },
+    {
+      label: "外部工作台",
+      value: "三条业务线",
+      meta: "Product Lab、AI Notes、AIBounty 已接入首页入口。",
+      icon: ExternalLink,
+    },
+  ];
 
   return (
     <main className="min-h-screen text-stone-900 p-4 md:p-8">
@@ -76,12 +109,33 @@ export default async function Year2026Page({ searchParams }: Props) {
           title="2026个人计划"
           subtitle="Coast2030"
           navItems={[
-            { label: "🧪 Product Lab", href: PRODUCT_LAB_URL, variant: "cyan", external: true },
-            { label: "📝 AI Notes", href: AI_NOTES_URL, variant: "amber", external: true },
-            { label: "🤖 AIBounty", href: AIBOUNTY_URL, variant: "emerald", external: true },
+            { label: "Product Lab", href: PRODUCT_LAB_URL, variant: "cyan", external: true },
+            { label: "AI Notes", href: AI_NOTES_URL, variant: "amber", external: true },
+            { label: "AIBounty", href: AIBOUNTY_URL, variant: "emerald", external: true },
             { label: "← 返回年度主页", href: "/", variant: "default" },
           ]}
         />
+
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {focusCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <Card
+                key={card.label}
+                className={`border-stone-200 bg-white/82 shadow-[0_8px_30px_rgba(84,61,31,0.06)] ${index === 0 ? "ring-1 ring-emerald-200" : ""}`}
+              >
+                <CardContent className="space-y-3 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">{card.label}</p>
+                    <Icon className="h-4 w-4 text-emerald-700" />
+                  </div>
+                  <p className="text-xl font-semibold text-stone-950">{card.value}</p>
+                  <p className="text-sm leading-6 text-stone-600">{card.meta}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </section>
 
         <section className="grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-5">
