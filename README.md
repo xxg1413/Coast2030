@@ -39,9 +39,9 @@
 
 ## 2026 细分入口
 
-- SaaS：[`2026/12SaaS/README.md`](pxiaoer-ai-notes/aigc.news/12SaaS/README.md)
-- 漏洞挖掘：[`2026/漏洞挖掘/README.md`](AIBounty/漏洞挖掘/README.md)
-- 自媒体：[`2026/自媒体/README.md`](pxiaoer-ai-notes/自媒体/README.md)
+- SaaS：[`pxiaoer-product-lab/SaaS/README.md`](../pxiaoer-product-lab/SaaS/README.md)
+- 漏洞挖掘：[`AIBounty/2026/README.md`](../AIBounty/2026/README.md)
+- 自媒体：[`pxiaoer-ai-notes/ainotes/README.md`](../pxiaoer-ai-notes/ainotes/README.md)
 
 ## 铁律
 

@@ -7,22 +7,18 @@
 
 ## 目录结构
 
-| 目录 | 说明 |
+| 文件/目录 | 说明 |
 |------|------|
-| `12SaaS/` | SaaS 项目池与项目文档 |
-| `漏洞挖掘/` | 漏洞挖掘行为约束与 AIPwn 品牌规划 |
-| `自媒体/` | 内容与平台运营策略 |
-| `metrics/` | Dashboard 数据源（自媒体粉丝、漏洞管道） |
-| `回顾/` | 阶段性深度复盘（月度/季度） |
+| `03-plan.md` | 当月执行计划 |
 | `servers.md` | 服务器与基础设施记录 |
 
 ---
 
 ## 快速入口
 
-- SaaS：[`12SaaS/README.md`](pxiaoer-ai-notes/aigc.news/12SaaS/README.md)
-- 漏洞挖掘：[`漏洞挖掘/README.md`](AIBounty/漏洞挖掘/README.md)
-- 自媒体：[`自媒体/README.md`](pxiaoer-ai-notes/自媒体/README.md)
+- SaaS：[`pxiaoer-product-lab/SaaS/README.md`](../../pxiaoer-product-lab/SaaS/README.md)
+- 漏洞挖掘：[`AIBounty/README.md`](../../AIBounty/README.md)
+- 自媒体：[`pxiaoer-ai-notes/ainotes/README.md`](../../pxiaoer-ai-notes/ainotes/README.md)
 - 月度计划：[`03-plan.md`](./03-plan.md)
 - 服务器记录：[`servers.md`](./servers.md)
 
