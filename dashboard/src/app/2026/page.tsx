@@ -89,7 +89,7 @@ export default async function Year2026Page({ searchParams }: Props) {
       icon: ClipboardList,
     },
     {
-      label: "本月收入缺口",
+      label: "本月待达成",
       value: formatMoney(monthGap),
       meta: `本月 ${formatMoney(monthlyIncome)} / ${formatMoney(monthTarget)}，达成率 ${monthlyProgress.toFixed(1)}%。`,
       icon: WalletCards,

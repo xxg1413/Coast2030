@@ -3,6 +3,7 @@ import { ArrowRight, ExternalLink, Target, WalletCards } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
+import { RetirementPlanProgress } from "@/components/dashboard/retirement-plan-progress";
 import { getAssetSnapshots, getBeijingCurrentDate, getYearIncome, formatMoney } from "@/lib/api";
 import { NET_WORTH_TARGET_2030, YEAR_TARGETS } from "@/lib/targets";
 
@@ -72,14 +73,14 @@ export default async function Home() {
       badge: "赏金回款",
       href: AIBOUNTY_URL,
       description: "漏洞挖掘计划、目标池、赏金记录与回款看板。",
-      next: "看今日任务、本月回款缺口和未到账记录。",
+      next: "看今日任务、本月回款待达成和未到账记录。",
     },
     {
       title: "AI Notes",
       badge: "内容增长",
       href: AI_NOTES_URL,
       description: "统一管理 AI 资讯、YouTube 提纲和内容资产。",
-      next: "看本周内容任务、粉丝缺口和内容收入。",
+      next: "看本周内容任务、粉丝待达成和内容收入。",
     },
   ];
 
@@ -127,6 +128,10 @@ export default async function Home() {
               </a>
             );
           })}
+        </section>
+
+        <section>
+          <RetirementPlanProgress years={years} incomes={incomes} targets={YEAR_TARGETS} />
         </section>
 
         <div id="asset-progress">
