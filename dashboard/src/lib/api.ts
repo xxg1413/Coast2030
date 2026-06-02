@@ -14,10 +14,10 @@ const PRODUCT_LAB_SYNC_URL = process.env.PRODUCT_LAB_SYNC_URL || "https://pxiaoe
 const PRODUCT_LAB_SYNC_PASSWORD = process.env.PRODUCT_LAB_SYNC_PASSWORD || "";
 const USD_CNY_RATE = Number(process.env.USD_CNY_RATE || 6);
 const YEAR_TARGETS = {
-    cashFlow: 3000000,
-    saas: 1750000,
-    hunter: 1000000,
-    media: 250000,
+    cashFlow: 1000000,
+    saas: 550000,
+    hunter: 300000,
+    media: 150000,
 } as const;
 
 type IncomeType = (typeof INCOME_TYPES)[number];
