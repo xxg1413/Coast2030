@@ -1233,6 +1233,26 @@ export async function getIncomeComposition(month?: string): Promise<IncomeCompos
     });
 }
 
+export async function getYearIncomeComposition(year?: number): Promise<IncomeCompositionItem[]> {
+    const targetYear = year || new Date().getFullYear();
+    const transactions = filterTransactions(await getUnifiedTransactions(), { year: targetYear });
+    const total = sumTransactions(transactions);
+    const byType = new Map<string, number>();
+
+    for (const transaction of transactions) {
+        byType.set(transaction.type, (byType.get(transaction.type) || 0) + Number(transaction.amount || 0));
+    }
+
+    return INCOME_TYPES.map((type) => {
+        const amount = byType.get(type) || 0;
+        return {
+            type,
+            amount,
+            percentage: total > 0 ? (amount / total) * 100 : 0,
+        };
+    });
+}
+
 // --- Monthly Milestones ---
 
 export async function getMonthlyTasks(month?: string): Promise<TaskItem[]> {

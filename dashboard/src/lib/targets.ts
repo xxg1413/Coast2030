@@ -1,11 +1,21 @@
 export const COAST_TARGET = 5000000;
 // 终局目标当前值手动维护，不跟随收入流水自动统计。
 export const COAST_CURRENT = 1700;
-export const NET_WORTH_TARGET_2030 = 10000000;
+// 2030年净资产目标：5年完成后需要达到的净资产
+export const NET_WORTH_TARGET_2030 = 5000000;
+
+// 年度净资产里程碑目标（每年底应该达到的净资产）
+export const NET_WORTH_MILESTONES: Record<number, number> = {
+  2026: 500000,   // 50万
+  2027: 1000000,  // 100万
+  2028: 2000000,  // 200万
+  2029: 3500000,  // 350万
+  2030: 5000000,  // 500万
+};
 
 export const YEAR_TARGETS: Record<number, number> = {
-  2026: 1000000,
-  2027: 3000000,
+  2026: 200000,
+  2027: 1000000,
   2028: 5000000,
   2029: 10000000,
   2030: 20000000,
@@ -14,8 +24,10 @@ export const YEAR_TARGETS: Record<number, number> = {
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;
 const MONTHLY_TARGET_ROUNDING_UNIT = 1000;
+// 2026年年度目标20万，按月递增分配（从6月开始）
+// 6-12月目标总和：20万
 const CUSTOM_MONTHLY_TARGETS: Partial<Record<number, number[]>> = {
-  2026: [0, 0, 0, 0, 0, 50000, 75000, 100000, 125000, 150000, 175000, 200000],
+  2026: [0, 0, 0, 0, 0, 10000, 20000, 35000, 45000, 50000, 25000, 15000],
 };
 
 function buildMonthlyTargets(yearTarget: number): number[] {

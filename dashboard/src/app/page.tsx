@@ -3,9 +3,10 @@ import { ArrowRight, ExternalLink, Target, WalletCards } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
-import { RetirementPlanProgress } from "@/components/dashboard/retirement-plan-progress";
-import { getAssetSnapshots, getBeijingCurrentDate, getYearIncome, formatMoney } from "@/lib/api";
-import { NET_WORTH_TARGET_2030, YEAR_TARGETS } from "@/lib/targets";
+import { FiveYearRoadmap } from "@/components/dashboard/five-year-roadmap";
+import { IncomeCompositionCard } from "@/components/dashboard/income-composition-card";
+import { getAssetSnapshots, getBeijingCurrentDate, getYearIncome, getIncomeComposition, getYearIncomeComposition, formatMoney } from "@/lib/api";
+import { NET_WORTH_TARGET_2030, NET_WORTH_MILESTONES, YEAR_TARGETS } from "@/lib/targets";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +24,41 @@ const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://prod
 
 export default async function Home() {
   const years = [2026, 2027, 2028, 2029, 2030];
-  const [incomes, assetSnapshots] = await Promise.all([
+  const [incomes, assetSnapshots, monthlyComposition, yearlyComposition] = await Promise.all([
     Promise.all(years.map((year) => getYearIncome(year))),
     getAssetSnapshots(6),
+    getIncomeComposition(),
+    getYearIncomeComposition(),
   ]);
+
+  // 构建5年路线图数据
+  const currentYear = new Date().getFullYear();
+  const roadmapData = years.map((year, index) => {
+    const target = YEAR_TARGETS[year] || 0;
+    const income = incomes[index] || 0;
+    const progress = target > 0 ? Math.min((income / target) * 100, 100) : 0;
+
+    let status: "completed" | "current" | "future" = "future";
+    if (target > 0 && income >= target) {
+      status = "completed";
+    } else if (year === currentYear || (year < currentYear && target > 0)) {
+      status = "current";
+    }
+
+    return {
+      year,
+      target,
+      income,
+      progress,
+      isCompleted: status === "completed",
+      isCurrent: status === "current",
+      isFuture: status === "future",
+    };
+  });
+
+  const totalTarget = roadmapData.reduce((sum, d) => sum + d.target, 0);
+  const totalIncome = roadmapData.reduce((sum, d) => sum + d.income, 0);
+  const totalProgress = totalTarget > 0 ? (totalIncome / totalTarget) * 100 : 0;
   const activeYearIncome = incomes[0] || 0;
   const activeYearTarget = YEAR_TARGETS[2026] || 0;
   const activeYearProgress = activeYearTarget > 0 ? Math.min((activeYearIncome / activeYearTarget) * 100, 100) : 0;
@@ -130,15 +162,19 @@ export default async function Home() {
           })}
         </section>
 
-        <section>
-          <RetirementPlanProgress years={years} incomes={incomes} targets={YEAR_TARGETS} />
-        </section>
+        <FiveYearRoadmap
+          yearData={roadmapData}
+          totalTarget={totalTarget}
+          totalIncome={totalIncome}
+          totalProgress={totalProgress}
+        />
 
         <div id="asset-progress">
         <AssetProgressCard
           snapshots={assetSnapshots}
           target={NET_WORTH_TARGET_2030}
           defaultDate={getBeijingCurrentDate()}
+          milestones={NET_WORTH_MILESTONES}
         />
         </div>
 
@@ -192,6 +228,11 @@ export default async function Home() {
             );
           })}
         </section>
+
+        <IncomeCompositionCard
+          monthlyComposition={monthlyComposition}
+          yearlyComposition={yearlyComposition}
+        />
 
         <section className="space-y-3">
           <div>

@@ -25,6 +25,7 @@ interface AssetProgressCardProps {
   snapshots: AssetSnapshot[];
   target: number;
   defaultDate: string;
+  milestones?: Record<number, number>;
 }
 
 interface ChartPoint {
@@ -53,7 +54,7 @@ function buildNetWorthChartPoints(snapshots: AssetSnapshot[]): ChartPoint[] {
     }));
 }
 
-export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgressCardProps) {
+export function AssetProgressCard({ snapshots, target, defaultDate, milestones }: AssetProgressCardProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -165,7 +166,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
                 <DialogHeader>
                   <DialogTitle>录入资产快照</DialogTitle>
                   <DialogDescription>
-                    每月记录一次总资产、总负债和备注，用净资产跟踪 2030 年 1000 万目标。
+                    每月记录一次总资产、总负债和备注，用净资产跟踪 2030 年 500 万目标。
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -261,6 +262,33 @@ export function AssetProgressCard({ snapshots, target, defaultDate }: AssetProgr
           </div>
           <Progress value={progress} className="h-3 bg-stone-200" indicatorClassName="bg-blue-500" />
         </div>
+
+        {milestones && (
+          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
+            <p className="text-sm font-medium text-stone-900 mb-3">年度净资产里程碑</p>
+            <div className="grid grid-cols-5 gap-2">
+              {Object.entries(milestones).map(([year, milestone]) => {
+                const currentYear = new Date().getFullYear();
+                const isCurrent = Number(year) === currentYear;
+                const achieved = currentNetWorth >= milestone;
+
+                return (
+                  <div key={year} className="text-center">
+                    <p className="text-xs text-stone-500">{year}</p>
+                    <p className={`text-sm font-semibold ${
+                      achieved ? "text-emerald-600" : isCurrent ? "text-blue-600" : "text-stone-700"
+                    }`}>
+                      {milestone >= 10000 ? `${milestone / 10000}万` : milestone}
+                    </p>
+                    <div className={`mt-1 h-1 rounded-full ${
+                      achieved ? "bg-emerald-500" : isCurrent ? "bg-blue-500" : "bg-stone-300"
+                    }`} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
