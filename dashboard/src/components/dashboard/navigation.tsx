@@ -47,9 +47,9 @@ export function Navigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-stone-200/60 bg-[#faf7f2]/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 md:px-8">
+      <div className="mx-auto flex flex-col gap-2 py-2.5 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0 px-4 md:px-8 max-w-[1280px]">
         {/* Logo and Brand */}
-        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
+        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 justify-center sm:justify-start">
           <Image
             src="/coast-logo.svg"
             alt="Coast2030 Logo"
@@ -57,26 +57,26 @@ export function Navigation() {
             height={32}
             className="h-8 w-8 rounded-lg border border-white/80 bg-white shadow-sm"
           />
-          <span className="hidden text-sm font-black tracking-tight text-stone-900 sm:block">
+          <span className="text-sm font-black tracking-tight text-stone-900">
             COAST<span className="text-emerald-700">2030</span>
           </span>
         </Link>
 
         {/* Navigation Tabs */}
-        <nav className="flex h-full items-center gap-1 overflow-x-auto scrollbar-none sm:gap-2">
+        <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none sm:gap-2 w-full sm:w-auto flex-nowrap whitespace-nowrap justify-center sm:justify-end pb-1 sm:pb-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`relative flex h-full items-center gap-1.5 px-3 text-xs font-bold transition-all md:px-4 md:text-sm ${
+                className={`relative flex shrink-0 items-center gap-1.5 px-3 py-1.5 sm:py-0 text-xs font-bold transition-all sm:h-16 md:px-4 md:text-sm whitespace-nowrap ${
                   item.active
                     ? "text-emerald-800"
                     : "text-stone-500 hover:text-stone-900"
                 }`}
               >
-                <Icon className={`h-4 w-4 ${item.active ? "text-emerald-700" : "text-stone-400"}`} />
+                <Icon className={`h-4 w-4 shrink-0 ${item.active ? "text-emerald-700" : "text-stone-400"}`} />
                 <span>{item.name}</span>
                 {item.active && (
                   <span className="absolute bottom-0 left-0 right-0 h-0.75 bg-emerald-700 rounded-t-full" />
