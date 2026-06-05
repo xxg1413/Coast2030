@@ -5,6 +5,7 @@ import {
   getBeijingCurrentYearMonth,
   getAvailableMonths,
   getDailyTasks,
+  getExternalTasks,
   getIncomeComposition,
   getMonthlyTasks,
   getStructuredWeeklyFocus,
@@ -15,6 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DailyTaskList } from "@/components/dashboard/daily-task-list";
+import { ExternalTaskList } from "@/components/dashboard/external-task-list";
 import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
@@ -49,11 +51,12 @@ export default async function Year2026Page({ searchParams }: Props) {
         ? params.taskMonth
         : currentMonth;
 
-  const [weeklyFocus, monthlyTasks, dailyTasks, transactions, monthlyIncome, yearIncome, composition] =
+  const [weeklyFocus, monthlyTasks, dailyTasks, externalTasks, transactions, monthlyIncome, yearIncome, composition] =
     await Promise.all([
       getStructuredWeeklyFocus(),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
+      getExternalTasks(),
       getTransactions(currentMonth),
       getTotalIncome(currentMonth),
       getYearIncome(2026),
@@ -243,6 +246,7 @@ export default async function Year2026Page({ searchParams }: Props) {
             <WeeklyFocusList tasks={weeklyFocus.tasks} />
             <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
             <DailyTaskList date={currentDay} tasks={dailyTasks} />
+            <ExternalTaskList tasks={externalTasks} />
           </div>
         </section>
 

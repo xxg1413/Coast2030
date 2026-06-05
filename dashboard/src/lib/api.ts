@@ -12,6 +12,9 @@ const AIBOUNTY_SYNC_URL = process.env.AIBOUNTY_SYNC_URL || "https://aibounty-pla
 const AIBOUNTY_SYNC_PASSWORD = process.env.AIBOUNTY_SYNC_PASSWORD || "";
 const PRODUCT_LAB_SYNC_URL = process.env.PRODUCT_LAB_SYNC_URL || "https://pxiaoer-product-lab.openbot.workers.dev";
 const PRODUCT_LAB_SYNC_PASSWORD = process.env.PRODUCT_LAB_SYNC_PASSWORD || "";
+const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
+const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
+const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
 const USD_CNY_RATE = Number(process.env.USD_CNY_RATE || 6);
 const YEAR_TARGETS = {
     cashFlow: 1000000,
@@ -851,6 +854,14 @@ export interface Metric {
 }
 
 interface AiNotesStateResponse {
+    tasks?: Array<{
+        id: string;
+        title: string;
+        status: string;
+        dueDate?: string;
+        platformLabel?: string;
+        contentFormat?: string;
+    }>;
     revenues?: Array<{
         id: string;
         recordDate: string;
@@ -864,6 +875,19 @@ interface AiNotesStateResponse {
 
 interface AIBountyExportResponse {
     state?: {
+        plan?: {
+            phases?: Array<{
+                id: string;
+                title: string;
+                tasks?: Array<{
+                    id: string;
+                    title: string;
+                    priority?: string;
+                    due?: string;
+                    done?: boolean;
+                }>;
+            }>;
+        };
         vulns?: Array<{
             id: string;
             title: string;
@@ -879,6 +903,23 @@ interface AIBountyExportResponse {
 }
 
 interface ProductLabStateResponse {
+    roadmap?: Array<{
+        id: string;
+        title: string;
+        status: string;
+        priority?: string;
+        dueDate?: string;
+        productLabel?: string;
+        pillar?: string;
+    }>;
+    campaigns?: Array<{
+        id: string;
+        title: string;
+        status: string;
+        endDate?: string;
+        productLabel?: string;
+        channel?: string;
+    }>;
     revenues?: Array<{
         id: string;
         recordDate: string;
@@ -888,6 +929,17 @@ interface ProductLabStateResponse {
         notes?: string;
         productLabel?: string;
     }>;
+}
+
+export interface ExternalTask {
+    id: string;
+    source: "Product Lab" | "AI Notes" | "AIBounty";
+    project: string;
+    text: string;
+    status: string;
+    dueDate: string;
+    priority?: string;
+    href: string;
 }
 
 function normalizeCurrencyCode(value?: string): CurrencyCode {
@@ -912,6 +964,13 @@ function convertToCny(originalAmount: number, currency: CurrencyCode, fxRate: nu
 }
 
 let externalTransactionsCache: { expiresAt: number; items: Transaction[] } | null = null;
+let externalSyncCache: {
+    expiresAt: number;
+    aiNotes: AiNotesStateResponse | null;
+    aiBounty: AIBountyExportResponse | null;
+    productLab: ProductLabStateResponse | null;
+} | null = null;
+let externalTasksCache: { expiresAt: number; items: ExternalTask[] } | null = null;
 
 function getMonthFromDate(date: string): string | undefined {
     return DATE_REGEX.test(date) ? date.slice(0, 7) : undefined;
@@ -920,6 +979,11 @@ function getMonthFromDate(date: string): string | undefined {
 function normalizeSyncDate(input?: string): string {
     const candidate = String(input || "").slice(0, 10);
     return DATE_REGEX.test(candidate) ? candidate : getCurrentDate();
+}
+
+function normalizeOptionalSyncDate(input?: string): string {
+    const candidate = String(input || "").slice(0, 10);
+    return DATE_REGEX.test(candidate) ? candidate : "";
 }
 
 function buildAuthCookie(rawCookie: string | null): string {
@@ -950,6 +1014,26 @@ async function loginAndFetchJson<T>(baseUrl: string, password: string, path: str
     } catch {
         return null;
     }
+}
+
+async function getExternalSyncPayloads() {
+    if (externalSyncCache && externalSyncCache.expiresAt > Date.now()) {
+        return externalSyncCache;
+    }
+
+    const [aiNotes, aiBounty, productLab] = await Promise.all([
+        loginAndFetchJson<AiNotesStateResponse>(AI_NOTES_SYNC_URL, AI_NOTES_SYNC_PASSWORD, "/api/state"),
+        loginAndFetchJson<AIBountyExportResponse>(AIBOUNTY_SYNC_URL, AIBOUNTY_SYNC_PASSWORD, "/api/export"),
+        loginAndFetchJson<ProductLabStateResponse>(PRODUCT_LAB_SYNC_URL, PRODUCT_LAB_SYNC_PASSWORD, "/api/state"),
+    ]);
+
+    externalSyncCache = {
+        aiNotes,
+        aiBounty,
+        productLab,
+        expiresAt: Date.now() + 30_000,
+    };
+    return externalSyncCache;
 }
 
 async function getLocalTransactions(): Promise<Transaction[]> {
@@ -1052,11 +1136,7 @@ async function getExternalTransactions(): Promise<Transaction[]> {
         return externalTransactionsCache.items;
     }
 
-    const [aiNotes, aiBounty, productLab] = await Promise.all([
-        loginAndFetchJson<AiNotesStateResponse>(AI_NOTES_SYNC_URL, AI_NOTES_SYNC_PASSWORD, "/api/state"),
-        loginAndFetchJson<AIBountyExportResponse>(AIBOUNTY_SYNC_URL, AIBOUNTY_SYNC_PASSWORD, "/api/export"),
-        loginAndFetchJson<ProductLabStateResponse>(PRODUCT_LAB_SYNC_URL, PRODUCT_LAB_SYNC_PASSWORD, "/api/state"),
-    ]);
+    const { aiNotes, aiBounty, productLab } = await getExternalSyncPayloads();
 
     const items = [
         ...buildAiNotesTransactions(aiNotes),
@@ -1064,6 +1144,97 @@ async function getExternalTransactions(): Promise<Transaction[]> {
         ...buildProductLabTransactions(productLab),
     ];
     externalTransactionsCache = {
+        items,
+        expiresAt: Date.now() + 30_000,
+    };
+    return items;
+}
+
+function isOpenExternalStatus(status?: string): boolean {
+    const value = String(status || "");
+    return !["已完成", "Done", "Published", "已发布", "已搁置", "已复盘"].includes(value);
+}
+
+function externalTaskSortValue(item: ExternalTask): string {
+    return item.dueDate || "9999-12-31";
+}
+
+function buildAiNotesTasks(payload: AiNotesStateResponse | null): ExternalTask[] {
+    return (payload?.tasks || [])
+        .filter((item) => isOpenExternalStatus(item.status))
+        .map((item) => ({
+            id: `ainote:${item.id}`,
+            source: "AI Notes",
+            project: item.platformLabel || "AI Notes",
+            text: item.title,
+            status: item.status || "待办",
+            dueDate: normalizeOptionalSyncDate(item.dueDate),
+            priority: item.contentFormat || "",
+            href: AI_NOTES_URL,
+        }));
+}
+
+function buildAIBountyTasks(payload: AIBountyExportResponse | null): ExternalTask[] {
+    const phases = payload?.state?.plan?.phases || [];
+    return phases.flatMap((phase) => (phase.tasks || [])
+        .filter((item) => !item.done)
+        .map((item) => ({
+            id: `aibounty:${item.id}`,
+            source: "AIBounty" as const,
+            project: phase.title || "AIBounty",
+            text: item.title,
+            status: "待推进",
+            dueDate: normalizeOptionalSyncDate(item.due),
+            priority: item.priority || "",
+            href: AIBOUNTY_URL,
+        })));
+}
+
+function buildProductLabTasks(payload: ProductLabStateResponse | null): ExternalTask[] {
+    const roadmap = (payload?.roadmap || [])
+        .filter((item) => isOpenExternalStatus(item.status))
+        .map((item) => ({
+            id: `productlab-roadmap:${item.id}`,
+            source: "Product Lab" as const,
+            project: item.productLabel || "Product Lab",
+            text: item.title,
+            status: item.status || "待办",
+            dueDate: normalizeOptionalSyncDate(item.dueDate),
+            priority: item.priority || item.pillar || "",
+            href: PRODUCT_LAB_URL,
+        }));
+    const campaigns = (payload?.campaigns || [])
+        .filter((item) => isOpenExternalStatus(item.status))
+        .map((item) => ({
+            id: `productlab-campaign:${item.id}`,
+            source: "Product Lab" as const,
+            project: item.productLabel || "Product Lab",
+            text: item.title,
+            status: item.status || "进行中",
+            dueDate: normalizeOptionalSyncDate(item.endDate),
+            priority: item.channel || "",
+            href: PRODUCT_LAB_URL,
+        }));
+    return [...roadmap, ...campaigns];
+}
+
+export async function getExternalTasks(): Promise<ExternalTask[]> {
+    if (externalTasksCache && externalTasksCache.expiresAt > Date.now()) {
+        return externalTasksCache.items;
+    }
+
+    const { aiNotes, aiBounty, productLab } = await getExternalSyncPayloads();
+    const items = [
+        ...buildAiNotesTasks(aiNotes),
+        ...buildAIBountyTasks(aiBounty),
+        ...buildProductLabTasks(productLab),
+    ].sort((left, right) => {
+        const dueCompare = externalTaskSortValue(left).localeCompare(externalTaskSortValue(right));
+        if (dueCompare !== 0) return dueCompare;
+        return left.source.localeCompare(right.source);
+    });
+
+    externalTasksCache = {
         items,
         expiresAt: Date.now() + 30_000,
     };
