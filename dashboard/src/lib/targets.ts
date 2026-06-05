@@ -14,8 +14,8 @@ export const NET_WORTH_MILESTONES: Record<number, number> = {
 };
 
 export const YEAR_TARGETS: Record<number, number> = {
-  2026: 200000,
-  2027: 1000000,
+  2026: 1000000,  // 100万
+  2027: 2000000,  // 200万
   2028: 5000000,
   2029: 10000000,
   2030: 20000000,
@@ -24,10 +24,10 @@ export const YEAR_TARGETS: Record<number, number> = {
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;
 const MONTHLY_TARGET_ROUNDING_UNIT = 1000;
-// 2026年年度目标20万，按月递增分配（从6月开始）
-// 6-12月目标总和：20万
+// 2026年年度目标100万，按月递增分配（从6月开始）
+// 6-12月目标总和：100万
 const CUSTOM_MONTHLY_TARGETS: Partial<Record<number, number[]>> = {
-  2026: [0, 0, 0, 0, 0, 10000, 20000, 35000, 45000, 50000, 25000, 15000],
+  2026: [0, 0, 0, 0, 0, 50000, 70000, 100000, 140000, 180000, 220000, 240000],
 };
 
 function buildMonthlyTargets(yearTarget: number): number[] {

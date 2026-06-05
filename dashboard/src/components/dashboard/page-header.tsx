@@ -23,29 +23,29 @@ const variantStyles: Record<string, string> = {
 
 export function PageHeader({ title, subtitle, navItems }: PageHeaderProps) {
   return (
-    <section className="rounded-[2rem] border border-stone-200 bg-white/80 p-5 shadow-[0_24px_80px_rgba(72,50,22,0.10)] backdrop-blur md:p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="flex items-center gap-4">
+    <section className="rounded-2xl border border-stone-200 bg-white/84 p-4 shadow-[0_14px_44px_rgba(72,50,22,0.08)] backdrop-blur md:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <Image
             src="/coast-logo.svg"
             alt="Coast2030 Logo"
             width={52}
             height={52}
-            className="h-12 w-12 rounded-xl border border-stone-200 bg-white"
+            className="h-11 w-11 rounded-xl border border-stone-200 bg-white"
           />
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-stone-500">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-stone-500">
               {subtitle ?? "Coast2030"}
             </p>
-            <h1 className="mt-1 text-3xl md:text-4xl font-semibold bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent">
+            <h1 className="mt-1 text-2xl font-semibold leading-tight bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent md:text-3xl">
               {title}
             </h1>
           </div>
         </div>
         {navItems && navItems.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 lg:justify-end">
             {navItems.map((item) => {
-              const className = `inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${variantStyles[item.variant ?? "default"]}`;
+              const className = `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${variantStyles[item.variant ?? "default"]}`;
               if (item.external) {
                 return (
                   <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className={className}>

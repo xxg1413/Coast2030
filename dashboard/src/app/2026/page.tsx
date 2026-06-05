@@ -13,17 +13,16 @@ import {
   getYearIncome,
 } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RetirementProgress } from "@/components/dashboard/retirement-progress";
+import { Progress } from "@/components/ui/progress";
 import { DailyTaskList } from "@/components/dashboard/daily-task-list";
 import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
-import { ExecutionSummary } from "@/components/dashboard/execution-summary";
 import { getIncomeTypeConfig } from "@/lib/income-types";
 import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
-import { CalendarCheck, ClipboardList, ExternalLink, TrendingUp, WalletCards } from "lucide-react";
+import { CalendarCheck, ClipboardList, ListTodo, Target, TrendingUp } from "lucide-react";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
@@ -73,12 +72,14 @@ export default async function Year2026Page({ searchParams }: Props) {
   const monthlyOpen = Math.max(monthlyTasks.length - monthlyCompleted, 0);
   const monthGap = Math.max(monthTarget - monthlyIncome, 0);
 
-  const focusCards = [
+  const executionRows = [
     {
       label: "今日任务",
       value: `${dailyOpen} 项未完成`,
       meta: dailyTasks.length ? `${dailyCompleted}/${dailyTasks.length} 已完成 · ${currentDay}` : "今天还没有任务，先补一条最小行动。",
       icon: CalendarCheck,
+      accentClassName: "bg-emerald-600",
+      progress: dailyTasks.length ? (dailyCompleted / dailyTasks.length) * 100 : 0,
     },
     {
       label: "本周焦点",
@@ -87,26 +88,31 @@ export default async function Year2026Page({ searchParams }: Props) {
         ? `${weeklyCompleted}/${weeklyFocus.tasks.length} 已完成 · 本月还有 ${monthlyOpen} 项关键点`
         : `本周焦点还没建立 · 本月还有 ${monthlyOpen} 项关键点`,
       icon: ClipboardList,
+      accentClassName: "bg-cyan-600",
+      progress: weeklyFocus.tasks.length ? (weeklyCompleted / weeklyFocus.tasks.length) * 100 : 0,
     },
     {
-      label: "本月待达成",
-      value: formatMoney(monthGap),
-      meta: `本月 ${formatMoney(monthlyIncome)} / ${formatMoney(monthTarget)}，达成率 ${monthlyProgress.toFixed(1)}%。`,
-      icon: WalletCards,
-    },
-    {
-      label: "外部工作台",
-      value: "三条业务线",
-      meta: "Product Lab、AI Notes、AIBounty 已接入首页入口。",
-      icon: ExternalLink,
+      label: "本月关键点",
+      value: `${monthlyOpen} 项未完成`,
+      meta: monthlyTasks.length ? `${monthlyCompleted}/${monthlyTasks.length} 已完成 · ${currentTaskMonth}` : "本月关键点还没建立。",
+      icon: ListTodo,
+      accentClassName: "bg-amber-500",
+      progress: monthlyTasks.length ? (monthlyCompleted / monthlyTasks.length) * 100 : 0,
     },
   ];
 
+  const incomeStats = [
+    { label: "本月收入", value: formatMoney(monthlyIncome), sub: `${currentMonth}` },
+    { label: "本月目标", value: formatMoney(monthTarget), sub: `还差 ${formatMoney(monthGap)}` },
+    { label: "年度累计", value: formatMoney(yearIncome), sub: `目标 ${formatMoney(yearTarget)}` },
+    { label: "年度完成率", value: `${annualProgress.toFixed(1)}%`, sub: `本月 ${monthlyProgress.toFixed(1)}%` },
+  ];
+
   return (
-    <main className="min-h-screen text-stone-900 p-4 md:p-8">
-      <div className="mx-auto w-full max-w-7xl space-y-6">
+    <main className="min-h-screen text-stone-900 px-4 py-5 md:px-8 md:py-8">
+      <div className="mx-auto w-full max-w-[1180px] space-y-6">
         <PageHeader
-          title="2026个人计划"
+          title="2026 个人计划"
           subtitle="Coast2030"
           navItems={[
             { label: "Product Lab", href: PRODUCT_LAB_URL, variant: "cyan", external: true },
@@ -116,66 +122,96 @@ export default async function Year2026Page({ searchParams }: Props) {
           ]}
         />
 
-        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {focusCards.map((card, index) => {
-            const Icon = card.icon;
-            return (
-              <Card
-                key={card.label}
-                className={`border-stone-200 bg-white/82 shadow-[0_8px_30px_rgba(84,61,31,0.06)] ${index === 0 ? "ring-1 ring-emerald-200" : ""}`}
-              >
-                <CardContent className="space-y-3 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">{card.label}</p>
-                    <Icon className="h-4 w-4 text-emerald-700" />
-                  </div>
-                  <p className="text-xl font-semibold text-stone-950">{card.value}</p>
-                  <p className="text-sm leading-6 text-stone-600">{card.meta}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </section>
-
-        <section className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <RetirementProgress year={2026} yearIncome={yearIncome} />
-          </div>
-          <div className="lg:col-span-7">
-            <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-stone-500" />
-                  收入总览
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-                  {[
-                    { label: "本月收入", value: formatMoney(monthlyIncome), sub: null },
-                    { label: "月度目标", value: formatMoney(monthTarget), sub: `达成率 ${monthlyProgress.toFixed(1)}%` },
-                    { label: "年度累计", value: formatMoney(yearIncome), sub: null },
-                    { label: "年度进度", value: `${annualProgress.toFixed(1)}%`, sub: null },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5"
-                    >
-                      <p className="text-xs text-stone-500">{item.label}</p>
-                      <p className="mt-0.5 text-lg font-semibold text-stone-900">{item.value}</p>
-                      {item.sub && <p className="mt-0.5 text-xs text-stone-500">{item.sub}</p>}
-                    </div>
-                  ))}
+        <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+          <Card className="border-emerald-200 bg-white/84 py-0 shadow-[0_12px_40px_rgba(84,61,31,0.07)]">
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-stone-500">当前执行</p>
+                  <CardTitle className="mt-1 text-2xl">今天先推进这几件事</CardTitle>
                 </div>
+                <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
+                  {dailyOpen + weeklyOpen + monthlyOpen} 项待处理
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pb-5">
+              <div className="divide-y divide-stone-200">
+                {executionRows.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="grid gap-3 py-4 md:grid-cols-[44px_1fr_auto] md:items-center">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-stone-50 text-emerald-700">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <p className="text-sm font-medium text-stone-500">{item.label}</p>
+                          <p className="text-xl font-semibold text-stone-950">{item.value}</p>
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-stone-600">{item.meta}</p>
+                        <Progress value={Math.min(item.progress, 100)} className="mt-3 h-1.5 bg-stone-200" indicatorClassName={item.accentClassName} />
+                      </div>
+                      <Target className="hidden h-4 w-4 text-stone-300 md:block" />
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">收入来源构成</p>
-                  {composition.map((item) => {
+          <Card className="border-stone-200 bg-white/82 py-0 shadow-[0_12px_40px_rgba(84,61,31,0.07)]">
+            <CardHeader className="pb-3 pt-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-stone-500">收入进度</p>
+                  <CardTitle className="mt-1 flex items-center gap-2 text-2xl">
+                    <TrendingUp className="h-5 w-5 text-emerald-700" />
+                    本月收入目标
+                  </CardTitle>
+                </div>
+                <RevenueRecorder />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5 pb-5">
+              <div className="grid grid-cols-2 gap-3">
+                {incomeStats.map((item) => (
+                  <div key={item.label} className="border-b border-stone-200 pb-3">
+                    <p className="text-sm text-stone-500">{item.label}</p>
+                    <p className="mt-1 text-2xl font-semibold text-stone-950">{item.value}</p>
+                    <p className="mt-1 text-sm text-stone-500">{item.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-stone-500">本月达成率</span>
+                    <span className="font-medium text-stone-900">{monthlyProgress.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={monthlyProgress} className="h-2 bg-stone-200" indicatorClassName="bg-emerald-600" />
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-stone-500">年度达成率</span>
+                    <span className="font-medium text-stone-900">{annualProgress.toFixed(2)}%</span>
+                  </div>
+                  <Progress value={annualProgress} className="h-2 bg-stone-200" indicatorClassName="bg-cyan-600" />
+                </div>
+              </div>
+
+              <div className="space-y-3 border-t border-stone-200 pt-4">
+                <p className="text-sm font-medium text-stone-900">收入来源构成</p>
+                {composition.length === 0 ? (
+                  <p className="text-sm text-stone-500">本月还没有收入记录。</p>
+                ) : (
+                  composition.map((item) => {
                     const config = getIncomeTypeConfig(item.type);
                     return (
                       <div key={item.type} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <div className="flex items-center gap-2">
                             <span className={`h-2 w-2 rounded-full ${config.dotClass}`} />
                             <span className="text-stone-700">{config.label}</span>
                           </div>
@@ -183,43 +219,26 @@ export default async function Year2026Page({ searchParams }: Props) {
                             {formatMoney(item.amount)} · {item.percentage.toFixed(1)}%
                           </span>
                         </div>
-                        <div className="h-2 rounded bg-stone-200 overflow-hidden">
+                        <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
                           <div
-                            className={`h-2 rounded ${config.barClass}`}
+                            className={`h-full rounded-full ${config.barClass}`}
                             style={{ width: `${Math.max(item.percentage, 2)}%` }}
                           />
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">执行与任务</h2>
-          <ExecutionSummary
-            weekly={{
-              label: "本周焦点",
-              completed: weeklyCompleted,
-              total: weeklyFocus.tasks.length,
-              accentClassName: "bg-blue-500",
-            }}
-            monthly={{
-              label: "本月关键点",
-              completed: monthlyCompleted,
-              total: monthlyTasks.length,
-              accentClassName: "bg-amber-500",
-            }}
-            daily={{
-              label: "每日任务",
-              completed: dailyCompleted,
-              total: dailyTasks.length,
-              accentClassName: "bg-emerald-500",
-            }}
-          />
+          <div>
+            <p className="text-sm text-stone-500">任务列表</p>
+            <h2 className="mt-1 text-2xl font-semibold">执行与任务</h2>
+          </div>
           <div className="grid gap-4 xl:grid-cols-3">
             <WeeklyFocusList tasks={weeklyFocus.tasks} />
             <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
@@ -232,7 +251,6 @@ export default async function Year2026Page({ searchParams }: Props) {
             <h2 className="text-xl font-semibold">收入明细</h2>
             <div className="flex gap-2">
               <MonthFilter months={availableMonths} currentMonth={currentMonth} />
-              <RevenueRecorder />
             </div>
           </div>
           <TransactionList transactions={transactions} month={currentMonth} />

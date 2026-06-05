@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowRight, ExternalLink, Target, WalletCards } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, BriefcaseBusiness, CalendarCheck, ExternalLink, Target, WalletCards } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageHeader } from "@/components/dashboard/page-header";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
 import { FiveYearRoadmap } from "@/components/dashboard/five-year-roadmap";
 import { IncomeCompositionCard } from "@/components/dashboard/income-composition-card";
@@ -65,27 +65,27 @@ export default async function Home() {
   const currentNetWorth = assetSnapshots[0]?.netWorth || 0;
   const assetProgress = NET_WORTH_TARGET_2030 > 0 ? Math.min((currentNetWorth / NET_WORTH_TARGET_2030) * 100, 100) : 0;
 
-  const actionCards = [
+  const primaryActions = [
     {
-      label: "年度执行",
-      title: "进入 2026 今日工作台",
-      meta: `年累计 ${formatMoney(activeYearIncome)} / ${formatMoney(activeYearTarget)}，进度 ${activeYearProgress.toFixed(1)}%。`,
+      label: "2026 收入进度",
+      title: "进入 2026 工作台",
+      meta: `${formatMoney(activeYearIncome)} / ${formatMoney(activeYearTarget)} · ${activeYearProgress.toFixed(1)}%`,
       href: "/2026",
       external: false,
-      icon: Target,
+      icon: CalendarCheck,
     },
     {
-      label: "资产节奏",
-      title: "更新净资产快照",
-      meta: `当前净资产 ${formatMoney(currentNetWorth)}，2030 目标完成 ${assetProgress.toFixed(2)}%。`,
+      label: "2030 净资产",
+      title: "更新资产快照",
+      meta: `${formatMoney(currentNetWorth)} / ${formatMoney(NET_WORTH_TARGET_2030)} · ${assetProgress.toFixed(2)}%`,
       href: "#asset-progress",
       external: false,
       icon: WalletCards,
     },
     {
-      label: "项目入口",
+      label: "项目工作台",
       title: "打开 Product Lab",
-      meta: "产品收入、功能路线图、推广和指标快照集中在这里推进。",
+      meta: "产品收入、路线图、推广和指标快照。",
       href: PRODUCT_LAB_URL,
       external: true,
       icon: ExternalLink,
@@ -117,33 +117,99 @@ export default async function Home() {
   ];
 
   return (
-    <main className="min-h-screen text-stone-900 p-4 md:p-8">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <PageHeader
-          title="P小二的5年退休计划"
-          subtitle="Coast2030"
-        />
+    <main className="min-h-screen text-stone-900 px-4 py-5 md:px-8 md:py-8">
+      <div className="mx-auto w-full max-w-[1180px] space-y-6">
+        <section className="overflow-hidden rounded-3xl border border-stone-200 bg-white/88 shadow-[0_24px_80px_rgba(72,50,22,0.10)] backdrop-blur">
+          <div className="grid gap-6 p-5 md:grid-cols-[1.15fr_0.85fr] md:p-8">
+            <div className="flex min-w-0 flex-col justify-between gap-7">
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src="/coast-logo.svg"
+                    alt="Coast2030 Logo"
+                    width={56}
+                    height={56}
+                    className="h-14 w-14 rounded-2xl border border-stone-200 bg-white"
+                    priority
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-stone-500">Coast2030</p>
+                    <h1 className="mt-1 text-3xl font-semibold leading-tight text-stone-950 md:text-5xl">
+                      P小二的 5 年退休计划
+                    </h1>
+                  </div>
+                </div>
+                <p className="max-w-2xl text-base leading-7 text-stone-600 md:text-lg">
+                  把 2026 收入目标、2030 净资产目标和三条项目线放在同一个执行面板里。
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/2026"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(4,120,87,0.22)] transition-colors hover:bg-emerald-800"
+                >
+                  进入 2026 工作台
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a
+                  href="#asset-progress"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-5 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50"
+                >
+                  更新资产快照
+                  <WalletCards className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
+              {[
+                {
+                  label: "2026 收入",
+                  value: formatMoney(activeYearIncome),
+                  meta: `目标 ${formatMoney(activeYearTarget)} · ${activeYearProgress.toFixed(1)}%`,
+                  accent: "bg-emerald-600",
+                },
+                {
+                  label: "2030 净资产",
+                  value: formatMoney(currentNetWorth),
+                  meta: `目标 ${formatMoney(NET_WORTH_TARGET_2030)} · ${assetProgress.toFixed(2)}%`,
+                  accent: "bg-cyan-600",
+                },
+                {
+                  label: "累计收入路线",
+                  value: `${totalProgress.toFixed(1)}%`,
+                  meta: `${formatMoney(totalIncome)} / ${formatMoney(totalTarget)}`,
+                  accent: "bg-amber-500",
+                },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-stone-500">{item.label}</p>
+                    <span className={`h-2.5 w-2.5 rounded-full ${item.accent}`} />
+                  </div>
+                  <p className="mt-3 text-2xl font-semibold text-stone-950">{item.value}</p>
+                  <p className="mt-1 text-sm text-stone-600">{item.meta}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         <section className="grid gap-3 md:grid-cols-3">
-          {actionCards.map((item, index) => {
+          {primaryActions.map((item, index) => {
             const Icon = item.icon;
             const content = (
-              <Card className={`h-full border-stone-200 bg-white/82 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300 ${index === 0 ? "ring-1 ring-emerald-200" : ""}`}>
-                <CardContent className="flex h-full flex-col justify-between gap-4 p-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">{item.label}</p>
-                      <Icon className="h-4 w-4 text-emerald-700" />
-                    </div>
-                    <h2 className="text-lg font-semibold leading-tight text-stone-950">{item.title}</h2>
-                    <p className="text-sm leading-6 text-stone-600">{item.meta}</p>
-                  </div>
-                  <div className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
-                    进入
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
-                </CardContent>
-              </Card>
+              <div className={`flex h-full items-start justify-between gap-4 rounded-2xl border bg-white/82 p-4 shadow-[0_8px_30px_rgba(84,61,31,0.05)] transition-all hover:-translate-y-0.5 hover:border-stone-300 ${index === 0 ? "border-emerald-200" : "border-stone-200"}`}>
+                <div className="min-w-0 space-y-1.5">
+                  <p className="text-sm font-medium text-stone-500">{item.label}</p>
+                  <h2 className="text-lg font-semibold leading-tight text-stone-950">{item.title}</h2>
+                  <p className="text-sm leading-6 text-stone-600">{item.meta}</p>
+                </div>
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <Icon className="h-5 w-5" />
+                </div>
+              </div>
             );
 
             if (item.external) {
@@ -178,82 +244,83 @@ export default async function Home() {
         />
         </div>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {years.map((year, index) => {
-            const income = incomes[index];
-            const target = YEAR_TARGETS[year];
-            const progress = target > 0 ? Math.min((income / target) * 100, 100) : 0;
-            const link = YEAR_LINKS[year];
+        <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+          <Card className="border-stone-200 bg-white/78 py-0 shadow-[0_8px_30px_rgba(84,61,31,0.05)]">
+            <CardHeader className="pb-3 pt-5">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-emerald-700" />
+                年度快照
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-5">
+              <div className="divide-y divide-stone-200">
+                {years.map((year, index) => {
+                  const income = incomes[index];
+                  const target = YEAR_TARGETS[year];
+                  const progress = target > 0 ? Math.min((income / target) * 100, 100) : 0;
+                  const link = YEAR_LINKS[year];
+                  const row = (
+                    <div className="grid grid-cols-[64px_1fr_auto] items-center gap-3 py-3">
+                      <div>
+                        <p className="font-semibold text-stone-950">{year}</p>
+                        <p className={`mt-1 text-xs ${link ? "text-emerald-700" : "text-stone-400"}`}>
+                          {link ? "已开启" : "待开启"}
+                        </p>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
+                          <div
+                            className="h-full rounded-full bg-emerald-600 transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <p className="mt-2 truncate text-sm text-stone-600">
+                          {formatMoney(income)} / {formatMoney(target)}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-stone-900">{progress.toFixed(1)}%</p>
+                    </div>
+                  );
 
-            const card = (
-              <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <span>{year}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      link ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"
-                    }`}>
-                      {link ? "已开启" : "待开启"}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">年累计</span>
-                    <span className="font-medium text-stone-900">{formatMoney(income)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-stone-500">年度目标</span>
-                    <span className="text-stone-700">{formatMoney(target)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-stone-500">完成度</span>
-                    <span className="text-sm font-medium">{progress.toFixed(1)}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-stone-200 overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-emerald-500 transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            );
+                  if (!link) return <div key={year}>{row}</div>;
+                  return (
+                    <Link key={year} href={link} className="block hover:bg-stone-50">
+                      {row}
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-            if (!link) return <div key={year}>{card}</div>;
-            return (
-              <Link key={year} href={link} className="block">
-                {card}
-              </Link>
-            );
-          })}
+          <IncomeCompositionCard
+            monthlyComposition={monthlyComposition}
+            yearlyComposition={yearlyComposition}
+          />
         </section>
 
-        <IncomeCompositionCard
-          monthlyComposition={monthlyComposition}
-          yearlyComposition={yearlyComposition}
-        />
-
         <section className="space-y-3">
-          <div>
-            <p className="text-sm text-stone-500">应用入口</p>
-            <h2 className="mt-1 text-2xl font-semibold">内容与项目工作台</h2>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm text-stone-500">项目工作台</p>
+              <h2 className="mt-1 text-2xl font-semibold">三条业务线</h2>
+            </div>
+            <BriefcaseBusiness className="h-5 w-5 text-stone-500" />
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             {apps.map((app) => (
               <a key={app.title} href={app.href} target="_blank" rel="noopener noreferrer" className="block">
-                <Card className="h-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center justify-between gap-3 text-lg">
-                      <span>{app.title}</span>
-                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-600">{app.badge}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
-                    <p className="text-stone-800">{app.description}</p>
-                    <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-stone-600">{app.next}</p>
-                  </CardContent>
-                </Card>
+                <div className="h-full rounded-2xl border border-stone-200 bg-white/78 p-4 shadow-[0_8px_30px_rgba(84,61,31,0.05)] transition-all hover:-translate-y-0.5 hover:border-stone-300">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-stone-950">{app.title}</h3>
+                    <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs text-stone-600">{app.badge}</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-stone-700">{app.description}</p>
+                  <p className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+                    {app.next}
+                    <ArrowRight className="h-4 w-4" />
+                  </p>
+                </div>
               </a>
             ))}
           </div>
