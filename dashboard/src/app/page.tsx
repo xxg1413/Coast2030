@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, BriefcaseBusiness, CalendarCheck, ExternalLink, Target, WalletCards } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CalendarCheck, ExternalLink, Target, WalletCards, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
 import { FiveYearRoadmap } from "@/components/dashboard/five-year-roadmap";
@@ -86,9 +86,9 @@ export default async function Home() {
       label: "项目工作台",
       title: "打开 Product Lab",
       meta: "产品收入、路线图、推广和指标快照。",
-      href: PRODUCT_LAB_URL,
-      external: true,
-      icon: ExternalLink,
+      href: "/productlab",
+      external: false,
+      icon: Layers,
     },
   ];
 
@@ -96,21 +96,21 @@ export default async function Home() {
     {
       title: "Product Lab",
       badge: "产品收入",
-      href: PRODUCT_LAB_URL,
+      href: "/productlab",
       description: "SaaS 目标、功能路线图、推广计划、指标快照与收入管理。",
       next: "看本月产品收入和下一项功能。",
     },
     {
       title: "AIBounty Plan",
       badge: "赏金回款",
-      href: AIBOUNTY_URL,
+      href: "/aibounty",
       description: "漏洞挖掘计划、目标池、赏金记录与回款看板。",
       next: "看今日任务、本月回款待达成和未到账记录。",
     },
     {
       title: "AI Notes",
       badge: "内容经营",
-      href: AI_NOTES_URL,
+      href: "/ainotes",
       description: "内容生产、账号池、内容规划与粉丝增长经营台。",
       next: "看今日任务、待写作内容与本月增长经营细节。",
     },
@@ -312,11 +312,11 @@ export default async function Home() {
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {apps.map((app) => (
-              <a key={app.title} href={app.href} target="_blank" rel="noopener noreferrer" className="block">
+              <Link key={app.title} href={app.href} className="block">
                 <div className="h-full rounded-2xl glass-panel glass-panel-hover p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-base font-semibold text-stone-950">{app.title}</h3>
-                    <span className="rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">{app.badge}</span>
+                     <h3 className="text-base font-semibold text-stone-950">{app.title}</h3>
+                     <span className="rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">{app.badge}</span>
                   </div>
                   <p className="mt-2 text-sm leading-5 text-stone-700">{app.description}</p>
                   <p className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
@@ -324,7 +324,7 @@ export default async function Home() {
                     <ArrowRight className="h-4 w-4" />
                   </p>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </section>

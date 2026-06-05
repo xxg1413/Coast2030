@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Navigation } from "@/components/dashboard/navigation";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,8 +24,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased">
-        {children}
+      <body className="antialiased bg-[#faf7f2] min-h-screen flex flex-col text-stone-900">
+        <Navigation />
+        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );
