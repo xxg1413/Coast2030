@@ -13,7 +13,7 @@ export function ExternalTaskList({ tasks }: { tasks: ExternalTask[] }) {
   const visibleTasks = tasks.slice(0, 12);
 
   return (
-    <Card className="w-full border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)] xl:col-span-3">
+    <Card className="w-full border-stone-200 bg-white/78 shadow-[0_6px_20px_rgba(84,61,31,0.04)] xl:col-span-3">
       <CardHeader className="space-y-2 pb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>

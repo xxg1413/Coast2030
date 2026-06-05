@@ -23,7 +23,7 @@ const variantStyles: Record<string, string> = {
 
 export function PageHeader({ title, subtitle, navItems }: PageHeaderProps) {
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white/84 p-4 shadow-[0_14px_44px_rgba(72,50,22,0.08)] backdrop-blur md:p-5">
+    <section className="rounded-2xl border border-stone-200 bg-white/84 p-4 shadow-[0_10px_32px_rgba(72,50,22,0.06)] backdrop-blur md:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <Image

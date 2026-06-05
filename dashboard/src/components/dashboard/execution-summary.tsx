@@ -41,7 +41,7 @@ export function ExecutionSummary({
   const items = [weekly, monthly, daily];
 
   return (
-    <Card className="border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
+    <Card className="border-stone-200 bg-white/78 shadow-[0_6px_20px_rgba(84,61,31,0.04)]">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">执行概览</CardTitle>
       </CardHeader>

@@ -54,12 +54,12 @@ export function RetirementProgress({ year, yearIncome }: RetirementProgressProps
   ];
 
   return (
-    <Card className="border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
-      <CardHeader className="pb-3">
+    <Card className="border-stone-200 bg-white/78 shadow-[0_6px_20px_rgba(84,61,31,0.04)]">
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm text-stone-500">{year} 年目标进度</p>
-            <p className="text-xl font-semibold mt-1">{formatMoney(yearIncome)}</p>
+            <p className="text-lg font-semibold mt-1">{formatMoney(yearIncome)}</p>
           </div>
           <div className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
             年目标 {formatMoney(yearTarget)}
@@ -67,7 +67,7 @@ export function RetirementProgress({ year, yearIncome }: RetirementProgressProps
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4">
         <div>
           <div className="mb-2 flex items-center justify-between text-sm">
             <span className="text-stone-500">年度目标完成率</span>

@@ -141,12 +141,12 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
   ];
 
   return (
-    <Card className="border-stone-200 bg-white/80 shadow-[0_18px_50px_rgba(84,61,31,0.10)]">
-      <CardHeader className="pb-3">
+    <Card className="border-stone-200 bg-white/80 shadow-[0_12px_36px_rgba(84,61,31,0.08)]">
+      <CardHeader className="pb-2">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-sm text-stone-500">2030 资产目标进度</p>
-            <CardTitle className="mt-1 text-2xl">{formatMoney(currentNetWorth)}</CardTitle>
+            <CardTitle className="mt-1 text-xl">{formatMoney(currentNetWorth)}</CardTitle>
             <p className="mt-2 text-sm text-stone-500">
               {latest ? `最新快照 ${latest.snapshotDate}` : "还没有资产快照，先录入第一条。"}
             </p>
@@ -234,7 +234,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-5">
+      <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-4">
           {statItems.map((item) => {
             const Icon = item.icon;
@@ -303,7 +303,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
               {chartCoordinates.length >= 2 ? (
                 <div className="space-y-3">
                   <div className="rounded-lg border border-stone-200 bg-white p-3">
-                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-44 w-full overflow-visible">
+                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-40 w-full overflow-visible">
                       <defs>
                         <linearGradient id="net-worth-line" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#60a5fa" />
