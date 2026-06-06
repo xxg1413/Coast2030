@@ -150,6 +150,22 @@ const MIGRATIONS: Migration[] = [
               END;
         `,
     },
+    {
+        version: 7,
+        name: 'create_morning_logs',
+        sql: `
+            CREATE TABLE IF NOT EXISTS morning_logs (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              log_date TEXT NOT NULL UNIQUE,
+              items_json TEXT NOT NULL DEFAULT '[]',
+              custom_json TEXT NOT NULL DEFAULT '[]',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_morning_logs_log_date ON morning_logs(log_date DESC);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

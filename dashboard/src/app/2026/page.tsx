@@ -7,6 +7,7 @@ import {
   getDailyTasks,
   getExternalTasks,
   getIncomeComposition,
+  getMorningLog,
   getMonthlyTasks,
   getStructuredWeeklyFocus,
   getTotalIncome,
@@ -17,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DailyTaskList } from "@/components/dashboard/daily-task-list";
 import { ExternalTaskList } from "@/components/dashboard/external-task-list";
+import { MorningLogCard } from "@/components/dashboard/morning-log-card";
 import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
@@ -51,11 +53,12 @@ export default async function Year2026Page({ searchParams }: Props) {
         ? params.taskMonth
         : currentMonth;
 
-  const [weeklyFocus, monthlyTasks, dailyTasks, externalTasks, transactions, monthlyIncome, yearIncome, composition] =
+  const [weeklyFocus, monthlyTasks, dailyTasks, morningLog, externalTasks, transactions, monthlyIncome, yearIncome, composition] =
     await Promise.all([
       getStructuredWeeklyFocus(),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
+      getMorningLog(currentDay),
       getExternalTasks(),
       getTransactions(currentMonth),
       getTotalIncome(currentMonth),
@@ -124,6 +127,8 @@ export default async function Year2026Page({ searchParams }: Props) {
             { label: "← 返回年度主页", href: "/", variant: "default" },
           ]}
         />
+
+        <MorningLogCard log={morningLog} />
 
         <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
           <Card className="glass-panel py-0">

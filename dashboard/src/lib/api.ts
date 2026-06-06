@@ -713,6 +713,123 @@ export async function deleteDailyTask(id: string): Promise<boolean> {
     return true;
 }
 
+// --- Morning Logs ---
+
+export interface MorningLogItem {
+    key: string;
+    label: string;
+    completed: boolean;
+}
+
+export interface MorningLog {
+    date: string;
+    items: MorningLogItem[];
+    customItems: MorningLogItem[];
+}
+
+const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
+    { key: "wake_early", label: "早起", completed: false },
+    { key: "run", label: "跑步", completed: false },
+    { key: "ai_notes", label: "AINotes", completed: false },
+    { key: "saas", label: "SaaS", completed: false },
+    { key: "aibounty", label: "AIBounty", completed: false },
+    { key: "daily_review", label: "每日复盘", completed: false },
+    { key: "daily_output", label: "每日输出", completed: false },
+    { key: "daily_acquisition", label: "每日获客", completed: false },
+    { key: "daily_input", label: "每日输入", completed: false },
+];
+
+const DEFAULT_CUSTOM_MORNING_LOG_ITEMS: MorningLogItem[] = [
+    { key: "custom_1", label: "", completed: false },
+    { key: "custom_2", label: "", completed: false },
+    { key: "custom_3", label: "", completed: false },
+];
+
+async function ensureMorningLogsTable() {
+    const db = await getDB();
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS morning_logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          log_date TEXT NOT NULL UNIQUE,
+          items_json TEXT NOT NULL DEFAULT '[]',
+          custom_json TEXT NOT NULL DEFAULT '[]',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_morning_logs_log_date ON morning_logs(log_date DESC);
+    `);
+}
+
+function parseMorningLogItems(raw: string | null | undefined, fallback: MorningLogItem[]): MorningLogItem[] {
+    try {
+        const parsed = JSON.parse(raw || "[]");
+        if (!Array.isArray(parsed)) return fallback;
+        const fallbackByKey = new Map(fallback.map((item) => [item.key, item]));
+        return fallback.map((item) => {
+            const existing = parsed.find((row) => row?.key === item.key);
+            return {
+                key: item.key,
+                label: String(existing?.label ?? fallbackByKey.get(item.key)?.label ?? item.label),
+                completed: Boolean(existing?.completed),
+            };
+        });
+    } catch {
+        return fallback;
+    }
+}
+
+function normalizeMorningLogItems(items: unknown, fallback: MorningLogItem[]): MorningLogItem[] {
+    const rows = Array.isArray(items) ? items : [];
+    return fallback.map((item) => {
+        const existing = rows.find((row) => row?.key === item.key) as Partial<MorningLogItem> | undefined;
+        const label = String(existing?.label ?? item.label).trim();
+        return {
+            key: item.key,
+            label,
+            completed: Boolean(existing?.completed),
+        };
+    });
+}
+
+export async function getMorningLog(date?: string): Promise<MorningLog> {
+    await ensureMorningLogsTable();
+    const db = await getDB();
+    const targetDate = normalizeDate(date) || getCurrentDate();
+    const row = await db
+        .prepare("SELECT items_json, custom_json FROM morning_logs WHERE log_date = ?")
+        .bind(targetDate)
+        .first<{ items_json: string; custom_json: string }>();
+
+    return {
+        date: targetDate,
+        items: parseMorningLogItems(row?.items_json, DEFAULT_MORNING_LOG_ITEMS),
+        customItems: parseMorningLogItems(row?.custom_json, DEFAULT_CUSTOM_MORNING_LOG_ITEMS),
+    };
+}
+
+export async function saveMorningLog(input: { date?: string; items?: unknown; customItems?: unknown }): Promise<MorningLog> {
+    await ensureMorningLogsTable();
+    const db = await getDB();
+    const targetDate = normalizeDate(input.date) || getCurrentDate();
+    const items = normalizeMorningLogItems(input.items, DEFAULT_MORNING_LOG_ITEMS);
+    const customItems = normalizeMorningLogItems(input.customItems, DEFAULT_CUSTOM_MORNING_LOG_ITEMS);
+
+    await db
+        .prepare(`
+            INSERT INTO morning_logs (log_date, items_json, custom_json, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(log_date) DO UPDATE SET
+              items_json = excluded.items_json,
+              custom_json = excluded.custom_json,
+              updated_at = CURRENT_TIMESTAMP
+        `)
+        .bind(targetDate, JSON.stringify(items), JSON.stringify(customItems))
+        .run();
+
+    return { date: targetDate, items, customItems };
+}
+
 // --- Asset Snapshots ---
 
 async function ensureAssetSnapshotsTable() {
