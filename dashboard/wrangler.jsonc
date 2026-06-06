@@ -2,8 +2,15 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	"name": "dashboard",
+	"workers_dev": true,
 	"compatibility_date": "2026-02-13",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"routes": [
+		{
+			"pattern": "coast.pxiaoer.blog",
+			"custom_domain": true
+		}
+	],
 	"vars": {
 		"AI_NOTES_SYNC_URL": "https://pxiaoer-ai-notes.openbot.workers.dev",
 		"AIBOUNTY_SYNC_URL": "https://aibounty-plan.openbot.workers.dev",
