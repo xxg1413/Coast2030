@@ -845,45 +845,28 @@ export async function getMorningLog(date?: string): Promise<MorningLog> {
     };
 }
 
-function normalizePomodoroEntries(entries: unknown): PomodoroEntry[] {
-    const rows = Array.isArray(entries) ? entries : [];
-    return rows
-        .map((entry: unknown) => {
-            const row = entry as Record<string, unknown> | undefined;
-            if (!row) return null;
-            const duration = Number(row.duration);
-            return {
-                key: String(row.key ?? "ad_hoc"),
-                label: String(row.label ?? "").trim(),
-                duration: Number.isFinite(duration) && duration > 0 ? duration : FOCUS_DURATION_SECONDS,
-                completedAt: String(row.completedAt ?? new Date().toISOString()),
-            } satisfies PomodoroEntry;
-        })
-        .filter((entry): entry is PomodoroEntry => Boolean(entry));
-}
-
-export async function saveMorningLog(input: { date?: string; items?: unknown; customItems?: unknown; pomodoros?: unknown }): Promise<MorningLog> {
+export async function saveMorningLog(input: { date?: string; items?: unknown; customItems?: unknown }): Promise<{ date: string; items: MorningLogItem[]; customItems: MorningLogItem[] }> {
     await ensureMorningLogsTable();
     const db = await getDB();
     const targetDate = normalizeDate(input.date) || getCurrentDate();
     const items = normalizeMorningLogItems(input.items, DEFAULT_MORNING_LOG_ITEMS);
     const customItems = normalizeMorningLogItems(input.customItems, DEFAULT_CUSTOM_MORNING_LOG_ITEMS);
-    const pomodoros = normalizePomodoroEntries(input.pomodoros);
 
+    // 仅写入 items / custom；番茄记录由 addMorningLogPomodoro 原子追加，
+    // 这里刻意不在 ON CONFLICT 中更新 pomodoro_json，避免覆盖并发追加的番茄。
     await db
         .prepare(`
             INSERT INTO morning_logs (log_date, items_json, custom_json, pomodoro_json, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, '[]', CURRENT_TIMESTAMP)
             ON CONFLICT(log_date) DO UPDATE SET
               items_json = excluded.items_json,
               custom_json = excluded.custom_json,
-              pomodoro_json = excluded.pomodoro_json,
               updated_at = CURRENT_TIMESTAMP
         `)
-        .bind(targetDate, JSON.stringify(items), JSON.stringify(customItems), JSON.stringify(pomodoros))
+        .bind(targetDate, JSON.stringify(items), JSON.stringify(customItems))
         .run();
 
-    return { date: targetDate, items, customItems, pomodoros };
+    return { date: targetDate, items, customItems };
 }
 
 /**

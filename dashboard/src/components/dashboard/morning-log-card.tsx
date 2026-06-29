@@ -45,10 +45,19 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
   );
 
   /**
-   * 专注完成时记录一个番茄。通过独立接口原子追加，避免与防抖保存互相覆盖。
+   * 专注完成时记录一个番茄：先乐观追加到本地状态，再通过独立接口原子持久化。
+   * 番茄记录不参与防抖 save（save 不触碰 pomodoro_json），从根本上避免被覆盖。
    */
   const recordPomodoro = useCallback(
     async (key: string, label: string) => {
+      // 乐观更新：UI 立即反映新增的番茄。
+      const optimistic: PomodoroEntry = {
+        key,
+        label,
+        duration: 30 * 60,
+        completedAt: new Date().toISOString(),
+      };
+      setPomodoros((current) => [...current, optimistic]);
       try {
         const response = await fetch("/api/morning-log/pomodoro/add", {
           method: "POST",
@@ -56,12 +65,9 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
           body: JSON.stringify({ date: log.date, key, label }),
         });
         if (!response.ok) throw new Error(`Pomodoro add failed: ${response.status}`);
-        const data = (await response.json()) as { entry?: PomodoroEntry };
-        if (data.entry) {
-          setPomodoros((current) => [...current, data.entry as PomodoroEntry]);
-        }
       } catch {
-        // 记录失败不影响本地专注完成体验，静默忽略。
+        // 持久化失败时回滚本地乐观追加。
+        setPomodoros((current) => current.filter((entry) => entry !== optimistic));
       }
     },
     [log.date],
@@ -86,7 +92,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
       const response = await fetch("/api/morning-log/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: log.date, items, customItems, pomodoros }),
+        body: JSON.stringify({ date: log.date, items, customItems }),
       });
       if (!response.ok) {
         throw new Error(`Save failed: ${response.status}`);
@@ -102,6 +108,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
     }
   };
 
+  // items / customItems 变化后自动防抖保存；番茄记录走独立追加接口，不在此处保存。
   useEffect(() => {
     if (!mountedRef.current) {
       mountedRef.current = true;
@@ -118,7 +125,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [items, customItems, pomodoros]);
+  }, [items, customItems]);
 
   return (
     <Card className="glass-panel py-0">
@@ -138,10 +145,26 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
               </span>
             </div>
           </div>
-          <Button onClick={save} disabled={saving} variant={error ? "destructive" : "default"} className="min-w-[96px]">
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : saved ? <Check className="mr-2 h-4 w-4" /> : null}
-            {error ? "保存失败" : saved ? "已保存" : "保存"}
-          </Button>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-stone-500">
+            {saving ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                保存中
+              </>
+            ) : error ? (
+              <span className="text-red-600">保存失败</span>
+            ) : saved ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                已自动保存
+              </>
+            ) : (
+              <>
+                <Check className="h-3.5 w-3.5 text-stone-300" />
+                自动保存
+              </>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pb-5">
