@@ -166,6 +166,13 @@ const MIGRATIONS: Migration[] = [
             CREATE INDEX IF NOT EXISTS idx_morning_logs_log_date ON morning_logs(log_date DESC);
         `,
     },
+    {
+        version: 8,
+        name: 'add_morning_logs_pomodoro_json',
+        sql: `
+            ALTER TABLE morning_logs ADD COLUMN pomodoro_json TEXT NOT NULL DEFAULT '[]';
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

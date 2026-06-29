@@ -721,10 +721,21 @@ export interface MorningLogItem {
     completed: boolean;
 }
 
+export interface PomodoroEntry {
+    /** 关联的晨间日志项 key（默认项或自定义项），无关联时为 'ad_hoc'。 */
+    key: string;
+    label: string;
+    /** 专注时长（秒），默认 30 分钟。 */
+    duration: number;
+    /** 完成时间（ISO 字符串，服务端写入）。 */
+    completedAt: string;
+}
+
 export interface MorningLog {
     date: string;
     items: MorningLogItem[];
     customItems: MorningLogItem[];
+    pomodoros: PomodoroEntry[];
 }
 
 const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
@@ -744,6 +755,9 @@ const DEFAULT_CUSTOM_MORNING_LOG_ITEMS: MorningLogItem[] = [
     { key: "custom_2", label: "", completed: false },
     { key: "custom_3", label: "", completed: false },
 ];
+
+/** 番茄钟默认专注时长（秒）= 30 分钟。 */
+const FOCUS_DURATION_SECONDS = 30 * 60;
 
 async function ensureMorningLogsTable() {
     const db = await getDB();
@@ -792,42 +806,125 @@ function normalizeMorningLogItems(items: unknown, fallback: MorningLogItem[]): M
     });
 }
 
+function parsePomodoroEntries(raw: string | null | undefined): PomodoroEntry[] {
+    try {
+        const parsed = JSON.parse(raw || "[]");
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .map((entry: unknown) => {
+                const row = entry as Record<string, unknown> | undefined;
+                if (!row) return null;
+                const duration = Number(row.duration);
+                return {
+                    key: String(row.key ?? "ad_hoc"),
+                    label: String(row.label ?? "").trim(),
+                    duration: Number.isFinite(duration) && duration > 0 ? duration : FOCUS_DURATION_SECONDS,
+                    completedAt: String(row.completedAt ?? ""),
+                } satisfies PomodoroEntry;
+            })
+            .filter((entry): entry is PomodoroEntry => Boolean(entry));
+    } catch {
+        return [];
+    }
+}
+
 export async function getMorningLog(date?: string): Promise<MorningLog> {
     await ensureMorningLogsTable();
     const db = await getDB();
     const targetDate = normalizeDate(date) || getCurrentDate();
     const row = await db
-        .prepare("SELECT items_json, custom_json FROM morning_logs WHERE log_date = ?")
+        .prepare("SELECT items_json, custom_json, pomodoro_json FROM morning_logs WHERE log_date = ?")
         .bind(targetDate)
-        .first<{ items_json: string; custom_json: string }>();
+        .first<{ items_json: string; custom_json: string; pomodoro_json: string }>();
 
     return {
         date: targetDate,
         items: parseMorningLogItems(row?.items_json, DEFAULT_MORNING_LOG_ITEMS),
         customItems: parseMorningLogItems(row?.custom_json, DEFAULT_CUSTOM_MORNING_LOG_ITEMS),
+        pomodoros: parsePomodoroEntries(row?.pomodoro_json),
     };
 }
 
-export async function saveMorningLog(input: { date?: string; items?: unknown; customItems?: unknown }): Promise<MorningLog> {
+function normalizePomodoroEntries(entries: unknown): PomodoroEntry[] {
+    const rows = Array.isArray(entries) ? entries : [];
+    return rows
+        .map((entry: unknown) => {
+            const row = entry as Record<string, unknown> | undefined;
+            if (!row) return null;
+            const duration = Number(row.duration);
+            return {
+                key: String(row.key ?? "ad_hoc"),
+                label: String(row.label ?? "").trim(),
+                duration: Number.isFinite(duration) && duration > 0 ? duration : FOCUS_DURATION_SECONDS,
+                completedAt: String(row.completedAt ?? new Date().toISOString()),
+            } satisfies PomodoroEntry;
+        })
+        .filter((entry): entry is PomodoroEntry => Boolean(entry));
+}
+
+export async function saveMorningLog(input: { date?: string; items?: unknown; customItems?: unknown; pomodoros?: unknown }): Promise<MorningLog> {
     await ensureMorningLogsTable();
     const db = await getDB();
     const targetDate = normalizeDate(input.date) || getCurrentDate();
     const items = normalizeMorningLogItems(input.items, DEFAULT_MORNING_LOG_ITEMS);
     const customItems = normalizeMorningLogItems(input.customItems, DEFAULT_CUSTOM_MORNING_LOG_ITEMS);
+    const pomodoros = normalizePomodoroEntries(input.pomodoros);
 
     await db
         .prepare(`
-            INSERT INTO morning_logs (log_date, items_json, custom_json, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO morning_logs (log_date, items_json, custom_json, pomodoro_json, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(log_date) DO UPDATE SET
               items_json = excluded.items_json,
               custom_json = excluded.custom_json,
+              pomodoro_json = excluded.pomodoro_json,
               updated_at = CURRENT_TIMESTAMP
         `)
-        .bind(targetDate, JSON.stringify(items), JSON.stringify(customItems))
+        .bind(targetDate, JSON.stringify(items), JSON.stringify(customItems), JSON.stringify(pomodoros))
         .run();
 
-    return { date: targetDate, items, customItems };
+    return { date: targetDate, items, customItems, pomodoros };
+}
+
+/**
+ * 原子地追加一条番茄钟完成记录到当天日志，避免客户端并发保存覆盖。
+ */
+export async function addMorningLogPomodoro(input: {
+    date?: string;
+    key?: string;
+    label?: string;
+    duration?: number;
+}): Promise<PomodoroEntry> {
+    await ensureMorningLogsTable();
+    const db = await getDB();
+    const targetDate = normalizeDate(input.date) || getCurrentDate();
+    const duration = Number(input.duration);
+    const entry: PomodoroEntry = {
+        key: input.key?.trim() || "ad_hoc",
+        label: (input.label ?? "").trim(),
+        duration: Number.isFinite(duration) && duration > 0 ? duration : FOCUS_DURATION_SECONDS,
+        completedAt: new Date().toISOString(),
+    };
+
+    const row = await db
+        .prepare("SELECT pomodoro_json FROM morning_logs WHERE log_date = ?")
+        .bind(targetDate)
+        .first<{ pomodoro_json: string }>();
+
+    const pomodoros = [...parsePomodoroEntries(row?.pomodoro_json), entry];
+
+    await db
+        .prepare(`
+            INSERT INTO morning_logs (log_date, items_json, custom_json, pomodoro_json, updated_at)
+            VALUES (?, '[]', '[]', ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(log_date) DO UPDATE SET
+              pomodoro_json = excluded.pomodoro_json,
+              updated_at = CURRENT_TIMESTAMP
+        `)
+        .bind(targetDate, JSON.stringify(pomodoros))
+        .run();
+
+    return entry;
 }
 
 // --- Asset Snapshots ---

@@ -130,6 +130,19 @@ export default async function Year2026Page({ searchParams }: Props) {
 
         <MorningLogCard log={morningLog} />
 
+        <section className="space-y-4">
+          <div>
+            <p className="text-sm text-stone-500">任务列表</p>
+            <h2 className="mt-1 text-xl font-semibold">执行与任务</h2>
+          </div>
+          <div className="grid gap-3 xl:grid-cols-3">
+            <WeeklyFocusList tasks={weeklyFocus.tasks} />
+            <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
+            <DailyTaskList date={currentDay} tasks={dailyTasks} />
+            <ExternalTaskList tasks={externalTasks} />
+          </div>
+        </section>
+
         <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
           <Card className="glass-panel py-0">
             <CardHeader className="pb-2 pt-4">
@@ -240,19 +253,6 @@ export default async function Year2026Page({ searchParams }: Props) {
               </div>
             </CardContent>
           </Card>
-        </section>
-
-        <section className="space-y-4">
-          <div>
-            <p className="text-sm text-stone-500">任务列表</p>
-            <h2 className="mt-1 text-xl font-semibold">执行与任务</h2>
-          </div>
-          <div className="grid gap-3 xl:grid-cols-3">
-            <WeeklyFocusList tasks={weeklyFocus.tasks} />
-            <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
-            <DailyTaskList date={currentDay} tasks={dailyTasks} />
-            <ExternalTaskList tasks={externalTasks} />
-          </div>
         </section>
 
         <section className="space-y-4">

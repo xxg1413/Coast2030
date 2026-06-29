@@ -14,7 +14,7 @@ export function Navigation() {
 
   const navItems = [
     {
-      name: "退休主页",
+      name: "主页",
       href: "/",
       icon: Home,
       active: pathname === "/",

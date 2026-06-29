@@ -10,7 +10,8 @@ export async function POST(request: Request) {
             customItems: payload?.customItems,
         });
         return NextResponse.json({ success: true, log: result });
-    } catch {
+    } catch (error) {
+        console.error("[morning-log/save] failed:", error);
         return NextResponse.json({ error: "Server Error" }, { status: 500 });
     }
 }
