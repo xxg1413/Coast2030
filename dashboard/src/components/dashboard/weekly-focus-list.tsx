@@ -13,11 +13,22 @@ interface WeeklyFocusTask {
   id: string;
   text: string;
   completed: boolean;
+  goalArea: GoalArea;
 }
 
-export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
+type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
+
+const GOAL_LABELS: Record<GoalArea, string> = {
+  Overall: "总目标",
+  Hunter: "Hunter",
+  SaaS: "SaaS",
+  Media: "Media",
+};
+
+export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: WeeklyFocusTask[]; title?: string }) {
   const router = useRouter();
   const [newTask, setNewTask] = useState("");
+  const [goalArea, setGoalArea] = useState<GoalArea>("Overall");
   const [adding, setAdding] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -46,7 +57,7 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
       await fetch("/api/tasks/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newTask }),
+        body: JSON.stringify({ text: newTask, goalArea }),
       });
       setNewTask("");
       router.refresh();
@@ -77,7 +88,7 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
     <Card className="flex h-full w-full flex-col border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">🎯 本周焦点</CardTitle>
+          <CardTitle className="text-base">🎯 {title}</CardTitle>
           <div className="text-xs text-stone-500">
             {completedCount}/{tasks.length} 完成
           </div>
@@ -113,6 +124,9 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
                   >
                     {task.text}
                   </label>
+                  <span className="shrink-0 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                    {GOAL_LABELS[task.goalArea]}
+                  </span>
                 </div>
 
                 <Button
@@ -133,7 +147,17 @@ export function WeeklyFocusList({ tasks }: { tasks: WeeklyFocusTask[] }) {
           })}
         </div>
 
-        <div className="flex items-center gap-2 pt-3 border-t border-stone-100">
+        <div className="grid grid-cols-[110px_1fr_auto] items-center gap-2 pt-3 border-t border-stone-100">
+          <select
+            value={goalArea}
+            onChange={(event) => setGoalArea(event.target.value as GoalArea)}
+            className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs"
+            aria-label="目标线"
+          >
+            {Object.entries(GOAL_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
           <Input
             value={newTask}
             onChange={(event) => setNewTask(event.target.value)}

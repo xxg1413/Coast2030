@@ -21,7 +21,16 @@ interface TaskItem {
   id: string;
   text: string;
   completed: boolean;
+  goalArea: GoalArea;
 }
+
+type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
+const GOAL_LABELS: Record<GoalArea, string> = {
+  Overall: "总目标",
+  Hunter: "Hunter",
+  SaaS: "SaaS",
+  Media: "Media",
+};
 
 export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; month: string; months: string[] }) {
   const router = useRouter();
@@ -29,6 +38,7 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
   const searchParams = useSearchParams();
   const [toggling, setToggling] = useState<string | null>(null);
   const [newTask, setNewTask] = useState("");
+  const [goalArea, setGoalArea] = useState<GoalArea>("Overall");
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const isAllMonths = month === "all";
@@ -64,7 +74,7 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
       await fetch("/api/tasks/monthly/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newTask, month }),
+        body: JSON.stringify({ text: newTask, month, goalArea }),
       });
       setNewTask("");
       router.refresh();
@@ -141,6 +151,9 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
                   >
                     {task.text}
                   </label>
+                  <span className="shrink-0 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                    {GOAL_LABELS[task.goalArea]}
+                  </span>
                 </div>
                 <Button
                   variant="ghost"
@@ -160,7 +173,18 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
           })}
         </div>
 
-        <form onSubmit={handleAdd} className="mt-4 flex gap-2 pt-3 border-t border-stone-100">
+        <form onSubmit={handleAdd} className="mt-4 grid grid-cols-[110px_1fr_auto] gap-2 pt-3 border-t border-stone-100">
+          <select
+            value={goalArea}
+            onChange={(event) => setGoalArea(event.target.value as GoalArea)}
+            className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs"
+            disabled={isAllMonths}
+            aria-label="目标线"
+          >
+            {Object.entries(GOAL_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
           <Input
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}

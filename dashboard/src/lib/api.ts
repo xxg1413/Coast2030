@@ -13,9 +13,8 @@ const AIBOUNTY_SYNC_PASSWORD = process.env.AIBOUNTY_SYNC_PASSWORD || "";
 const PRODUCT_LAB_SYNC_URL = process.env.PRODUCT_LAB_SYNC_URL || "https://pxiaoer-product-lab.openbot.workers.dev";
 const PRODUCT_LAB_SYNC_PASSWORD = process.env.PRODUCT_LAB_SYNC_PASSWORD || "";
 const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
-const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
 const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
-const USD_CNY_RATE = Number(process.env.USD_CNY_RATE || 6);
+const USD_CNY_RATE = Number(process.env.USD_CNY_RATE || 7.2);
 const YEAR_TARGETS = {
     cashFlow: 1000000,
     saas: 550000,
@@ -25,6 +24,13 @@ const YEAR_TARGETS = {
 
 type IncomeType = (typeof INCOME_TYPES)[number];
 export type CurrencyCode = "CNY" | "USD";
+export type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
+
+const GOAL_AREAS: GoalArea[] = ["Overall", "Hunter", "SaaS", "Media"];
+
+function normalizeGoalArea(value?: string): GoalArea {
+    return GOAL_AREAS.includes(value as GoalArea) ? value as GoalArea : "Overall";
+}
 
 function resolveProjectPath(...segments: string[]): string {
     return path.resolve(process.cwd(), "..", ...segments);
@@ -78,6 +84,16 @@ function getCurrentYearMonth(): string {
 function getCurrentDate(): string {
     const parts = getBeijingDateTimeParts();
     return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function getIsoWeekKey(date: Date = new Date()): string {
+    const parts = getBeijingDateTimeParts(date);
+    const localDate = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
+    const day = localDate.getUTCDay() || 7;
+    localDate.setUTCDate(localDate.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(localDate.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((localDate.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${localDate.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
 function normalizeYearMonth(month?: string): string | undefined {
@@ -155,21 +171,25 @@ export interface TaskItem {
     id: string;
     text: string;
     completed: boolean;
+    goalArea: GoalArea;
 }
 
 export async function getStructuredWeeklyFocus(): Promise<{ title: string; tasks: TaskItem[] }> {
     const db = await getDB();
+    const weekKey = getIsoWeekKey();
     const result = await db
-        .prepare("SELECT id, text, completed FROM weekly_focus ORDER BY created_at ASC")
-        .all<{ id: number; text: string; completed: number }>();
+        .prepare("SELECT id, text, completed, goal_area FROM weekly_focus WHERE week_key = ? ORDER BY created_at ASC")
+        .bind(weekKey)
+        .all<{ id: number; text: string; completed: number; goal_area: string }>();
 
     const tasks = result.results.map((r) => ({
         id: r.id.toString(),
         text: r.text,
         completed: r.completed === 1,
+        goalArea: normalizeGoalArea(r.goal_area),
     }));
 
-    return { title: "本周焦点", tasks };
+    return { title: `本周焦点 · ${weekKey}`, tasks };
 }
 
 export async function toggleTask(taskId: string, completed: boolean): Promise<boolean> {
@@ -181,11 +201,25 @@ export async function toggleTask(taskId: string, completed: boolean): Promise<bo
     return true;
 }
 
-export async function addTask(taskText: string): Promise<boolean> {
+export async function addTask(taskText: string, goalArea?: string): Promise<boolean> {
     const db = await getDB();
+    const normalizedGoalArea = normalizeGoalArea(goalArea);
+    const parts = getBeijingDateTimeParts();
+    const parent = await db
+        .prepare(`
+            SELECT id FROM monthly_milestones
+            WHERE year = ? AND month = ? AND goal_area IN (?, 'Overall')
+            ORDER BY completed ASC, created_at DESC
+            LIMIT 1
+        `)
+        .bind(Number(parts.year), Number(parts.month), normalizedGoalArea)
+        .first<{ id: number }>();
     await db
-        .prepare("INSERT INTO weekly_focus (text, completed) VALUES (?, 0)")
-        .bind(taskText.trim())
+        .prepare(`
+            INSERT INTO weekly_focus (text, completed, week_key, goal_area, parent_monthly_id)
+            VALUES (?, 0, ?, ?, ?)
+        `)
+        .bind(taskText.trim(), getIsoWeekKey(), normalizedGoalArea, parent?.id || null)
         .run();
     return true;
 }
@@ -653,35 +687,50 @@ export interface DailyTaskItem {
     date: string;
     text: string;
     completed: boolean;
+    goalArea: GoalArea;
 }
 
 export async function getDailyTasks(date?: string): Promise<DailyTaskItem[]> {
     const db = await getDB();
     const targetDate = normalizeDate(date) || getCurrentDate();
     const result = await db
-        .prepare("SELECT id, task_date, text, completed FROM daily_tasks WHERE task_date = ? ORDER BY created_at ASC")
+        .prepare("SELECT id, task_date, text, completed, goal_area FROM daily_tasks WHERE task_date = ? ORDER BY created_at ASC")
         .bind(targetDate)
-        .all<{ id: number; task_date: string; text: string; completed: number }>();
+        .all<{ id: number; task_date: string; text: string; completed: number; goal_area: string }>();
 
     return result.results.map((task) => ({
         id: task.id.toString(),
         date: task.task_date,
         text: task.text,
         completed: task.completed === 1,
+        goalArea: normalizeGoalArea(task.goal_area),
     }));
 }
 
-export async function addDailyTask(text: string, date?: string): Promise<boolean> {
+export async function addDailyTask(text: string, date?: string, goalArea?: string): Promise<boolean> {
     const db = await getDB();
     const trimmed = text.trim();
     const targetDate = normalizeDate(date) || getCurrentDate();
     if (!trimmed) return false;
     const addedAt = getNowDateTimeInfo();
     const prefixedText = buildPrefixedText(trimmed, addedAt.date, addedAt.time);
+    const normalizedGoalArea = normalizeGoalArea(goalArea);
+    const parent = await db
+        .prepare(`
+            SELECT id FROM weekly_focus
+            WHERE week_key = ? AND goal_area IN (?, 'Overall')
+            ORDER BY completed ASC, created_at DESC
+            LIMIT 1
+        `)
+        .bind(getIsoWeekKey(), normalizedGoalArea)
+        .first<{ id: number }>();
 
     await db
-        .prepare("INSERT INTO daily_tasks (task_date, task_datetime, text, completed) VALUES (?, ?, ?, 0)")
-        .bind(targetDate, addedAt.datetime, prefixedText)
+        .prepare(`
+            INSERT INTO daily_tasks (task_date, task_datetime, text, completed, goal_area, parent_weekly_id)
+            VALUES (?, ?, ?, 0, ?, ?)
+        `)
+        .bind(targetDate, addedAt.datetime, prefixedText, normalizedGoalArea, parent?.id || null)
         .run();
     return true;
 }
@@ -739,15 +788,13 @@ export interface MorningLog {
 }
 
 const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
+    { key: "aibounty", label: "", completed: false },
+    { key: "saas", label: "", completed: false },
+    { key: "ai_notes", label: "", completed: false },
     { key: "wake_early", label: "早起", completed: false },
     { key: "run", label: "跑步", completed: false },
-    { key: "ai_notes", label: "AINotes", completed: false },
-    { key: "saas", label: "SaaS", completed: false },
-    { key: "aibounty", label: "AIBounty", completed: false },
-    { key: "daily_review", label: "每日复盘", completed: false },
-    { key: "daily_output", label: "每日输出", completed: false },
-    { key: "daily_acquisition", label: "每日获客", completed: false },
     { key: "daily_input", label: "每日输入", completed: false },
+    { key: "daily_review", label: "每日复盘", completed: false },
 ];
 
 const DEFAULT_CUSTOM_MORNING_LOG_ITEMS: MorningLogItem[] = [
@@ -1072,18 +1119,9 @@ interface AiNotesStateResponse {
 
 interface AIBountyExportResponse {
     state?: {
-        plan?: {
-            phases?: Array<{
-                id: string;
-                title: string;
-                tasks?: Array<{
-                    id: string;
-                    title: string;
-                    priority?: string;
-                    due?: string;
-                    done?: boolean;
-                }>;
-            }>;
+        config?: {
+            campaignConfirmedTarget?: number;
+            campaignLeadingBenchmark?: number;
         };
         vulns?: Array<{
             id: string;
@@ -1139,6 +1177,18 @@ export interface ExternalTask {
     href: string;
 }
 
+export interface ExternalSourceHealth {
+    source: ExternalTask["source"];
+    status: "ok" | "stale" | "error" | "unconfigured";
+    fetchedAt: string;
+    message: string;
+}
+
+interface SyncFetchResult<T> {
+    data: T | null;
+    health: Omit<ExternalSourceHealth, "source">;
+}
+
 function normalizeCurrencyCode(value?: string): CurrencyCode {
     return value === "USD" ? "USD" : "CNY";
 }
@@ -1166,7 +1216,13 @@ let externalSyncCache: {
     aiNotes: AiNotesStateResponse | null;
     aiBounty: AIBountyExportResponse | null;
     productLab: ProductLabStateResponse | null;
+    health: ExternalSourceHealth[];
 } | null = null;
+let lastSuccessfulExternalPayloads: {
+    aiNotes: AiNotesStateResponse | null;
+    aiBounty: AIBountyExportResponse | null;
+    productLab: ProductLabStateResponse | null;
+} = { aiNotes: null, aiBounty: null, productLab: null };
 let externalTasksCache: { expiresAt: number; items: ExternalTask[] } | null = null;
 
 function getMonthFromDate(date: string): string | undefined {
@@ -1187,8 +1243,14 @@ function buildAuthCookie(rawCookie: string | null): string {
     return String(rawCookie || "").split(";")[0] || "";
 }
 
-async function loginAndFetchJson<T>(baseUrl: string, password: string, path: string): Promise<T | null> {
-    if (!baseUrl || !password) return null;
+async function loginAndFetchJson<T>(baseUrl: string, password: string, path: string): Promise<SyncFetchResult<T>> {
+    const fetchedAt = new Date().toISOString();
+    if (!baseUrl || !password) {
+        return {
+            data: null,
+            health: { status: "unconfigured", fetchedAt, message: "未配置同步凭据" },
+        };
+    }
 
     try {
         const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
@@ -1197,19 +1259,44 @@ async function loginAndFetchJson<T>(baseUrl: string, password: string, path: str
             body: JSON.stringify({ password }),
             cache: "no-store",
         });
-        if (!loginResponse.ok) return null;
+        if (!loginResponse.ok) {
+            return {
+                data: null,
+                health: { status: "error", fetchedAt, message: `登录失败 HTTP ${loginResponse.status}` },
+            };
+        }
 
         const cookie = buildAuthCookie(loginResponse.headers.get("set-cookie"));
-        if (!cookie) return null;
+        if (!cookie) {
+            return {
+                data: null,
+                health: { status: "error", fetchedAt, message: "登录响应缺少会话 Cookie" },
+            };
+        }
 
         const response = await fetch(`${baseUrl}${path}`, {
             headers: { cookie },
             cache: "no-store",
         });
-        if (!response.ok) return null;
-        return await response.json() as T;
-    } catch {
-        return null;
+        if (!response.ok) {
+            return {
+                data: null,
+                health: { status: "error", fetchedAt, message: `读取失败 HTTP ${response.status}` },
+            };
+        }
+        return {
+            data: await response.json() as T,
+            health: { status: "ok", fetchedAt, message: "同步正常" },
+        };
+    } catch (error) {
+        return {
+            data: null,
+            health: {
+                status: "error",
+                fetchedAt,
+                message: error instanceof Error ? error.message : "同步请求失败",
+            },
+        };
     }
 }
 
@@ -1218,16 +1305,48 @@ async function getExternalSyncPayloads() {
         return externalSyncCache;
     }
 
-    const [aiNotes, aiBounty, productLab] = await Promise.all([
+    const [aiNotesResult, aiBountyResult, productLabResult] = await Promise.all([
         loginAndFetchJson<AiNotesStateResponse>(AI_NOTES_SYNC_URL, AI_NOTES_SYNC_PASSWORD, "/api/state"),
         loginAndFetchJson<AIBountyExportResponse>(AIBOUNTY_SYNC_URL, AIBOUNTY_SYNC_PASSWORD, "/api/export"),
         loginAndFetchJson<ProductLabStateResponse>(PRODUCT_LAB_SYNC_URL, PRODUCT_LAB_SYNC_PASSWORD, "/api/state"),
     ]);
 
+    const resolvePayload = <T>(
+        result: SyncFetchResult<T>,
+        fallback: T | null,
+        source: ExternalTask["source"],
+    ): { data: T | null; health: ExternalSourceHealth } => {
+        if (result.data) {
+            return { data: result.data, health: { source, ...result.health } };
+        }
+        if (fallback) {
+            return {
+                data: fallback,
+                health: {
+                    source,
+                    status: "stale",
+                    fetchedAt: result.health.fetchedAt,
+                    message: `${result.health.message}，当前显示上次成功缓存`,
+                },
+            };
+        }
+        return { data: null, health: { source, ...result.health } };
+    };
+
+    const aiNotes = resolvePayload(aiNotesResult, lastSuccessfulExternalPayloads.aiNotes, "AI Notes");
+    const aiBounty = resolvePayload(aiBountyResult, lastSuccessfulExternalPayloads.aiBounty, "AIBounty");
+    const productLab = resolvePayload(productLabResult, lastSuccessfulExternalPayloads.productLab, "Product Lab");
+    lastSuccessfulExternalPayloads = {
+        aiNotes: aiNotesResult.data || lastSuccessfulExternalPayloads.aiNotes,
+        aiBounty: aiBountyResult.data || lastSuccessfulExternalPayloads.aiBounty,
+        productLab: productLabResult.data || lastSuccessfulExternalPayloads.productLab,
+    };
+
     externalSyncCache = {
-        aiNotes,
-        aiBounty,
-        productLab,
+        aiNotes: aiNotes.data,
+        aiBounty: aiBounty.data,
+        productLab: productLab.data,
+        health: [productLab.health, aiNotes.health, aiBounty.health],
         expiresAt: Date.now() + 30_000,
     };
     return externalSyncCache;
@@ -1263,7 +1382,7 @@ async function getLocalTransactions(): Promise<Transaction[]> {
 }
 
 function buildAiNotesTransactions(payload: AiNotesStateResponse | null): Transaction[] {
-    return (payload?.revenues || []).map((item) => ({
+    return (payload?.revenues || []).filter((item) => item.isSettled === true).map((item) => ({
         id: `ainote:${item.id}`,
         date: normalizeSyncDate(item.recordDate),
         type: "Media",
@@ -1282,12 +1401,9 @@ function buildAiNotesTransactions(payload: AiNotesStateResponse | null): Transac
 
 function buildAIBountyTransactions(payload: AIBountyExportResponse | null): Transaction[] {
     return (payload?.state?.vulns || [])
-        .filter((item) => Number(item.receivedBounty || 0) > 0 || Number(item.expectedBounty || 0) > 0)
+        .filter((item) => Number(item.receivedBounty || 0) > 0)
         .map((item) => {
             const received = Number(item.receivedBounty || 0);
-            const expected = Number(item.expectedBounty || 0);
-            const amount = received > 0 ? received : expected;
-            const payoutState = received > 0 ? "已到账" : "未到账";
 
             return {
             id: `aibounty:${item.id}`,
@@ -1295,11 +1411,11 @@ function buildAIBountyTransactions(payload: AIBountyExportResponse | null): Tran
             type: "Hunter",
             source: "AIBounty",
             project: item.target || item.title || "AIBounty",
-            amount: roundMoney(amount),
-            originalAmount: roundMoney(amount),
-            currency: "CNY",
-            fxRate: 1,
-            memo: [item.title || "", payoutState, item.status ? `状态 ${item.status}` : "", item.notes || ""]
+            amount: convertToCny(received, "USD", USD_CNY_RATE),
+            originalAmount: roundMoney(received),
+            currency: "USD",
+            fxRate: USD_CNY_RATE,
+            memo: [item.title || "", "已到账", item.status ? `状态 ${item.status}` : "", item.notes || ""]
                 .filter(Boolean)
                 .join(" · "),
             deletable: false,
@@ -1308,7 +1424,7 @@ function buildAIBountyTransactions(payload: AIBountyExportResponse | null): Tran
 }
 
 function buildProductLabTransactions(payload: ProductLabStateResponse | null): Transaction[] {
-    return (payload?.revenues || []).map((item) => {
+    return (payload?.revenues || []).filter((item) => item.isSettled === true).map((item) => {
         const originalAmount = roundMoney(item.amount || 0);
         return {
             id: `productlab:${item.id}`,
@@ -1371,22 +1487,6 @@ function buildAiNotesTasks(payload: AiNotesStateResponse | null): ExternalTask[]
         }));
 }
 
-function buildAIBountyTasks(payload: AIBountyExportResponse | null): ExternalTask[] {
-    const phases = payload?.state?.plan?.phases || [];
-    return phases.flatMap((phase) => (phase.tasks || [])
-        .filter((item) => !item.done)
-        .map((item) => ({
-            id: `aibounty:${item.id}`,
-            source: "AIBounty" as const,
-            project: phase.title || "AIBounty",
-            text: item.title,
-            status: "待推进",
-            dueDate: normalizeOptionalSyncDate(item.due),
-            priority: item.priority || "",
-            href: AIBOUNTY_URL,
-        })));
-}
-
 function buildProductLabTasks(payload: ProductLabStateResponse | null): ExternalTask[] {
     const roadmap = (payload?.roadmap || [])
         .filter((item) => isOpenExternalStatus(item.status))
@@ -1420,10 +1520,9 @@ export async function getExternalTasks(): Promise<ExternalTask[]> {
         return externalTasksCache.items;
     }
 
-    const { aiNotes, aiBounty, productLab } = await getExternalSyncPayloads();
+    const { aiNotes, productLab } = await getExternalSyncPayloads();
     const items = [
         ...buildAiNotesTasks(aiNotes),
-        ...buildAIBountyTasks(aiBounty),
         ...buildProductLabTasks(productLab),
     ].sort((left, right) => {
         const dueCompare = externalTaskSortValue(left).localeCompare(externalTaskSortValue(right));
@@ -1438,13 +1537,52 @@ export async function getExternalTasks(): Promise<ExternalTask[]> {
     return items;
 }
 
+export async function getExternalSourceHealth(): Promise<ExternalSourceHealth[]> {
+    const payloads = await getExternalSyncPayloads();
+    return payloads.health;
+}
+
+export interface AIBountyGoalProgress {
+    targetUsd: number;
+    receivedUsd: number;
+    progress: number;
+    submittedCount: number;
+}
+
+export async function getAIBountyGoalProgress(): Promise<AIBountyGoalProgress> {
+    const { aiBounty } = await getExternalSyncPayloads();
+    const state = aiBounty?.state;
+    const vulns = state?.vulns || [];
+    const targetUsd = Number(state?.config?.campaignConfirmedTarget || 100000);
+    const receivedUsd = roundMoney(
+        vulns.reduce((sum, item) => sum + Math.max(0, Number(item.receivedBounty || 0)), 0),
+    );
+    const submittedStatuses = new Set(["Submitted", "Triaged", "Resolved", "Paid"]);
+
+    return {
+        targetUsd,
+        receivedUsd,
+        progress: targetUsd > 0 ? Math.min((receivedUsd / targetUsd) * 100, 100) : 0,
+        submittedCount: vulns.filter((item) => submittedStatuses.has(item.status)).length,
+    };
+}
+
 async function getUnifiedTransactions(): Promise<Transaction[]> {
     const [localTransactions, externalTransactions] = await Promise.all([
         getLocalTransactions(),
         getExternalTransactions(),
     ]);
 
-    return [...localTransactions, ...externalTransactions].sort((left, right) => {
+    const uniqueTransactions = Array.from(
+        new Map(
+            [...localTransactions, ...externalTransactions].map((transaction) => [
+                `${transaction.source}:${transaction.id}`,
+                transaction,
+            ]),
+        ).values(),
+    );
+
+    return uniqueTransactions.sort((left, right) => {
         const dateCompare = right.date.localeCompare(left.date);
         if (dateCompare !== 0) return dateCompare;
         return right.id.localeCompare(left.id);
@@ -1629,24 +1767,26 @@ export async function getMonthlyTasks(month?: string): Promise<TaskItem[]> {
 
     if (!parsed) {
         const fallback = await db
-            .prepare("SELECT id, text, completed FROM monthly_milestones ORDER BY year DESC, month DESC, created_at ASC")
-            .all<{ id: number; text: string; completed: number }>();
+            .prepare("SELECT id, text, completed, goal_area FROM monthly_milestones ORDER BY year DESC, month DESC, created_at ASC")
+            .all<{ id: number; text: string; completed: number; goal_area: string }>();
         return fallback.results.map((r) => ({
             id: r.id.toString(),
             text: r.text,
             completed: r.completed === 1,
+            goalArea: normalizeGoalArea(r.goal_area),
         }));
     }
 
     const result = await db
-        .prepare("SELECT id, text, completed FROM monthly_milestones WHERE year = ? AND month = ? ORDER BY created_at ASC")
+        .prepare("SELECT id, text, completed, goal_area FROM monthly_milestones WHERE year = ? AND month = ? ORDER BY created_at ASC")
         .bind(parsed.year, parsed.month)
-        .all<{ id: number; text: string; completed: number }>();
+        .all<{ id: number; text: string; completed: number; goal_area: string }>();
 
     return result.results.map((r) => ({
         id: r.id.toString(),
         text: r.text,
         completed: r.completed === 1,
+        goalArea: normalizeGoalArea(r.goal_area),
     }));
 }
 
@@ -1659,7 +1799,7 @@ export async function toggleMonthlyTask(taskId: string, completed: boolean): Pro
     return true;
 }
 
-export async function addMonthlyTask(taskText: string, month?: string): Promise<boolean> {
+export async function addMonthlyTask(taskText: string, month?: string, goalArea?: string): Promise<boolean> {
     const db = await getDB();
     const parsed = parseYearMonth(month || getCurrentYearMonth());
     if (!parsed) return false;
@@ -1667,8 +1807,11 @@ export async function addMonthlyTask(taskText: string, month?: string): Promise<
     const prefixedText = buildPrefixedText(taskText, addedAt.date, addedAt.time);
 
     await db
-        .prepare("INSERT INTO monthly_milestones (year, month, text, completed, milestone_datetime) VALUES (?, ?, ?, 0, ?)")
-        .bind(parsed.year, parsed.month, prefixedText, addedAt.datetime)
+        .prepare(`
+            INSERT INTO monthly_milestones (year, month, text, completed, milestone_datetime, goal_area)
+            VALUES (?, ?, ?, 0, ?, ?)
+        `)
+        .bind(parsed.year, parsed.month, prefixedText, addedAt.datetime, normalizeGoalArea(goalArea))
         .run();
     return true;
 }

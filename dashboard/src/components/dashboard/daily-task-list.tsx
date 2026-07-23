@@ -14,7 +14,16 @@ interface DailyTask {
   text: string;
   completed: boolean;
   date: string;
+  goalArea: GoalArea;
 }
+
+type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
+const GOAL_LABELS: Record<GoalArea, string> = {
+  Overall: "总目标",
+  Hunter: "Hunter",
+  SaaS: "SaaS",
+  Media: "Media",
+};
 
 interface DailyTaskListProps {
   date: string;
@@ -27,6 +36,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
   const searchParams = useSearchParams();
 
   const [newTask, setNewTask] = useState("");
+  const [goalArea, setGoalArea] = useState<GoalArea>("Overall");
   const [adding, setAdding] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -50,7 +60,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
       await fetch("/api/tasks/daily/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newTask, date }),
+        body: JSON.stringify({ text: newTask, date, goalArea }),
       });
       setNewTask("");
       router.refresh();
@@ -179,7 +189,10 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                       </label>
                     )}
 
-                    <div className="flex gap-0.5">
+                    <div className="flex items-center gap-0.5">
+                      <span className="mr-1 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                        {GOAL_LABELS[task.goalArea]}
+                      </span>
                       {inEdit ? (
                         <>
                           <Button
@@ -238,7 +251,17 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
           })}
         </div>
 
-        <div className="flex items-center gap-2 pt-3 border-t border-stone-100">
+        <div className="grid grid-cols-[110px_1fr_auto] items-center gap-2 pt-3 border-t border-stone-100">
+          <select
+            value={goalArea}
+            onChange={(event) => setGoalArea(event.target.value as GoalArea)}
+            className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs"
+            aria-label="目标线"
+          >
+            {Object.entries(GOAL_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
           <Input
             value={newTask}
             onChange={(event) => setNewTask(event.target.value)}

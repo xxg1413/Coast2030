@@ -173,6 +173,34 @@ const MIGRATIONS: Migration[] = [
             ALTER TABLE morning_logs ADD COLUMN pomodoro_json TEXT NOT NULL DEFAULT '[]';
         `,
     },
+    {
+        version: 9,
+        name: 'add_goal_hierarchy_and_week_history',
+        sql: `
+            ALTER TABLE monthly_milestones ADD COLUMN goal_area TEXT NOT NULL DEFAULT 'Overall';
+            ALTER TABLE monthly_milestones ADD COLUMN evidence TEXT NOT NULL DEFAULT '';
+
+            ALTER TABLE weekly_focus ADD COLUMN week_key TEXT NOT NULL DEFAULT '';
+            ALTER TABLE weekly_focus ADD COLUMN goal_area TEXT NOT NULL DEFAULT 'Overall';
+            ALTER TABLE weekly_focus ADD COLUMN parent_monthly_id INTEGER;
+            ALTER TABLE weekly_focus ADD COLUMN evidence TEXT NOT NULL DEFAULT '';
+
+            ALTER TABLE daily_tasks ADD COLUMN goal_area TEXT NOT NULL DEFAULT 'Overall';
+            ALTER TABLE daily_tasks ADD COLUMN parent_weekly_id INTEGER;
+            ALTER TABLE daily_tasks ADD COLUMN evidence TEXT NOT NULL DEFAULT '';
+
+            UPDATE weekly_focus
+            SET week_key = strftime('%Y-W%W', 'now', '+8 hours')
+            WHERE week_key = '';
+
+            CREATE INDEX IF NOT EXISTS idx_monthly_milestones_goal_area
+              ON monthly_milestones(year, month, goal_area);
+            CREATE INDEX IF NOT EXISTS idx_weekly_focus_week_goal
+              ON weekly_focus(week_key, goal_area);
+            CREATE INDEX IF NOT EXISTS idx_daily_tasks_date_goal
+              ON daily_tasks(task_date, goal_area);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

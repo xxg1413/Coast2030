@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
     try {
-        const { text } = await request.json();
+        const { text, goalArea } = await request.json();
         if (!text || !text.trim()) return NextResponse.json({ error: 'Text required' }, { status: 400 });
 
-        const success = await addTask(text);
+        const success = await addTask(text, goalArea);
         return NextResponse.json({ success });
     } catch {
         return NextResponse.json({ error: 'Server Error' }, { status: 500 });

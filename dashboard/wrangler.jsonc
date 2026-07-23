@@ -16,7 +16,7 @@
 		"AIBOUNTY_SYNC_URL": "https://aibounty-plan.openbot.workers.dev",
 		"PRODUCT_LAB_SYNC_URL": "https://pxiaoer-product-lab.openbot.workers.dev",
 		"NEXT_PUBLIC_PRODUCT_LAB_URL": "https://productlab.pxiaoer.blog/",
-		"USD_CNY_RATE": "6"
+		"USD_CNY_RATE": "7.2"
 	},
 	"assets": {
 		"directory": ".open-next/assets",

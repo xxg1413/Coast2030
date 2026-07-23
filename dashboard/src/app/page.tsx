@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, BriefcaseBusiness, CalendarCheck, ExternalLink, Target, WalletCards, Layers } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CalendarCheck, Target, WalletCards, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
 import { FiveYearRoadmap } from "@/components/dashboard/five-year-roadmap";
@@ -17,10 +17,6 @@ const YEAR_LINKS: Record<number, string | null> = {
   2029: null,
   2030: null,
 };
-
-const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
-const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
-const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
 
 export default async function Home() {
   const years = [2026, 2027, 2028, 2029, 2030];

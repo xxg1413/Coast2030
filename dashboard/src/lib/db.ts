@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import initSqlJs from 'sql.js';
 import fs from 'fs';
 import path from 'path';
@@ -28,19 +29,6 @@ export interface D1Result<T = unknown> {
 export interface D1ExecResult {
     count: number;
     duration: number;
-}
-
-// Local sql.js Helper
-let SQLPromise: Promise<initSqlJs.SqlJsStatic> | null = null;
-function getSqlJs() {
-    if (!SQLPromise) {
-        // Use local copy of wasm to avoid node_modules resolution issues in Next.js build
-        const wasmPath = path.join(process.cwd(), 'sql-wasm.wasm');
-        SQLPromise = initSqlJs({
-            locateFile: (file) => wasmPath
-        });
-    }
-    return SQLPromise;
 }
 
 // Local SQLite Implementation (simulating D1 with WASM)
@@ -103,6 +91,10 @@ class LocalD1PreparedStatement implements D1PreparedStatement {
         if (res.length > 0 && res[0].values.length > 0) {
             const columns = res[0].columns;
             const values = res[0].values[0];
+            if (colName) {
+                const index = columns.indexOf(colName);
+                return (index >= 0 ? values[index] : null) as T | null;
+            }
             const obj: any = {};
             columns.forEach((col, i) => obj[col] = values[i]);
             return obj as T;
@@ -252,7 +244,7 @@ export async function getDB(): Promise<D1Database> {
 
             const init = async () => {
                 const SQL = await initSqlJs({
-                    locateFile: (file) => wasmPath
+                    locateFile: () => wasmPath
                 });
                 let db: initSqlJs.Database;
                 if (fs.existsSync(dbPath)) {

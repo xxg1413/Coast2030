@@ -84,7 +84,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
     [lockedPomodoroKey],
   );
 
-  const save = async () => {
+  const save = useCallback(async () => {
     setSaving(true);
     setSaved(false);
     setError(false);
@@ -106,7 +106,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [customItems, items, log.date, router]);
 
   // items / customItems 变化后自动防抖保存；番茄记录走独立追加接口，不在此处保存。
   useEffect(() => {
@@ -125,7 +125,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [items, customItems]);
+  }, [items, customItems, save]);
 
   return (
     <Card className="glass-panel py-0">

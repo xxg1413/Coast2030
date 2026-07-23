@@ -5,7 +5,9 @@ import {
   getBeijingCurrentYearMonth,
   getAvailableMonths,
   getDailyTasks,
+  getAIBountyGoalProgress,
   getExternalTasks,
+  getExternalSourceHealth,
   getIncomeComposition,
   getMorningLog,
   getMonthlyTasks,
@@ -18,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DailyTaskList } from "@/components/dashboard/daily-task-list";
 import { ExternalTaskList } from "@/components/dashboard/external-task-list";
-import { MorningLogCard } from "@/components/dashboard/morning-log-card";
+import { MorningActionPanel } from "@/components/dashboard/morning-action-panel";
 import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
@@ -53,16 +55,36 @@ export default async function Year2026Page({ searchParams }: Props) {
         ? params.taskMonth
         : currentMonth;
 
-  const [weeklyFocus, monthlyTasks, dailyTasks, morningLog, externalTasks, transactions, monthlyIncome, yearIncome, composition] =
+  const [
+    weeklyFocus,
+    monthlyTasks,
+    dailyTasks,
+    morningLog,
+    externalTasks,
+    externalHealth,
+    aiBountyGoal,
+    transactions,
+    monthlyIncome,
+    yearIncome,
+    hunterIncome,
+    saasIncome,
+    mediaIncome,
+    composition,
+  ] =
     await Promise.all([
       getStructuredWeeklyFocus(),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
       getMorningLog(currentDay),
       getExternalTasks(),
+      getExternalSourceHealth(),
+      getAIBountyGoalProgress(),
       getTransactions(currentMonth),
       getTotalIncome(currentMonth),
       getYearIncome(2026),
+      getYearIncome(2026, "Hunter"),
+      getYearIncome(2026, "SaaS"),
+      getYearIncome(2026, "Media"),
       getIncomeComposition(currentMonth),
     ]);
 
@@ -113,6 +135,11 @@ export default async function Year2026Page({ searchParams }: Props) {
     { label: "年度累计", value: formatMoney(yearIncome), sub: `目标 ${formatMoney(yearTarget)}` },
     { label: "年度完成率", value: `${annualProgress.toFixed(1)}%`, sub: `本月 ${monthlyProgress.toFixed(1)}%` },
   ];
+  const targetLines = [
+    { label: "Hunter", current: hunterIncome, target: 300000, className: "bg-blue-600" },
+    { label: "SaaS", current: saasIncome, target: 550000, className: "bg-emerald-600" },
+    { label: "Media", current: mediaIncome, target: 150000, className: "bg-amber-500" },
+  ];
 
   return (
     <main className="min-h-screen text-stone-900 px-4 py-4 md:px-6 md:py-6">
@@ -128,7 +155,7 @@ export default async function Year2026Page({ searchParams }: Props) {
           ]}
         />
 
-        <MorningLogCard log={morningLog} />
+        <MorningActionPanel log={morningLog} />
 
         <section className="space-y-4">
           <div>
@@ -136,10 +163,10 @@ export default async function Year2026Page({ searchParams }: Props) {
             <h2 className="mt-1 text-xl font-semibold">执行与任务</h2>
           </div>
           <div className="grid gap-3 xl:grid-cols-3">
-            <WeeklyFocusList tasks={weeklyFocus.tasks} />
+            <WeeklyFocusList tasks={weeklyFocus.tasks} title={weeklyFocus.title} />
             <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
             <DailyTaskList date={currentDay} tasks={dailyTasks} />
-            <ExternalTaskList tasks={externalTasks} />
+            <ExternalTaskList tasks={externalTasks} health={externalHealth} />
           </div>
         </section>
 
@@ -263,6 +290,54 @@ export default async function Year2026Page({ searchParams }: Props) {
             </div>
           </div>
           <TransactionList transactions={transactions} month={currentMonth} />
+        </section>
+
+        <section className="space-y-3">
+          <div>
+            <p className="text-sm text-stone-500">年度统计</p>
+            <h2 className="mt-1 text-xl font-semibold">年度收入与组合目标</h2>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+            <Card className="border-stone-200 bg-stone-950 text-white">
+              <CardContent className="pt-5">
+                <p className="text-sm text-stone-300">2026 唯一组合目标 · 已结算现金</p>
+                <p className="mt-2 text-3xl font-black">{formatMoney(yearIncome)} / ¥1,000,000</p>
+                <div className="mt-4 border-t border-stone-700 pt-3">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-stone-300">AIBounty 100 天独立目标</span>
+                    <strong>
+                      ${aiBountyGoal.receivedUsd.toLocaleString("en-US")} / ${aiBountyGoal.targetUsd.toLocaleString("en-US")}
+                    </strong>
+                  </div>
+                  <Progress
+                    value={aiBountyGoal.progress}
+                    className="mt-2 h-2 bg-stone-700"
+                    indicatorClassName="bg-emerald-500"
+                  />
+                  <p className="mt-2 text-xs text-stone-400">
+                    {aiBountyGoal.progress.toFixed(1)}% · Submitted+ {aiBountyGoal.submittedCount}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-500">该目标不覆盖 Hunter ¥30 万组合分配。</p>
+                </div>
+              </CardContent>
+            </Card>
+            {targetLines.map((line) => {
+              const progress = Math.min((line.current / line.target) * 100, 100);
+              return (
+                <Card key={line.label} className="border-stone-200 bg-white/78">
+                  <CardContent className="pt-5">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold">{line.label}</p>
+                      <p className="text-xs text-stone-500">{progress.toFixed(1)}%</p>
+                    </div>
+                    <p className="mt-2 text-xl font-bold">{formatMoney(line.current)}</p>
+                    <p className="mt-1 text-xs text-stone-500">目标 {formatMoney(line.target)}</p>
+                    <Progress value={progress} className="mt-3 h-2" indicatorClassName={line.className} />
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </section>
       </div>
     </main>
