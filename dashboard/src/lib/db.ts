@@ -240,7 +240,10 @@ export async function getDB(): Promise<D1Database> {
         if (!globalForDB.conn) {
             // Use local copy of wasm to avoid node_modules resolution issues in Next.js build
             const wasmPath = path.join(process.cwd(), 'sql-wasm.wasm');
-            const dbPath = path.join(process.cwd(), 'local.sqlite');
+            const configuredDbPath = process.env.LOCAL_DB_PATH?.trim();
+            const dbPath = configuredDbPath
+                ? path.resolve(process.cwd(), configuredDbPath)
+                : path.join(process.cwd(), 'local.sqlite');
 
             const init = async () => {
                 const SQL = await initSqlJs({

@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getDB } from '@/lib/db';
+import {
+    AUTH_COOKIE_NAME,
+    AUTH_SESSION_TTL_SECONDS,
+    createAuthSessionToken,
+} from '@/lib/auth-session';
 
 const AUTH_USERNAME_KEY = 'AUTH_USERNAME';
 const AUTH_PASSWORD_SALT_KEY = 'AUTH_PASSWORD_SALT';
@@ -121,16 +126,17 @@ export async function POST(request: Request) {
 
         if (secureCompare(usernameInput, configuredUsername) && secureCompare(calculatedHash, configuredPasswordHash)) {
             await clearFailedLogins(clientIp);
+            const session = await createAuthSessionToken();
             const cookieStore = await cookies();
-            cookieStore.set('auth_token', 'valid_session', {
+            cookieStore.set(AUTH_COOKIE_NAME, session.token, {
                 httpOnly: true,
                 secure: isProd,
-                sameSite: isProd ? 'none' : 'lax',
+                sameSite: 'lax',
                 path: '/',
-                maxAge: 60 * 60 * 24 * 7, // 1 week
+                maxAge: AUTH_SESSION_TTL_SECONDS,
             });
 
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, expiresAt: session.expiresAt });
         }
 
         await recordFailedLogin(clientIp);

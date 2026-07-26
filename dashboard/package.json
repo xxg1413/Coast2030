@@ -14,6 +14,7 @@
     "auth:hash": "node scripts/hash-password.js"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@opennextjs/cloudflare": "^1.16.4",
     "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
@@ -27,7 +28,8 @@
     "remark": "^15.0.1",
     "remark-html": "^16.0.1",
     "sql.js": "^1.14.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260213.0",

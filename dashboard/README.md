@@ -36,6 +36,24 @@ Coast2030 的年度计划与收入跟踪系统（Next.js + Cloudflare）。
 - 账号密码通过环境变量配置（不再写死在代码里）
 - 登录失败限流（按 IP，15 分钟窗口）
 
+### 6) Coast Operator 0.3
+
+- `/operator`：创建或撤销 Codex 连接 Token，并处理高风险动作审批
+- `/mcp`：受 Bearer Token 保护的 Streamable HTTP MCP 地址
+- Codex 可读取 2026 总览与工作台，管理日/周/月内部任务，并提交模型生成的今日计划
+- 发布、漏洞提交、部署、收入与资产修改只创建审批请求，不会直接执行
+
+连接生产环境：
+
+```bash
+export COAST_OPERATOR_TOKEN='<在 /operator 创建的 Token>'
+codex mcp add coast-operator \
+  --url https://coast.pxiaoer.blog/mcp \
+  --bearer-token-env-var COAST_OPERATOR_TOKEN
+```
+
+添加后重启 Codex，再用 `/mcp` 检查连接状态。
+
 ## 技术栈
 
 - Next.js App Router

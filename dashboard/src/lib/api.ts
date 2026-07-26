@@ -731,10 +731,56 @@ export async function addDailyTask(text: string, date?: string, goalArea?: strin
 
 export async function toggleDailyTask(id: string, completed: boolean): Promise<boolean> {
     const db = await getDB();
-    await db
-        .prepare("UPDATE daily_tasks SET completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-        .bind(completed ? 1 : 0, Number(id))
-        .run();
+    const linked = await db
+        .prepare("SELECT agent_work_item_id FROM daily_tasks WHERE id = ? LIMIT 1")
+        .bind(Number(id))
+        .first<{ agent_work_item_id: string | null }>();
+    const statements = [
+        db
+            .prepare("UPDATE daily_tasks SET completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+            .bind(completed ? 1 : 0, Number(id)),
+    ];
+
+    if (linked?.agent_work_item_id) {
+        const now = new Date().toISOString();
+        statements.push(
+            db
+                .prepare(`
+                    UPDATE agent_work_items
+                    SET
+                      state = ?,
+                      completed_at = ?,
+                      version = version + 1,
+                      updated_at = ?
+                    WHERE id = ? AND state IN ('approved', 'completed')
+                `)
+                .bind(
+                    completed ? "completed" : "approved",
+                    completed ? now : null,
+                    now,
+                    linked.agent_work_item_id,
+                ),
+            db
+                .prepare(`
+                    INSERT INTO agent_events (
+                      run_id, work_item_id, event_type, actor_type, actor_id,
+                      payload_json, idempotency_key, created_at
+                    )
+                    SELECT run_id, id, ?, 'human', 'owner', ?, ?, ?
+                    FROM agent_work_items
+                    WHERE id = ?
+                `)
+                .bind(
+                    completed ? "work_item_completed" : "work_item_reopened",
+                    JSON.stringify({ dailyTaskId: id }),
+                    `daily-toggle:${id}:${crypto.randomUUID()}`,
+                    now,
+                    linked.agent_work_item_id,
+                ),
+        );
+    }
+
+    await db.batch(statements);
     return true;
 }
 

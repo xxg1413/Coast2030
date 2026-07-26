@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/dashboard/page-header";
 import { MorningActionPanel } from "@/components/dashboard/morning-action-panel";
+import { AgentControlPanel } from "@/components/dashboard/agent-control-panel";
 import {
   formatMoney,
   getBeijingCurrentDate,
@@ -33,6 +34,7 @@ import {
   getMonthlyTarget,
   YEAR_TARGETS,
 } from "@/lib/targets";
+import { getAgentAdvisorOverview } from "@/lib/agent";
 import { CalendarCheck, ClipboardList, ListTodo, Target, TrendingUp } from "lucide-react";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -63,6 +65,7 @@ export default async function Year2026Page({ searchParams }: Props) {
   const [
     weeklyFocus,
     morningLog,
+    agentOverview,
     monthlyTasks,
     dailyTasks,
     externalTasks,
@@ -79,6 +82,7 @@ export default async function Year2026Page({ searchParams }: Props) {
     await Promise.all([
       getStructuredWeeklyFocus(),
       getMorningLog(currentDate),
+      getAgentAdvisorOverview(currentDate),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
       getExternalTasks(),
@@ -152,8 +156,12 @@ export default async function Year2026Page({ searchParams }: Props) {
       <div className="mx-auto w-full max-w-[1280px] space-y-4">
         <PageHeader
           title="2026 个人计划"
-          subtitle="晨间行动、任务、收入与回款明细"
+          subtitle="Operator 计划、晨间行动、任务、收入与回款明细"
         />
+
+        <section aria-label="Agent 管理台">
+          <AgentControlPanel overview={agentOverview} />
+        </section>
 
         <section className="coast-primary-workbench" aria-label="2026 晨间行动">
           <MorningActionPanel log={morningLog} />

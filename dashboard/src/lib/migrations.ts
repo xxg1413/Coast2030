@@ -201,6 +201,142 @@ const MIGRATIONS: Migration[] = [
               ON daily_tasks(task_date, goal_area);
         `,
     },
+    {
+        version: 10,
+        name: 'create_agent_advisor_control_plane',
+        sql: `
+            ALTER TABLE daily_tasks ADD COLUMN agent_work_item_id TEXT;
+
+            CREATE TABLE IF NOT EXISTS agent_runs (
+              id TEXT PRIMARY KEY,
+              run_key TEXT NOT NULL UNIQUE,
+              trigger_type TEXT NOT NULL DEFAULT 'daily_advisor',
+              objective TEXT NOT NULL,
+              status TEXT NOT NULL DEFAULT 'completed',
+              context_json TEXT NOT NULL DEFAULT '{}',
+              plan_json TEXT NOT NULL DEFAULT '[]',
+              summary TEXT NOT NULL DEFAULT '',
+              budget_steps INTEGER NOT NULL DEFAULT 3,
+              started_at TEXT NOT NULL,
+              completed_at TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS agent_work_items (
+              id TEXT PRIMARY KEY,
+              run_id TEXT NOT NULL,
+              goal_area TEXT NOT NULL,
+              project TEXT NOT NULL,
+              title TEXT NOT NULL,
+              rationale TEXT NOT NULL DEFAULT '',
+              definition_of_done TEXT NOT NULL DEFAULT '',
+              evidence_required TEXT NOT NULL DEFAULT '',
+              priority TEXT NOT NULL DEFAULT 'P1',
+              state TEXT NOT NULL DEFAULT 'proposed',
+              due_date TEXT NOT NULL,
+              source_kind TEXT NOT NULL DEFAULT 'advisor',
+              source_ref TEXT NOT NULL DEFAULT '',
+              created_by TEXT NOT NULL DEFAULT 'agent_advisor',
+              version INTEGER NOT NULL DEFAULT 1,
+              approved_at TEXT,
+              completed_at TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS agent_approvals (
+              id TEXT PRIMARY KEY,
+              run_id TEXT NOT NULL,
+              work_item_id TEXT NOT NULL UNIQUE,
+              action_type TEXT NOT NULL,
+              risk_level TEXT NOT NULL DEFAULT 'low',
+              request_json TEXT NOT NULL DEFAULT '{}',
+              status TEXT NOT NULL DEFAULT 'pending',
+              decided_by TEXT,
+              decided_at TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS agent_events (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              run_id TEXT NOT NULL,
+              work_item_id TEXT,
+              event_type TEXT NOT NULL,
+              actor_type TEXT NOT NULL,
+              actor_id TEXT NOT NULL,
+              payload_json TEXT NOT NULL DEFAULT '{}',
+              idempotency_key TEXT NOT NULL UNIQUE,
+              created_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_agent_runs_created
+              ON agent_runs(created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_agent_work_items_run_state
+              ON agent_work_items(run_id, state, priority);
+            CREATE INDEX IF NOT EXISTS idx_agent_work_items_due
+              ON agent_work_items(due_date, goal_area);
+            CREATE INDEX IF NOT EXISTS idx_agent_approvals_status
+              ON agent_approvals(status, created_at);
+            CREATE INDEX IF NOT EXISTS idx_agent_events_run
+              ON agent_events(run_id, created_at);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_tasks_agent_work_item
+              ON daily_tasks(agent_work_item_id);
+        `,
+    },
+    {
+        version: 11,
+        name: 'create_operator_control_plane',
+        sql: `
+            CREATE TABLE IF NOT EXISTS operator_access_tokens (
+              id TEXT PRIMARY KEY,
+              label TEXT NOT NULL,
+              token_prefix TEXT NOT NULL,
+              token_hash TEXT NOT NULL UNIQUE,
+              last_used_at TEXT,
+              expires_at TEXT,
+              revoked_at TEXT,
+              created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS operator_action_requests (
+              id TEXT PRIMARY KEY,
+              action_type TEXT NOT NULL,
+              target TEXT NOT NULL,
+              summary TEXT NOT NULL,
+              risk_level TEXT NOT NULL DEFAULT 'high',
+              request_json TEXT NOT NULL DEFAULT '{}',
+              status TEXT NOT NULL DEFAULT 'pending',
+              requested_by TEXT NOT NULL,
+              idempotency_key TEXT NOT NULL UNIQUE,
+              decided_by TEXT,
+              decided_at TEXT,
+              executed_at TEXT,
+              created_at TEXT NOT NULL,
+              updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS operator_tool_calls (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              token_id TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              request_json TEXT NOT NULL DEFAULT '{}',
+              response_json TEXT NOT NULL DEFAULT '{}',
+              status TEXT NOT NULL,
+              error_message TEXT NOT NULL DEFAULT '',
+              created_at TEXT NOT NULL,
+              completed_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_operator_tokens_active
+              ON operator_access_tokens(revoked_at, expires_at);
+            CREATE INDEX IF NOT EXISTS idx_operator_actions_status
+              ON operator_action_requests(status, created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_operator_tool_calls_created
+              ON operator_tool_calls(created_at DESC);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

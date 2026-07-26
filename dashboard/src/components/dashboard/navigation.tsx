@@ -9,6 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bot,
   CalendarCheck,
   ChevronDown,
   FileText,
@@ -94,6 +95,15 @@ export function Navigation() {
             <CalendarCheck aria-hidden="true" />
             2026 工作台
           </Link>
+          <Link
+            href="/operator"
+            className="coast-nav-link"
+            data-active={pathname === "/operator" ? "true" : undefined}
+            aria-current={pathname === "/operator" ? "page" : undefined}
+          >
+            <Bot aria-hidden="true" />
+            Operator
+          </Link>
           <div className="coast-project-menu">
             <button
               type="button"
@@ -153,6 +163,14 @@ export function Navigation() {
           <Link href="/2026" onClick={closeMenus} aria-current={pathname === "/2026" ? "page" : undefined}>
             <CalendarCheck aria-hidden="true" />
             2026 工作台
+          </Link>
+          <Link
+            href="/operator"
+            onClick={closeMenus}
+            aria-current={pathname === "/operator" ? "page" : undefined}
+          >
+            <Bot aria-hidden="true" />
+            Coast Operator
           </Link>
           {PROJECT_ITEMS.map((item) => {
             const Icon = item.icon;
