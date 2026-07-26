@@ -1,91 +1,175 @@
+/* Hallmark · component: navigation · genre: modern-minimal · nav: N5 floating pill
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * rationale: personal workbench needs two primary destinations and a compact project disclosure
+ */
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
-import { Home, CalendarCheck, Shield, FileText, Layers } from "lucide-react";
+import {
+  CalendarCheck,
+  ChevronDown,
+  FileText,
+  Home,
+  Layers,
+  Menu,
+  Shield,
+  X,
+} from "lucide-react";
+
+const PROJECT_ITEMS = [
+  { name: "Product Lab", href: "/productlab", icon: Layers },
+  { name: "AIBounty", href: "/aibounty", icon: Shield },
+  { name: "AI Notes", href: "/ainotes", icon: FileText },
+] as const;
 
 export function Navigation() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const projectIsActive = PROJECT_ITEMS.some((item) => pathname.startsWith(item.href));
+
+  useEffect(() => {
+    if (!projectsOpen && !mobileOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProjectsOpen(false);
+        setMobileOpen(false);
+      }
+    };
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setProjectsOpen(false);
+        setMobileOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("pointerdown", closeOnOutsidePress);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("pointerdown", closeOnOutsidePress);
+    };
+  }, [mobileOpen, projectsOpen]);
 
   if (pathname === "/login") {
     return null;
   }
 
-  const navItems = [
-    {
-      name: "主页",
-      href: "/",
-      icon: Home,
-      active: pathname === "/",
-    },
-    {
-      name: "2026工作台",
-      href: "/2026",
-      icon: CalendarCheck,
-      active: pathname === "/2026",
-    },
-    {
-      name: "Product Lab",
-      href: "/productlab",
-      icon: Layers,
-      active: pathname.startsWith("/productlab"),
-    },
-    {
-      name: "AIBounty",
-      href: "/aibounty",
-      icon: Shield,
-      active: pathname.startsWith("/aibounty"),
-    },
-    {
-      name: "AI Notes",
-      href: "/ainotes",
-      icon: FileText,
-      active: pathname.startsWith("/ainotes"),
-    },
-  ];
+  const closeMenus = () => {
+    setProjectsOpen(false);
+    setMobileOpen(false);
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-stone-200/60 bg-[#faf7f2]/80 backdrop-blur-md">
-      <div className="mx-auto flex flex-col gap-2 py-2.5 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:py-0 px-4 md:px-8 max-w-[1280px]">
-        {/* Logo and Brand */}
-        <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 justify-center sm:justify-start">
-          <Image
-            src="/coast-logo.svg"
-            alt="Coast2030 Logo"
-            width={32}
-            height={32}
-            className="h-8 w-8 rounded-lg border border-white/80 bg-white shadow-sm"
-          />
-          <span className="text-sm font-black tracking-tight text-stone-900">
-            COAST<span className="text-emerald-700">2030</span>
+    <header ref={navRef} className="coast-nav-frame">
+      <div className="coast-nav">
+        <Link href="/" className="coast-brand" onClick={closeMenus} aria-label="Coast2030 主页">
+          <Image src="/coast-logo.svg" alt="" width={32} height={32} priority />
+          <span>
+            COAST<b>2030</b>
           </span>
         </Link>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1 overflow-x-auto scrollbar-none sm:gap-2 w-full sm:w-auto flex-nowrap whitespace-nowrap justify-center sm:justify-end pb-1 sm:pb-0">
-          {navItems.map((item) => {
+        <nav className="coast-nav-desktop" aria-label="主导航">
+          <Link
+            href="/"
+            className="coast-nav-link"
+            data-active={pathname === "/" ? "true" : undefined}
+            aria-current={pathname === "/" ? "page" : undefined}
+          >
+            <Home aria-hidden="true" />
+            2030
+          </Link>
+          <Link
+            href="/2026"
+            className="coast-nav-link"
+            data-active={pathname === "/2026" ? "true" : undefined}
+            aria-current={pathname === "/2026" ? "page" : undefined}
+          >
+            <CalendarCheck aria-hidden="true" />
+            2026 工作台
+          </Link>
+          <div className="coast-project-menu">
+            <button
+              type="button"
+              className="coast-nav-link"
+              data-active={projectIsActive ? "true" : undefined}
+              aria-expanded={projectsOpen}
+              aria-controls="coast-project-links"
+              onClick={() => setProjectsOpen((open) => !open)}
+            >
+              项目
+              <ChevronDown aria-hidden="true" data-open={projectsOpen ? "true" : undefined} />
+            </button>
+            {projectsOpen ? (
+              <div id="coast-project-links" className="coast-project-popover">
+                {PROJECT_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMenus}
+                      aria-current={active ? "page" : undefined}
+                      data-active={active ? "true" : undefined}
+                    >
+                      <Icon aria-hidden="true" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+        </nav>
+
+        <button
+          type="button"
+          className="coast-mobile-toggle"
+          aria-expanded={mobileOpen}
+          aria-controls="coast-mobile-menu"
+          aria-label={mobileOpen ? "关闭导航" : "打开导航"}
+          onClick={() => {
+            setProjectsOpen(false);
+            setMobileOpen((open) => !open);
+          }}
+        >
+          {mobileOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+        </button>
+      </div>
+
+      {mobileOpen ? (
+        <nav id="coast-mobile-menu" className="coast-mobile-menu" aria-label="移动导航">
+          <Link href="/" onClick={closeMenus} aria-current={pathname === "/" ? "page" : undefined}>
+            <Home aria-hidden="true" />
+            2030 总览
+          </Link>
+          <Link href="/2026" onClick={closeMenus} aria-current={pathname === "/2026" ? "page" : undefined}>
+            <CalendarCheck aria-hidden="true" />
+            2026 工作台
+          </Link>
+          {PROJECT_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
-                className={`relative flex shrink-0 items-center gap-1.5 px-3 py-1.5 sm:py-0 text-xs font-bold transition-all sm:h-16 md:px-4 md:text-sm whitespace-nowrap ${
-                  item.active
-                    ? "text-emerald-800"
-                    : "text-stone-500 hover:text-stone-900"
-                }`}
+                onClick={closeMenus}
+                aria-current={pathname.startsWith(item.href) ? "page" : undefined}
               >
-                <Icon className={`h-4 w-4 shrink-0 ${item.active ? "text-emerald-700" : "text-stone-400"}`} />
-                <span>{item.name}</span>
-                {item.active && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.75 bg-emerald-700 rounded-t-full" />
-                )}
+                <Icon aria-hidden="true" />
+                {item.name}
               </Link>
             );
           })}
         </nav>
-      </div>
+      ) : null}
     </header>
   );
 }

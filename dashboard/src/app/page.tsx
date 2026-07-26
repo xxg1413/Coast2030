@@ -1,329 +1,351 @@
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, BriefcaseBusiness, CalendarCheck, Target, WalletCards, Layers } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  FileText,
+  ShieldCheck,
+  Video,
+  WalletCards,
+} from "lucide-react";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
-import { FiveYearRoadmap } from "@/components/dashboard/five-year-roadmap";
-import { IncomeCompositionCard } from "@/components/dashboard/income-composition-card";
-import { getAssetSnapshots, getBeijingCurrentDate, getYearIncome, getIncomeComposition, getYearIncomeComposition, formatMoney } from "@/lib/api";
-import { NET_WORTH_TARGET_2030, NET_WORTH_MILESTONES, YEAR_TARGETS } from "@/lib/targets";
+import {
+  formatMoney,
+  getAssetSnapshots,
+  getBeijingCurrentDate,
+  getHunterTargets,
+  getYearIncome,
+} from "@/lib/api";
+import {
+  BUSINESS_LINE_TARGETS_2026,
+  getAnnualRecoveryPace,
+  NET_WORTH_MILESTONES,
+  NET_WORTH_TARGET_2030,
+  YEAR_TARGETS,
+} from "@/lib/targets";
 
 export const dynamic = "force-dynamic";
 
-const YEAR_LINKS: Record<number, string | null> = {
-  2026: "/2026",
-  2027: null,
-  2028: null,
-  2029: null,
-  2030: null,
-};
-
 export default async function Home() {
+  const currentDate = getBeijingCurrentDate();
   const years = [2026, 2027, 2028, 2029, 2030];
-  const [incomes, assetSnapshots, monthlyComposition, yearlyComposition] = await Promise.all([
-    Promise.all(years.map((year) => getYearIncome(year))),
-    getAssetSnapshots(6),
-    getIncomeComposition(),
-    getYearIncomeComposition(),
-  ]);
+  const [incomes, hunterIncome, saasIncome, mediaIncome, hunterTargets, assetSnapshots] =
+    await Promise.all([
+      Promise.all(years.map((year) => getYearIncome(year))),
+      getYearIncome(2026, "Hunter"),
+      getYearIncome(2026, "SaaS"),
+      getYearIncome(2026, "Media"),
+      getHunterTargets(),
+      getAssetSnapshots(6),
+    ]);
 
-  // 构建5年路线图数据
-  const currentYear = new Date().getFullYear();
-  const roadmapData = years.map((year, index) => {
-    const target = YEAR_TARGETS[year] || 0;
-    const income = incomes[index] || 0;
-    const progress = target > 0 ? Math.min((income / target) * 100, 100) : 0;
-
-    let status: "completed" | "current" | "future" = "future";
-    if (target > 0 && income >= target) {
-      status = "completed";
-    } else if (year === currentYear || (year < currentYear && target > 0)) {
-      status = "current";
-    }
-
+  const yearIncome = incomes[0] ?? 0;
+  const latestAssetSnapshot = assetSnapshots[0];
+  const currentNetWorth = latestAssetSnapshot?.netWorth ?? 0;
+  const netWorthProgress =
+    NET_WORTH_TARGET_2030 > 0
+      ? Math.min(Math.max((currentNetWorth / NET_WORTH_TARGET_2030) * 100, 0), 100)
+      : 0;
+  const netWorthGap = Math.max(NET_WORTH_TARGET_2030 - currentNetWorth, 0);
+  const yearTarget = YEAR_TARGETS[2026] ?? 0;
+  const annualProgress = yearTarget > 0 ? Math.min((yearIncome / yearTarget) * 100, 100) : 0;
+  const recovery = getAnnualRecoveryPace(2026, yearIncome, currentDate);
+  const fiveYearIncomeTarget = years.reduce((sum, year) => sum + (YEAR_TARGETS[year] ?? 0), 0);
+  const fiveYearIncome = incomes.reduce((sum, income) => sum + income, 0);
+  const fiveYearIncomeProgress =
+    fiveYearIncomeTarget > 0 ? Math.min((fiveYearIncome / fiveYearIncomeTarget) * 100, 100) : 0;
+  const activeHunterTargets = hunterTargets.filter((target) => target.status === "active");
+  const primaryHunterTarget =
+    activeHunterTargets.find((target) => target.priority === "P0") ??
+    hunterTargets.find((target) => target.priority === "P0") ??
+    hunterTargets[0];
+  const milestones = Object.entries(NET_WORTH_MILESTONES).map(([year, target]) => ({
+    year: Number(year),
+    target,
+    reached: currentNetWorth >= target,
+  }));
+  const horizonRows = years.map((year, index) => {
+    const income = incomes[index] ?? 0;
+    const incomeTarget = YEAR_TARGETS[year] ?? 0;
     return {
       year,
-      target,
       income,
-      progress,
-      isCompleted: status === "completed",
-      isCurrent: status === "current",
-      isFuture: status === "future",
+      incomeTarget,
+      incomeProgress: incomeTarget > 0 ? Math.min((income / incomeTarget) * 100, 100) : 0,
+      netWorthTarget: NET_WORTH_MILESTONES[year] ?? 0,
+      isCurrent: year === 2026,
     };
   });
 
-  const totalTarget = roadmapData.reduce((sum, d) => sum + d.target, 0);
-  const totalIncome = roadmapData.reduce((sum, d) => sum + d.income, 0);
-  const totalProgress = totalTarget > 0 ? (totalIncome / totalTarget) * 100 : 0;
-  const activeYearIncome = incomes[0] || 0;
-  const activeYearTarget = YEAR_TARGETS[2026] || 0;
-  const activeYearProgress = activeYearTarget > 0 ? Math.min((activeYearIncome / activeYearTarget) * 100, 100) : 0;
-  const currentNetWorth = assetSnapshots[0]?.netWorth || 0;
-  const assetProgress = NET_WORTH_TARGET_2030 > 0 ? Math.min((currentNetWorth / NET_WORTH_TARGET_2030) * 100, 100) : 0;
-
-  const primaryActions = [
-    {
-      label: "2026 收入进度",
-      title: "进入 2026 工作台",
-      meta: `${formatMoney(activeYearIncome)} / ${formatMoney(activeYearTarget)} · ${activeYearProgress.toFixed(1)}%`,
-      href: "/2026",
-      external: false,
-      icon: CalendarCheck,
-    },
-    {
-      label: "2030 净资产",
-      title: "更新资产快照",
-      meta: `${formatMoney(currentNetWorth)} / ${formatMoney(NET_WORTH_TARGET_2030)} · ${assetProgress.toFixed(2)}%`,
-      href: "#asset-progress",
-      external: false,
-      icon: WalletCards,
-    },
-    {
-      label: "项目工作台",
-      title: "打开 Product Lab",
-      meta: "产品收入、路线图、推广和指标快照。",
-      href: "/productlab",
-      external: false,
-      icon: Layers,
-    },
-  ];
-
-  const apps = [
-    {
-      title: "Product Lab",
-      badge: "产品收入",
-      href: "/productlab",
-      description: "SaaS 目标、功能路线图、推广计划、指标快照与收入管理。",
-      next: "看本月产品收入和下一项功能。",
-    },
-    {
-      title: "AIBounty Plan",
-      badge: "赏金回款",
-      href: "/aibounty",
-      description: "漏洞挖掘计划、目标池、赏金记录与回款看板。",
-      next: "看今日任务、本月回款待达成和未到账记录。",
-    },
-    {
-      title: "AI Notes",
-      badge: "内容经营",
-      href: "/ainotes",
-      description: "内容生产、账号池、内容规划与粉丝增长经营台。",
-      next: "看今日任务、待写作内容与本月增长经营细节。",
-    },
-  ];
-
   return (
-    <main className="min-h-screen p-4 text-stone-900 md:p-8">
-      <div className="mx-auto w-full max-w-[1280px] space-y-4">
-        {/* Hero Banner Panel */}
-        <section className="overflow-hidden rounded-3xl glass-panel">
-          <div className="grid gap-4 p-5 md:grid-cols-[1.25fr_0.75fr] md:p-6 lg:p-7">
-            <div className="flex min-w-0 flex-col justify-between gap-4 md:gap-5">
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <Image
-                    src="/coast-logo.svg"
-                    alt="Coast2030 Logo"
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 rounded-2xl border border-white/80 bg-white shadow-sm"
-                    priority
-                  />
-                  <div>
-                    <p className="text-xs font-semibold tracking-wider text-emerald-800 uppercase">Coast2030</p>
-                    <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-900 md:text-3xl lg:text-4xl">
-                      P小二的 5 年退休计划
-                    </h1>
+    <main className="coast-home coast-overview">
+      <div className="coast-shell">
+        <section className="coast-intro coast-reveal" aria-labelledby="home-heading">
+          <div className="coast-intro__copy">
+            <p className="coast-topline">
+              <CalendarDays aria-hidden="true" />
+              Coast2030 · 五年总盘
+            </p>
+            <h1 id="home-heading">2030 总览</h1>
+            <p>
+              首页只看长期目标、年度进度和三条业务线。晨间行动、任务和收入明细统一进入
+              2026 工作台。
+            </p>
+          </div>
+
+          <div className="coast-cash-brief" aria-label="2030 净资产进度">
+            <span>当前净资产</span>
+            <strong>{latestAssetSnapshot ? formatMoney(currentNetWorth) : "未记录"}</strong>
+            <div
+              className="coast-progress"
+              role="progressbar"
+              aria-label="2030 净资产完成率"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Number(netWorthProgress.toFixed(2))}
+            >
+              <span style={{ width: `${netWorthProgress}%` }} />
+            </div>
+            <p>
+              {latestAssetSnapshot
+                ? `距离 2030 年 ¥500 万净资产目标还差 ${formatMoney(netWorthGap)}。`
+                : "还没有资产快照，当前不能判断长期目标进度。"}
+            </p>
+            <a className="coast-text-link" href="#asset-progress">
+              查看资产总盘
+              <ArrowRight aria-hidden="true" />
+            </a>
+          </div>
+        </section>
+
+        <section className="coast-overview-year coast-reveal" aria-labelledby="year-heading">
+          <div className="coast-section-heading">
+            <div>
+              <p className="coast-lane__role">当前年度</p>
+              <h2 id="year-heading">2026 年度进度</h2>
+              <p>年度目标只统计已结算、已到账现金；任务与执行细节放在年度工作台。</p>
+            </div>
+            <BarChart3 aria-hidden="true" />
+          </div>
+
+          <div className="coast-overview-year__grid">
+            <div className="coast-overview-year__primary">
+              <span>2026 已到账</span>
+              <strong>{formatMoney(yearIncome)}</strong>
+              <div
+                className="coast-progress"
+                role="progressbar"
+                aria-label="2026 年收入完成率"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Number(annualProgress.toFixed(2))}
+              >
+                <span style={{ width: `${annualProgress}%` }} />
+              </div>
+              <p>
+                目标 {formatMoney(yearTarget)} · 剩余 {formatMoney(recovery.remaining)} ·
+                每周需到账 {formatMoney(recovery.weeklyRequired)}
+              </p>
+            </div>
+            <Link className="coast-button coast-button--primary" href="/2026">
+              进入 2026 工作台
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+
+        <section className="coast-horizon" aria-labelledby="horizon-heading">
+          <div className="coast-section-heading">
+            <div>
+              <p className="coast-lane__role">参考上上次首页的五年路线</p>
+              <h2 id="horizon-heading">2026–2030 五年路线</h2>
+              <p>同一行对照年度收入目标与年底净资产里程碑；未来年份不填预测收入。</p>
+            </div>
+            <BarChart3 aria-hidden="true" />
+          </div>
+
+          <div className="coast-horizon__summary">
+            <div>
+              <span>五年累计已到账</span>
+              <strong>{formatMoney(fiveYearIncome)}</strong>
+            </div>
+            <div>
+              <span>五年收入目标</span>
+              <strong>{formatMoney(fiveYearIncomeTarget)}</strong>
+            </div>
+            <div>
+              <span>累计完成度</span>
+              <strong>{fiveYearIncomeProgress.toFixed(2)}%</strong>
+            </div>
+          </div>
+
+          <ol className="coast-horizon__rows">
+            {horizonRows.map((row) => {
+              const content = (
+                <>
+                  <div className="coast-horizon__year">
+                    <strong>{row.year}</strong>
+                    <small>{row.isCurrent ? "当前工作台" : "待开启"}</small>
                   </div>
-                </div>
-                <p className="max-w-xl text-sm leading-relaxed text-stone-600 md:text-base">
-                  将 2026 收入目标、2030 净资产目标和三条项目线的进度整合在同一个智能执行面板里，每日打卡推进。
+                  <div className="coast-horizon__income">
+                    <span>
+                      已到账 {formatMoney(row.income)} / 目标 {formatMoney(row.incomeTarget)}
+                    </span>
+                    <div
+                      className="coast-progress"
+                      role="progressbar"
+                      aria-label={`${row.year} 年收入完成率`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Number(row.incomeProgress.toFixed(2))}
+                    >
+                      <span style={{ width: `${row.incomeProgress}%` }} />
+                    </div>
+                  </div>
+                  <div className="coast-horizon__asset">
+                    <span>年底净资产里程碑</span>
+                    <strong>{formatMoney(row.netWorthTarget)}</strong>
+                  </div>
+                </>
+              );
+
+              return (
+                <li key={row.year}>
+                  {row.isCurrent ? (
+                    <Link href="/2026" aria-label="进入 2026 工作台">
+                      {content}
+                    </Link>
+                  ) : (
+                    <div>{content}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <section className="coast-section coast-overview-directions" aria-labelledby="directions-heading">
+          <div className="coast-section-heading">
+            <div>
+              <h2 id="directions-heading">三个方向</h2>
+              <p>汇总只看年度已到账、年度目标和当前下一步。</p>
+            </div>
+            <ShieldCheck aria-hidden="true" />
+          </div>
+
+          <article className="coast-lane coast-lane--primary">
+            <div className="coast-lane__header">
+              <div>
+                <p className="coast-lane__role">现金主攻</p>
+                <h3>Hunter</h3>
+              </div>
+              <span className="coast-status coast-status--strong">
+                {activeHunterTargets.length} 个主攻
+              </span>
+            </div>
+            <p className="coast-lane__next">
+              {primaryHunterTarget?.nextStep ||
+                (primaryHunterTarget
+                  ? `为 ${primaryHunterTarget.name} 补一条可验证的下一步。`
+                  : "目标池为空，先建立一个有明确攻击假设的 P0。")}
+            </p>
+            <dl className="coast-lane__facts">
+              <div>
+                <dt>年度已到账</dt>
+                <dd>{formatMoney(hunterIncome)}</dd>
+              </div>
+              <div>
+                <dt>年度目标</dt>
+                <dd>{formatMoney(BUSINESS_LINE_TARGETS_2026.Hunter)}</dd>
+              </div>
+              <div>
+                <dt>目标池</dt>
+                <dd>{hunterTargets.length}</dd>
+              </div>
+            </dl>
+            <Link className="coast-button coast-button--primary" href="/aibounty">
+              打开 AIBounty
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </article>
+
+          <div className="coast-support-lanes">
+            <article className="coast-lane coast-lane--compact">
+              <Video aria-hidden="true" />
+              <div>
+                <p className="coast-lane__role">产品验证</p>
+                <h3>KOL Clips</h3>
+                <p>先验证固定样例、生产 E2E 与外部用户真实运行。</p>
+                <p className="coast-lane__measure">
+                  年度已到账 {formatMoney(saasIncome)} / {formatMoney(BUSINESS_LINE_TARGETS_2026.SaaS)}
                 </p>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/2026"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-[0_8px_24px_rgba(4,120,87,0.25)] transition-all hover:bg-emerald-800 hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  进入 2026 工作台
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="#asset-progress"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl glass-btn px-6 text-sm font-bold text-stone-800 transition-all hover:scale-[1.02]"
-                >
-                  更新资产快照
-                  <WalletCards className="h-4 w-4" />
-                </a>
-              </div>
-            </div>
-
-            {/* KPI Cards Grid */}
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-              {[
-                {
-                  label: "2026 收入进度",
-                  value: formatMoney(activeYearIncome),
-                  meta: `目标 ${formatMoney(activeYearTarget)} · ${activeYearProgress.toFixed(1)}%`,
-                  accent: "bg-emerald-600",
-                },
-                {
-                  label: "2030 目标净资产",
-                  value: formatMoney(currentNetWorth),
-                  meta: `目标 ${formatMoney(NET_WORTH_TARGET_2030)} · ${assetProgress.toFixed(2)}%`,
-                  accent: "bg-cyan-600",
-                },
-                {
-                  label: "五年累计收入路线",
-                  value: `${totalProgress.toFixed(1)}%`,
-                  meta: `${formatMoney(totalIncome)} / ${formatMoney(totalTarget)}`,
-                  accent: "bg-amber-500",
-                },
-              ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/60 bg-white/40 p-3 px-4 backdrop-blur-sm transition-all hover:bg-white/60">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">{item.label}</p>
-                    <span className={`h-2.5 w-2.5 rounded-full ${item.accent} animate-pulse`} />
-                  </div>
-                  <p className="mt-1.5 text-2xl lg:text-3xl font-black text-stone-950 tracking-tight">{item.value}</p>
-                  <p className="mt-0.5 text-xs font-medium text-stone-600">{item.meta}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Primary Action Shortcuts */}
-        <section className="grid gap-3 md:grid-cols-3">
-          {primaryActions.map((item, index) => {
-            const Icon = item.icon;
-            const content = (
-              <div className={`flex h-full items-start justify-between gap-4 rounded-2xl p-5 transition-all glass-panel glass-panel-hover ${index === 0 ? "border-emerald-300/60 bg-emerald-50/10" : ""}`}>
-                <div className="min-w-0 space-y-2">
-                  <p className="text-xs font-bold text-stone-500 tracking-wider uppercase">{item.label}</p>
-                  <h2 className="text-base font-bold leading-snug text-stone-900">{item.title}</h2>
-                  <p className="text-xs leading-normal text-stone-600">{item.meta}</p>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 shadow-sm border border-emerald-100">
-                  <Icon className="h-5 w-5" />
-                </div>
-              </div>
-            );
-
-            if (item.external) {
-              return (
-                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className="block">
-                  {content}
-                </a>
-              );
-            }
-
-            return (
-              <a key={item.label} href={item.href} className="block">
-                {content}
-              </a>
-            );
-          })}
-        </section>
-
-        <FiveYearRoadmap
-          yearData={roadmapData}
-          totalTarget={totalTarget}
-          totalIncome={totalIncome}
-          totalProgress={totalProgress}
-        />
-
-        <div id="asset-progress">
-        <AssetProgressCard
-          snapshots={assetSnapshots}
-          target={NET_WORTH_TARGET_2030}
-          defaultDate={getBeijingCurrentDate()}
-          milestones={NET_WORTH_MILESTONES}
-        />
-        </div>
-
-        <section className="grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
-          <Card className="border-stone-200 bg-white/78 py-0 shadow-[0_6px_20px_rgba(84,61,31,0.04)]">
-            <CardHeader className="pb-2 pt-4">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Target className="h-4 w-4 text-emerald-700" />
-                年度快照
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pb-4">
-              <div className="divide-y divide-stone-200">
-                {years.map((year, index) => {
-                  const income = incomes[index];
-                  const target = YEAR_TARGETS[year];
-                  const progress = target > 0 ? Math.min((income / target) * 100, 100) : 0;
-                  const link = YEAR_LINKS[year];
-                  const row = (
-                    <div className="grid grid-cols-[64px_1fr_auto] items-center gap-3 py-3">
-                      <div>
-                        <p className="font-semibold text-stone-950">{year}</p>
-                        <p className={`mt-1 text-xs ${link ? "text-emerald-700" : "text-stone-400"}`}>
-                          {link ? "已开启" : "待开启"}
-                        </p>
-                      </div>
-                      <div className="min-w-0">
-                        <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
-                          <div
-                            className="h-full rounded-full bg-emerald-600 transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                        <p className="mt-2 truncate text-sm text-stone-600">
-                          {formatMoney(income)} / {formatMoney(target)}
-                        </p>
-                      </div>
-                      <p className="text-sm font-semibold text-stone-900">{progress.toFixed(1)}%</p>
-                    </div>
-                  );
-
-                  if (!link) return <div key={year}>{row}</div>;
-                  return (
-                    <Link key={year} href={link} className="block hover:bg-stone-50">
-                      {row}
-                    </Link>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <IncomeCompositionCard
-            monthlyComposition={monthlyComposition}
-            yearlyComposition={yearlyComposition}
-          />
-        </section>
-
-        <section className="space-y-2">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm text-stone-500">项目工作台</p>
-              <h2 className="mt-1 text-xl font-semibold">三条业务线</h2>
-            </div>
-            <BriefcaseBusiness className="h-5 w-5 text-stone-500" />
-          </div>
-          <div className="grid gap-3 md:grid-cols-3">
-            {apps.map((app) => (
-              <Link key={app.title} href={app.href} className="block">
-                <div className="h-full rounded-2xl glass-panel glass-panel-hover p-4">
-                  <div className="flex items-center justify-between gap-3">
-                     <h3 className="text-base font-semibold text-stone-950">{app.title}</h3>
-                     <span className="rounded-full bg-emerald-50 border border-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">{app.badge}</span>
-                  </div>
-                  <p className="mt-2 text-sm leading-5 text-stone-700">{app.description}</p>
-                  <p className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
-                    {app.next}
-                    <ArrowRight className="h-4 w-4" />
-                  </p>
-                </div>
+              <Link className="coast-text-link" href="/productlab">
+                打开 Product Lab
+                <ArrowRight aria-hidden="true" />
               </Link>
-            ))}
+            </article>
+
+            <article className="coast-lane coast-lane--compact">
+              <FileText aria-hidden="true" />
+              <div>
+                <p className="coast-lane__role">内容支持</p>
+                <h3>AI Notes</h3>
+                <p>只放大已经发生的 Hunter 证据、产品案例和真实失败复盘。</p>
+                <p className="coast-lane__measure">
+                  年度已到账 {formatMoney(mediaIncome)} / {formatMoney(BUSINESS_LINE_TARGETS_2026.Media)}
+                </p>
+              </div>
+              <Link className="coast-text-link" href="/ainotes">
+                打开 AI Notes
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </article>
           </div>
         </section>
+
+        <section className="coast-milestones" aria-labelledby="milestones-heading">
+          <div className="coast-section-heading">
+            <div>
+              <h2 id="milestones-heading">净资产里程碑</h2>
+              <p>每年底用资产快照判断是否跨过里程碑；这里不把收入替代成净资产。</p>
+            </div>
+            <WalletCards aria-hidden="true" />
+          </div>
+          <ol>
+            {milestones.map((milestone) => (
+              <li key={milestone.year} data-reached={milestone.reached ? "true" : undefined}>
+                <span>{milestone.year}</span>
+                <strong>{formatMoney(milestone.target)}</strong>
+                <small>{milestone.reached ? "已达到" : "未达到"}</small>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="asset-progress" className="coast-assets" aria-labelledby="assets-heading">
+          <div className="coast-section-heading">
+            <div>
+              <h2 id="assets-heading">资产总盘</h2>
+              <p>资产与负债使用独立快照，不用收入流水替代净资产。</p>
+            </div>
+            <WalletCards aria-hidden="true" />
+          </div>
+          <AssetProgressCard
+            snapshots={assetSnapshots}
+            target={NET_WORTH_TARGET_2030}
+            defaultDate={currentDate}
+            milestones={NET_WORTH_MILESTONES}
+          />
+          <p className="coast-assets__summary">
+            数据截至：收入 {currentDate} · 资产快照 {latestAssetSnapshot?.snapshotDate || "未记录"}。
+          </p>
+        </section>
+
+        <footer className="coast-footer">
+          <span>Coast2030 · 首页是五年总盘，2026 是当前执行工作台。</span>
+          <Link href="/2026">进入 2026 工作台</Link>
+        </footer>
       </div>
     </main>
   );

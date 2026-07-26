@@ -78,7 +78,7 @@ export default function LoginPage() {
                         </div>
                         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
                         <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? "登录中..." : "登录"}
+                            {loading ? "登录中…" : "登录"}
                         </Button>
                     </form>
                 </CardContent>

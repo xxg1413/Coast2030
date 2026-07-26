@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/dashboard/page-header";
+import { MorningActionPanel } from "@/components/dashboard/morning-action-panel";
 import {
   formatMoney,
   getBeijingCurrentDate,
@@ -20,21 +21,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DailyTaskList } from "@/components/dashboard/daily-task-list";
 import { ExternalTaskList } from "@/components/dashboard/external-task-list";
-import { MorningActionPanel } from "@/components/dashboard/morning-action-panel";
 import { MonthlyTaskList } from "@/components/dashboard/monthly-task-list";
 import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
 import { getIncomeTypeConfig } from "@/lib/income-types";
-import { getMonthlyTarget, YEAR_TARGETS } from "@/lib/targets";
+import {
+  BUSINESS_LINE_TARGETS_2026,
+  getAnnualRecoveryPace,
+  getMonthlyTarget,
+  YEAR_TARGETS,
+} from "@/lib/targets";
 import { CalendarCheck, ClipboardList, ListTodo, Target, TrendingUp } from "lucide-react";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-const AIBOUNTY_URL = process.env.NEXT_PUBLIC_AIBOUNTY_URL || "https://aibounty.pxiaoer.blog/";
-const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
-const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
-
 interface Props {
   searchParams: Promise<{ month?: string; day?: string; taskMonth?: string }>;
 }
@@ -43,23 +44,27 @@ export default async function Year2026Page({ searchParams }: Props) {
   const params = await searchParams;
   const availableMonths = await getAvailableMonths(2026);
   const currentCalendarMonth = getBeijingCurrentYearMonth();
-  const fallbackMonth = availableMonths.includes(currentCalendarMonth)
-    ? currentCalendarMonth
-    : availableMonths[0] || currentCalendarMonth;
-  const currentMonth = params.month && availableMonths.includes(params.month) ? params.month : fallbackMonth;
-  const currentDay = params.day && DATE_REGEX.test(params.day) ? params.day : getBeijingCurrentDate();
+  const selectableMonths = Array.from(new Set([currentCalendarMonth, ...availableMonths])).sort((left, right) =>
+    right.localeCompare(left),
+  );
+  const currentMonth =
+    params.month && selectableMonths.includes(params.month)
+      ? params.month
+      : currentCalendarMonth;
+  const currentDate = getBeijingCurrentDate();
+  const currentDay = params.day && DATE_REGEX.test(params.day) ? params.day : currentDate;
   const currentTaskMonth =
     params.taskMonth === "all"
       ? "all"
-      : params.taskMonth && availableMonths.includes(params.taskMonth)
+      : params.taskMonth && selectableMonths.includes(params.taskMonth)
         ? params.taskMonth
         : currentMonth;
 
   const [
     weeklyFocus,
+    morningLog,
     monthlyTasks,
     dailyTasks,
-    morningLog,
     externalTasks,
     externalHealth,
     aiBountyGoal,
@@ -73,9 +78,9 @@ export default async function Year2026Page({ searchParams }: Props) {
   ] =
     await Promise.all([
       getStructuredWeeklyFocus(),
+      getMorningLog(currentDate),
       getMonthlyTasks(currentTaskMonth === "all" ? undefined : currentTaskMonth),
       getDailyTasks(currentDay),
-      getMorningLog(currentDay),
       getExternalTasks(),
       getExternalSourceHealth(),
       getAIBountyGoalProgress(),
@@ -99,6 +104,7 @@ export default async function Year2026Page({ searchParams }: Props) {
   const weeklyOpen = Math.max(weeklyFocus.tasks.length - weeklyCompleted, 0);
   const monthlyOpen = Math.max(monthlyTasks.length - monthlyCompleted, 0);
   const monthGap = Math.max(monthTarget - monthlyIncome, 0);
+  const recovery = getAnnualRecoveryPace(2026, yearIncome, currentDate);
 
   const executionRows = [
     {
@@ -130,15 +136,15 @@ export default async function Year2026Page({ searchParams }: Props) {
   ];
 
   const incomeStats = [
-    { label: "本月收入", value: formatMoney(monthlyIncome), sub: `${currentMonth}` },
-    { label: "本月目标", value: formatMoney(monthTarget), sub: `还差 ${formatMoney(monthGap)}` },
-    { label: "年度累计", value: formatMoney(yearIncome), sub: `目标 ${formatMoney(yearTarget)}` },
-    { label: "年度完成率", value: `${annualProgress.toFixed(1)}%`, sub: `本月 ${monthlyProgress.toFixed(1)}%` },
+    { label: "所选月收入", value: formatMoney(monthlyIncome), sub: `${currentMonth}` },
+    { label: "所选月原排期", value: formatMoney(monthTarget), sub: `还差 ${formatMoney(monthGap)}` },
+    { label: "年度剩余", value: formatMoney(recovery.remaining), sub: `剩余 ${recovery.daysRemaining} 天` },
+    { label: "每周需入账", value: formatMoney(recovery.weeklyRequired), sub: `旧排期未覆盖 ${formatMoney(recovery.scheduleGap)}` },
   ];
   const targetLines = [
-    { label: "Hunter", current: hunterIncome, target: 300000, className: "bg-blue-600" },
-    { label: "SaaS", current: saasIncome, target: 550000, className: "bg-emerald-600" },
-    { label: "Media", current: mediaIncome, target: 150000, className: "bg-amber-500" },
+    { label: "Hunter", current: hunterIncome, target: BUSINESS_LINE_TARGETS_2026.Hunter, className: "bg-blue-600" },
+    { label: "SaaS", current: saasIncome, target: BUSINESS_LINE_TARGETS_2026.SaaS, className: "bg-emerald-600" },
+    { label: "Media", current: mediaIncome, target: BUSINESS_LINE_TARGETS_2026.Media, className: "bg-amber-500" },
   ];
 
   return (
@@ -146,16 +152,12 @@ export default async function Year2026Page({ searchParams }: Props) {
       <div className="mx-auto w-full max-w-[1280px] space-y-4">
         <PageHeader
           title="2026 个人计划"
-          subtitle="Coast2030"
-          navItems={[
-            { label: "Product Lab", href: PRODUCT_LAB_URL, variant: "cyan", external: true },
-            { label: "AI Notes", href: AI_NOTES_URL, variant: "amber", external: true },
-            { label: "AIBounty", href: AIBOUNTY_URL, variant: "emerald", external: true },
-            { label: "← 返回年度主页", href: "/", variant: "default" },
-          ]}
+          subtitle="晨间行动、任务、收入与回款明细"
         />
 
-        <MorningActionPanel log={morningLog} />
+        <section className="coast-primary-workbench" aria-label="2026 晨间行动">
+          <MorningActionPanel log={morningLog} />
+        </section>
 
         <section className="space-y-4">
           <div>
@@ -164,7 +166,7 @@ export default async function Year2026Page({ searchParams }: Props) {
           </div>
           <div className="grid gap-3 xl:grid-cols-3">
             <WeeklyFocusList tasks={weeklyFocus.tasks} title={weeklyFocus.title} />
-            <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={availableMonths} />
+            <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={selectableMonths} />
             <DailyTaskList date={currentDay} tasks={dailyTasks} />
             <ExternalTaskList tasks={externalTasks} health={externalHealth} />
           </div>
@@ -215,7 +217,7 @@ export default async function Year2026Page({ searchParams }: Props) {
                   <p className="text-sm font-medium text-stone-500">收入进度</p>
                   <CardTitle className="mt-1 flex items-center gap-2 text-2xl font-bold">
                     <TrendingUp className="h-5 w-5 text-emerald-700" />
-                    本月收入目标
+                    收入与追赶节奏
                   </CardTitle>
                 </div>
                 <RevenueRecorder />
@@ -226,7 +228,7 @@ export default async function Year2026Page({ searchParams }: Props) {
                 {incomeStats.map((item) => (
                   <div key={item.label} className="border-b border-stone-200/50 pb-3">
                     <p className="text-sm text-stone-500 font-medium">{item.label}</p>
-                    <p className="mt-1 text-2xl lg:text-3xl font-black text-stone-950 tracking-tight">{item.value}</p>
+                    <p className="mt-1 text-xl sm:text-2xl lg:text-3xl font-black text-stone-950 tracking-tight">{item.value}</p>
                     <p className="mt-0.5 text-xs text-stone-500 font-medium">{item.sub}</p>
                   </div>
                 ))}
@@ -235,7 +237,7 @@ export default async function Year2026Page({ searchParams }: Props) {
               <div className="space-y-4">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-stone-500 font-medium">本月达成率</span>
+                    <span className="text-stone-500 font-medium">原月度排期达成率</span>
                     <span className="font-bold text-stone-900">{monthlyProgress.toFixed(1)}%</span>
                   </div>
                   <Progress value={monthlyProgress} className="h-2.5 bg-stone-200/60 rounded-full border border-white/30 shadow-inner" indicatorClassName="bg-emerald-600" />
@@ -286,7 +288,7 @@ export default async function Year2026Page({ searchParams }: Props) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-semibold">收入明细</h2>
             <div className="flex gap-2">
-              <MonthFilter months={availableMonths} currentMonth={currentMonth} />
+              <MonthFilter months={selectableMonths} currentMonth={currentMonth} />
             </div>
           </div>
           <TransactionList transactions={transactions} month={currentMonth} />

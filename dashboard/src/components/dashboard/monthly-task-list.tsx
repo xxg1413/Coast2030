@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
@@ -102,10 +102,13 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
   };
 
   return (
-    <Card className="w-full h-full flex flex-col border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
+    <Card className="glass-panel flex h-full w-full flex-col">
       <CardHeader className="space-y-3 pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">📅 本月关键点</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarDays className="h-4 w-4 text-cyan-700" aria-hidden="true" />
+            本月关键点
+          </CardTitle>
         </div>
         <Select value={month} onValueChange={handleMonthChange}>
           <SelectTrigger className="w-full max-w-[220px] h-9 bg-white border-stone-200">
@@ -190,7 +193,7 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
             onChange={(e) => setNewTask(e.target.value)}
             className="bg-white border-stone-200"
             disabled={isAllMonths}
-            placeholder={isAllMonths ? "请先选择具体月份再新增" : "新增关键点..."}
+            placeholder={isAllMonths ? "请先选择具体月份再新增" : "新增关键点…"}
           />
           <Button type="submit" size="icon" disabled={adding || isAllMonths}>
             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

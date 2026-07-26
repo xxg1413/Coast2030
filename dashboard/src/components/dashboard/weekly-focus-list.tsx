@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Crosshair, Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EmptyState } from "./empty-state";
 
@@ -85,10 +85,13 @@ export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: Week
   };
 
   return (
-    <Card className="flex h-full w-full flex-col border-stone-200 bg-white/78 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
+    <Card className="glass-panel flex h-full w-full flex-col">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">🎯 {title}</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Crosshair className="h-4 w-4 text-cyan-700" aria-hidden="true" />
+            {title}
+          </CardTitle>
           <div className="text-xs text-stone-500">
             {completedCount}/{tasks.length} 完成
           </div>
@@ -163,7 +166,7 @@ export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: Week
             onChange={(event) => setNewTask(event.target.value)}
             onKeyDown={(event) => event.key === "Enter" && handleAdd()}
             className="bg-white border-stone-200"
-            placeholder="新增本周焦点..."
+            placeholder="新增本周焦点…"
           />
           <Button size="icon" onClick={handleAdd} disabled={adding}>
             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}

@@ -52,8 +52,13 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
   const [activePomodoroKey, setActivePomodoroKey] = useState<string | null>(null);
   const [lockedPomodoroKey, setLockedPomodoroKey] = useState<string | null>(null);
   const [draftCustomKey, setDraftCustomKey] = useState<string | null>(null);
-  const mountedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastQueuedPayloadRef = useRef(
+    JSON.stringify({
+      items: normalizeInitialItems(log.items),
+      customItems: log.customItems,
+    }),
+  );
 
   const coreItems = useMemo(
     () => CORE_DEFINITIONS.map((definition) => ({
@@ -159,10 +164,10 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
   }, [customItems, items, log.date, router]);
 
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
+    const nextPayload = JSON.stringify({ items, customItems });
+    if (nextPayload === lastQueuedPayloadRef.current) return;
+    lastQueuedPayloadRef.current = nextPayload;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       void save();

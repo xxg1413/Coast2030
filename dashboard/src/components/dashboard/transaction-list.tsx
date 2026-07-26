@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2, TrendingUp } from "lucide-react";
+import { Loader2, Trash2, TrendingUp, WalletCards } from "lucide-react";
 import { getIncomeTypeConfig } from "@/lib/income-types";
 import { EmptyState } from "./empty-state";
 
@@ -115,13 +115,16 @@ export function TransactionList({ transactions, month }: { transactions: Transac
   };
 
   return (
-    <Card className="w-full border-stone-200 bg-white/80 shadow-[0_8px_30px_rgba(84,61,31,0.06)]">
+    <Card className="glass-panel w-full">
       <CardHeader className="pb-4">
-        <CardTitle className="text-base">💰 {month} 收入明细</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <WalletCards className="h-4 w-4 text-cyan-700" aria-hidden="true" />
+          {month} 收入明细
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
-          <EmptyState message={`${month} 暂无收入记录，加油！`} />
+          <EmptyState message={`${month} 暂无收入记录。`} />
         ) : (
           <>
             {/* Mobile: Card list */}

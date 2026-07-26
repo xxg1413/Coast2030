@@ -143,13 +143,19 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - progress / 100);
-  const ringColor = completed ? "#16a34a" : isBreak ? "#0891b2" : isUrgent ? "#dc2626" : "#d97706";
+  const ringColor = completed
+    ? "var(--color-success)"
+    : isBreak
+      ? "var(--color-accent)"
+      : isUrgent
+        ? "var(--color-danger)"
+        : "var(--color-warning)";
 
   return (
-    <div className="mt-2 flex flex-col gap-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-orange-50/60 p-4 sm:flex-row sm:items-center sm:gap-6">
+    <div className="coast-pomodoro mt-2 flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:gap-6">
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#f5f5f4" strokeWidth={stroke} />
+          <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--color-rule)" strokeWidth={stroke} />
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -160,7 +166,6 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
-            className="transition-all duration-300 ease-linear"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -189,11 +194,11 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-amber-700">🍅 番茄钟 · 30 分钟专注</p>
+          <p className="text-xs font-medium text-amber-700">番茄钟 · 30 分钟专注</p>
           <p className="mt-0.5 truncate text-base font-semibold text-stone-900">{label}</p>
           <p className="mt-0.5 text-xs text-stone-500">
             {completed
-              ? "专注完成！可以开始 5 分钟短休息。"
+              ? "专注完成。可以开始 5 分钟短休息。"
               : isBreak
                 ? "休息一下，喝口水，准备好再开始下一个。"
                 : running

@@ -1,4 +1,5 @@
 import { getDB } from "./db";
+import { BUSINESS_LINE_TARGETS_2026, YEAR_TARGETS as ANNUAL_YEAR_TARGETS } from "./targets";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -15,13 +16,6 @@ const PRODUCT_LAB_SYNC_PASSWORD = process.env.PRODUCT_LAB_SYNC_PASSWORD || "";
 const AI_NOTES_URL = process.env.NEXT_PUBLIC_AI_NOTES_URL || "https://ainote.pxiaoer.blog/";
 const PRODUCT_LAB_URL = process.env.NEXT_PUBLIC_PRODUCT_LAB_URL || "https://productlab.pxiaoer.blog/";
 const USD_CNY_RATE = Number(process.env.USD_CNY_RATE || 7.2);
-const YEAR_TARGETS = {
-    cashFlow: 1000000,
-    saas: 550000,
-    hunter: 300000,
-    media: 150000,
-} as const;
-
 type IncomeType = (typeof INCOME_TYPES)[number];
 export type CurrencyCode = "CNY" | "USD";
 export type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
@@ -1115,6 +1109,16 @@ interface AiNotesStateResponse {
         notes?: string;
         platformLabel?: string;
     }>;
+    incomeSummary?: {
+        year: number;
+        annualSettledAmount: number;
+        months: Array<{
+            month: string;
+            settledAmount: number;
+            pendingAmount: number;
+            recordCount: number;
+        }>;
+    };
 }
 
 interface AIBountyExportResponse {
@@ -1557,7 +1561,7 @@ export async function getAIBountyGoalProgress(): Promise<AIBountyGoalProgress> {
     const receivedUsd = roundMoney(
         vulns.reduce((sum, item) => sum + Math.max(0, Number(item.receivedBounty || 0)), 0),
     );
-    const submittedStatuses = new Set(["Submitted", "Triaged", "Resolved", "Paid"]);
+    const submittedStatuses = new Set(["Submitted", "Triaged", "Awarded", "Resolved", "Paid"]);
 
     return {
         targetUsd,
@@ -1602,14 +1606,51 @@ function sumTransactions(transactions: Transaction[]): number {
     return transactions.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
 }
 
+function getAiNotesSummaryAmount(
+    payload: AiNotesStateResponse | null,
+    options: { month?: string; year?: number },
+): number | null {
+    const summary = payload?.incomeSummary;
+    if (!summary) return null;
+
+    if (options.month) {
+        const month = summary.months.find((item) => item.month === options.month);
+        return month ? roundMoney(month.settledAmount || 0) : 0;
+    }
+
+    if (options.year && summary.year === options.year) {
+        return roundMoney(summary.annualSettledAmount || 0);
+    }
+
+    return null;
+}
+
+async function sumTransactionsWithAiNotesSummary(
+    transactions: Transaction[],
+    options: { month?: string; year?: number; type?: IncomeType },
+): Promise<number> {
+    const filtered = filterTransactions(transactions, options);
+    const base = sumTransactions(filtered);
+    if (options.type && options.type !== "Media") return base;
+
+    const { aiNotes } = await getExternalSyncPayloads();
+    const summaryAmount = getAiNotesSummaryAmount(aiNotes, options);
+    if (summaryAmount === null) return base;
+
+    const recentAiNotesAmount = sumTransactions(
+        filtered.filter((transaction) => transaction.source === "AI Notes" && transaction.type === "Media"),
+    );
+    return roundMoney(base - recentAiNotesAmount + summaryAmount);
+}
+
 async function getMonthlyIncomeByType(month: string, type?: IncomeType): Promise<number> {
     const transactions = await getUnifiedTransactions();
-    return sumTransactions(filterTransactions(transactions, { month, type }));
+    return sumTransactionsWithAiNotesSummary(transactions, { month, type });
 }
 
 export async function getYearIncome(year: number, type?: IncomeType): Promise<number> {
     const transactions = await getUnifiedTransactions();
-    return sumTransactions(filterTransactions(transactions, { year, type }));
+    return sumTransactionsWithAiNotesSummary(transactions, { year, type });
 }
 
 export async function getCoreMetrics(month?: string): Promise<Metric[]> {
@@ -1650,32 +1691,32 @@ export async function getCoreMetrics(month?: string): Promise<Metric[]> {
             label: "现金流",
             monthly: monthlyCashFlow,
             yearToDate: ytdCashFlow,
-            yearlyTarget: YEAR_TARGETS.cashFlow,
-            progress: getProgress(ytdCashFlow, YEAR_TARGETS.cashFlow),
+            yearlyTarget: ANNUAL_YEAR_TARGETS[targetYear] || 0,
+            progress: getProgress(ytdCashFlow, ANNUAL_YEAR_TARGETS[targetYear] || 0),
             trend: getTrendText(monthlyCashFlow, previousCashFlow),
         },
         {
             label: "Hunter 收入",
             monthly: monthlyHunter,
             yearToDate: ytdHunter,
-            yearlyTarget: YEAR_TARGETS.hunter,
-            progress: getProgress(ytdHunter, YEAR_TARGETS.hunter),
+            yearlyTarget: BUSINESS_LINE_TARGETS_2026.Hunter,
+            progress: getProgress(ytdHunter, BUSINESS_LINE_TARGETS_2026.Hunter),
             trend: getTrendText(monthlyHunter, previousHunter),
         },
         {
             label: "SaaS 收入",
             monthly: monthlySaaS,
             yearToDate: ytdSaaS,
-            yearlyTarget: YEAR_TARGETS.saas,
-            progress: getProgress(ytdSaaS, YEAR_TARGETS.saas),
+            yearlyTarget: BUSINESS_LINE_TARGETS_2026.SaaS,
+            progress: getProgress(ytdSaaS, BUSINESS_LINE_TARGETS_2026.SaaS),
             trend: getTrendText(monthlySaaS, previousSaaS),
         },
         {
             label: "自媒体收入",
             monthly: monthlyMedia,
             yearToDate: ytdMedia,
-            yearlyTarget: YEAR_TARGETS.media,
-            progress: getProgress(ytdMedia, YEAR_TARGETS.media),
+            yearlyTarget: BUSINESS_LINE_TARGETS_2026.Media,
+            progress: getProgress(ytdMedia, BUSINESS_LINE_TARGETS_2026.Media),
             trend: getTrendText(monthlyMedia, previousMedia),
         },
     ];
@@ -1710,7 +1751,7 @@ export async function deleteTransaction(id: number): Promise<boolean> {
 export async function getTotalIncome(month?: string): Promise<number> {
     const normalizedMonth = normalizeYearMonth(month);
     const transactions = await getUnifiedTransactions();
-    return sumTransactions(filterTransactions(transactions, { month: normalizedMonth }));
+    return sumTransactionsWithAiNotesSummary(transactions, { month: normalizedMonth });
 }
 
 export interface IncomeCompositionItem {
@@ -1722,12 +1763,17 @@ export interface IncomeCompositionItem {
 export async function getIncomeComposition(month?: string): Promise<IncomeCompositionItem[]> {
     const targetMonth = normalizeYearMonth(month) || getCurrentYearMonth();
     const transactions = filterTransactions(await getUnifiedTransactions(), { month: targetMonth });
-    const total = sumTransactions(transactions);
     const byType = new Map<string, number>();
 
     for (const transaction of transactions) {
         byType.set(transaction.type, (byType.get(transaction.type) || 0) + Number(transaction.amount || 0));
     }
+
+    byType.set(
+        "Media",
+        await sumTransactionsWithAiNotesSummary(transactions, { month: targetMonth, type: "Media" }),
+    );
+    const total = Array.from(byType.values()).reduce((sum, amount) => sum + amount, 0);
 
     return INCOME_TYPES.map((type) => {
         const amount = byType.get(type) || 0;
@@ -1742,12 +1788,17 @@ export async function getIncomeComposition(month?: string): Promise<IncomeCompos
 export async function getYearIncomeComposition(year?: number): Promise<IncomeCompositionItem[]> {
     const targetYear = year || new Date().getFullYear();
     const transactions = filterTransactions(await getUnifiedTransactions(), { year: targetYear });
-    const total = sumTransactions(transactions);
     const byType = new Map<string, number>();
 
     for (const transaction of transactions) {
         byType.set(transaction.type, (byType.get(transaction.type) || 0) + Number(transaction.amount || 0));
     }
+
+    byType.set(
+        "Media",
+        await sumTransactionsWithAiNotesSummary(transactions, { year: targetYear, type: "Media" }),
+    );
+    const total = Array.from(byType.values()).reduce((sum, amount) => sum + amount, 0);
 
     return INCOME_TYPES.map((type) => {
         const amount = byType.get(type) || 0;

@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased bg-[#faf7f2] min-h-screen flex flex-col text-stone-900">
+      <body className="min-h-svh flex flex-col antialiased">
         <Navigation />
         <div className="flex-1 w-full flex flex-col">
           {children}

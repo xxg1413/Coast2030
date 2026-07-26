@@ -62,6 +62,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
   const [totalAssets, setTotalAssets] = useState("");
   const [totalLiabilities, setTotalLiabilities] = useState("");
   const [notes, setNotes] = useState("");
+  const [error, setError] = useState(false);
 
   const latest = snapshots[0];
   const previous = snapshots[1];
@@ -103,12 +104,14 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
     const netWorth = assetsValue - liabilitiesValue;
 
     if (!snapshotDate || totalAssets === "" || !Number.isFinite(assetsValue) || !Number.isFinite(liabilitiesValue)) {
+      setError(true);
       return;
     }
 
     setLoading(true);
+    setError(false);
     try {
-      await fetch("/api/assets/snapshot/add", {
+      const response = await fetch("/api/assets/snapshot/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -119,6 +122,9 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
           notes: notes.trim(),
         }),
       });
+      if (!response.ok) {
+        throw new Error(`Asset snapshot save failed: ${response.status}`);
+      }
 
       setOpen(false);
       setSnapshotDate(defaultDate);
@@ -128,20 +134,21 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
       router.refresh();
     } catch (error) {
       console.error(error);
+      setError(true);
     } finally {
       setLoading(false);
     }
   };
 
   const statItems = [
-    { label: "当前净资产", value: formatMoney(currentNetWorth), icon: Wallet, iconBg: "bg-blue-50", iconColor: "text-blue-600" },
-    { label: "总资产", value: formatMoney(currentAssets), icon: Landmark, iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
-    { label: "总负债", value: formatMoney(currentLiabilities), icon: CreditCard, iconBg: "bg-amber-50", iconColor: "text-amber-600" },
-    { label: "距离目标", value: formatMoney(gap), icon: Target, iconBg: "bg-rose-50", iconColor: "text-rose-600" },
+    { label: "当前净资产", value: formatMoney(currentNetWorth), icon: Wallet },
+    { label: "总资产", value: formatMoney(currentAssets), icon: Landmark },
+    { label: "总负债", value: formatMoney(currentLiabilities), icon: CreditCard },
+    { label: "距离目标", value: formatMoney(gap), icon: Target },
   ];
 
   return (
-    <Card className="border-stone-200 bg-white/80 shadow-[0_12px_36px_rgba(84,61,31,0.08)]">
+    <Card className="glass-panel py-0">
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
@@ -152,7 +159,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs text-blue-700">
+            <div className="coast-status coast-status--strong">
               目标 {formatMoney(target)}
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
@@ -170,18 +177,18 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="snapshot-date" className="text-right">日期</Label>
+                  <div className="grid gap-2">
+                    <Label htmlFor="snapshot-date">日期</Label>
                     <Input
                       id="snapshot-date"
                       type="date"
                       value={snapshotDate}
                       onChange={(event) => setSnapshotDate(event.target.value)}
-                      className="col-span-3"
+                      aria-invalid={error && !snapshotDate}
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="total-assets" className="text-right">总资产</Label>
+                  <div className="grid gap-2">
+                    <Label htmlFor="total-assets">总资产</Label>
                     <Input
                       id="total-assets"
                       type="number"
@@ -189,12 +196,12 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
                       step="1000"
                       value={totalAssets}
                       onChange={(event) => setTotalAssets(event.target.value)}
-                      className="col-span-3"
                       placeholder="例如：150000"
+                      aria-invalid={error && totalAssets === ""}
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="total-liabilities" className="text-right">总负债</Label>
+                  <div className="grid gap-2">
+                    <Label htmlFor="total-liabilities">总负债</Label>
                     <Input
                       id="total-liabilities"
                       type="number"
@@ -202,11 +209,10 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
                       step="1000"
                       value={totalLiabilities}
                       onChange={(event) => setTotalLiabilities(event.target.value)}
-                      className="col-span-3"
                       placeholder="例如：20000"
                     />
                   </div>
-                  <div className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
+                  <div className="coast-asset-preview">
                     当前净资产预览：{formatMoney(Number(totalAssets || 0) - Number(totalLiabilities || 0))}
                   </div>
                   <div className="grid gap-2">
@@ -219,6 +225,9 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
                       rows={4}
                     />
                   </div>
+                  <p className="min-h-5 text-sm text-red-700" role="alert" aria-live="polite">
+                    {error ? "资产快照未保存。请检查金额和日期后重试。" : ""}
+                  </p>
                 </div>
                 <DialogFooter>
                   <Button
@@ -235,16 +244,16 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="coast-asset-stats">
           {statItems.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.label}
-                className="flex items-center gap-2.5 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5"
+                className="coast-asset-stat"
               >
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${item.iconBg}`}>
-                  <Icon className={`h-4 w-4 ${item.iconColor}`} />
+                <div>
+                  <Icon />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-stone-500">{item.label}</p>
@@ -260,11 +269,11 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
             <span className="text-stone-500">目标完成率</span>
             <span className="font-medium">{progress.toFixed(2)}%</span>
           </div>
-          <Progress value={progress} className="h-3 bg-stone-200" indicatorClassName="bg-blue-500" />
+          <Progress value={progress} className="h-3 bg-stone-200" indicatorClassName="bg-cyan-700" />
         </div>
 
         {milestones && (
-          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
+          <div className="coast-asset-milestones">
             <p className="text-sm font-medium text-stone-900 mb-3">年度净资产里程碑</p>
             <div className="grid grid-cols-5 gap-2">
               {Object.entries(milestones).map(([year, milestone]) => {
@@ -290,8 +299,8 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
           </div>
         )}
 
-        <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
+        <div className="coast-asset-grid">
+          <div className="coast-asset-panel">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-medium text-stone-900">净资产趋势</p>
               <span className={`flex items-center gap-1 text-sm ${delta >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
@@ -302,33 +311,28 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
             <div className="mt-4">
               {chartCoordinates.length >= 2 ? (
                 <div className="space-y-3">
-                  <div className="rounded-lg border border-stone-200 bg-white p-3">
-                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="h-40 w-full overflow-visible">
-                      <defs>
-                        <linearGradient id="net-worth-line" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#60a5fa" />
-                          <stop offset="100%" stopColor="#34d399" />
-                        </linearGradient>
-                        <linearGradient id="net-worth-fill" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.2" />
-                          <stop offset="100%" stopColor="#34d399" stopOpacity="0.02" />
-                        </linearGradient>
-                      </defs>
-                      <line x1="0" y1={chartHeight - paddingBottom} x2={chartWidth} y2={chartHeight - paddingBottom} stroke="#d6cec2" strokeWidth="1" />
+                  <div className="coast-asset-chart">
+                    <svg
+                      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                      className="h-40 w-full overflow-visible"
+                      role="img"
+                      aria-label="最近六次净资产快照趋势"
+                    >
+                      <line x1="0" y1={chartHeight - paddingBottom} x2={chartWidth} y2={chartHeight - paddingBottom} stroke="var(--color-rule)" strokeWidth="1" />
                       {areaPath && (
-                        <path d={areaPath} fill="url(#net-worth-fill)" />
+                        <path d={areaPath} fill="var(--color-accent-soft)" />
                       )}
                       <path
                         d={chartPath}
                         fill="none"
-                        stroke="url(#net-worth-line)"
+                        stroke="var(--color-accent)"
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                       {chartCoordinates.map((point) => (
                         <g key={point.id}>
-                          <circle cx={point.x} cy={point.y} r="4.5" fill="#fff" stroke="#60a5fa" strokeWidth="2" />
+                          <circle cx={point.x} cy={point.y} r="4.5" fill="var(--color-paper-2)" stroke="var(--color-accent)" strokeWidth="2" />
                         </g>
                       ))}
                     </svg>
@@ -348,12 +352,12 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
             </div>
           </div>
 
-          <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
+          <div className="coast-asset-panel">
             <p className="text-sm font-medium text-stone-900">最近快照</p>
             <div className="mt-3 space-y-2">
               {snapshots.length ? (
                 snapshots.map((snapshot) => (
-                  <div key={snapshot.id} className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm">
+                  <div key={snapshot.id} className="coast-snapshot-row">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-stone-700">{snapshot.snapshotDate}</span>
                       <span className="font-medium text-stone-900">{formatMoney(snapshot.netWorth)}</span>

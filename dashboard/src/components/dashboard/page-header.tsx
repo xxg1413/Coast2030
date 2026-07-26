@@ -23,27 +23,24 @@ const variantStyles: Record<string, string> = {
 
 export function PageHeader({ title, subtitle, navItems }: PageHeaderProps) {
   return (
-    <section className="rounded-2xl border border-stone-200 bg-white/84 p-4 shadow-[0_10px_32px_rgba(72,50,22,0.06)] backdrop-blur md:p-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
+    <section className="coast-page-header">
+      <div className="coast-page-header__inner">
+        <div className="coast-page-header__title">
           <Image
             src="/coast-logo.svg"
-            alt="Coast2030 Logo"
+            alt=""
             width={52}
             height={52}
-            className="h-11 w-11 rounded-xl border border-stone-200 bg-white"
           />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-stone-500">
+            <p>
               {subtitle ?? "Coast2030"}
             </p>
-            <h1 className="mt-1 text-2xl font-semibold leading-tight bg-gradient-to-r from-stone-950 via-stone-800 to-emerald-700 bg-clip-text text-transparent md:text-3xl">
-              {title}
-            </h1>
+            <h1>{title}</h1>
           </div>
         </div>
         {navItems && navItems.length > 0 && (
-          <div className="flex flex-wrap gap-2 lg:justify-end">
+          <div className="coast-page-header__links">
             {navItems.map((item) => {
               const className = `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${variantStyles[item.variant ?? "default"]}`;
               if (item.external) {

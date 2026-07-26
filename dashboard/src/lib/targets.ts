@@ -21,6 +21,16 @@ export const YEAR_TARGETS: Record<number, number> = {
   2030: 20000000,
 };
 
+/**
+ * 2026 组合收入分配的唯一代码来源。
+ * 各方向 Dashboard 可以保留自己的运营币种与目标，但 Coast 汇总统一使用人民币。
+ */
+export const BUSINESS_LINE_TARGETS_2026 = {
+  Hunter: 300000,
+  SaaS: 550000,
+  Media: 150000,
+} as const;
+
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;
 const MONTHLY_TARGET_ROUNDING_UNIT = 1000;
@@ -80,4 +90,66 @@ export function getMonthlyTarget(year: number, yearMonth: string): number {
   }
 
   return buildMonthlyTargets(yearTarget)[monthPart - 1] ?? 0;
+}
+
+export interface AnnualRecoveryPace {
+  remaining: number;
+  daysRemaining: number;
+  weeksRemaining: number;
+  weeklyRequired: number;
+  scheduledRemaining: number;
+  scheduleGap: number;
+}
+
+/**
+ * 用已入账收入计算年度追赶节奏。
+ * 月度排期只用于暴露旧计划缺口，不会覆盖实际收入或年度剩余目标。
+ */
+export function getAnnualRecoveryPace(
+  year: number,
+  currentIncome: number,
+  currentDate: string,
+): AnnualRecoveryPace {
+  const yearTarget = YEAR_TARGETS[year] ?? 0;
+  const remaining = Math.max(yearTarget - Math.max(currentIncome, 0), 0);
+  const [dateYear, dateMonth, dateDay] = currentDate.split("-").map(Number);
+  const validDate =
+    Number.isInteger(dateYear) &&
+    Number.isInteger(dateMonth) &&
+    Number.isInteger(dateDay) &&
+    dateMonth >= 1 &&
+    dateMonth <= 12 &&
+    dateDay >= 1 &&
+    dateDay <= 31;
+
+  const currentUtc = validDate
+    ? Date.UTC(dateYear, dateMonth - 1, dateDay)
+    : Date.UTC(year, 0, 1);
+  const endUtc = Date.UTC(year, 11, 31);
+  const daysRemaining =
+    dateYear > year
+      ? 0
+      : Math.max(Math.floor((endUtc - currentUtc) / 86400000) + 1, 1);
+  const weeksRemaining = daysRemaining > 0 ? daysRemaining / 7 : 0;
+  const weeklyRequired =
+    remaining > 0 && weeksRemaining > 0
+      ? Math.ceil(remaining / weeksRemaining)
+      : 0;
+
+  const startMonth = dateYear === year && validDate ? dateMonth : dateYear > year ? 13 : 1;
+  const scheduledRemaining = Array.from({ length: 12 - Math.min(startMonth, 12) + 1 }, (_, index) => {
+    const month = Math.min(startMonth, 12) + index;
+    return startMonth > 12
+      ? 0
+      : getMonthlyTarget(year, `${year}-${String(month).padStart(2, "0")}`);
+  }).reduce((sum, target) => sum + target, 0);
+
+  return {
+    remaining,
+    daysRemaining,
+    weeksRemaining,
+    weeklyRequired,
+    scheduledRemaining,
+    scheduleGap: Math.max(remaining - scheduledRemaining, 0),
+  };
 }
