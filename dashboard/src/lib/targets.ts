@@ -26,10 +26,56 @@ export const YEAR_TARGETS: Record<number, number> = {
  * 各方向 Dashboard 可以保留自己的运营币种与目标，但 Coast 汇总统一使用人民币。
  */
 export const BUSINESS_LINE_TARGETS_2026 = {
-  Hunter: 300000,
-  SaaS: 550000,
-  Media: 150000,
+  Hunter: 150000,
+  SaaS: 600000,
+  Media: 250000,
 } as const;
+
+/**
+ * 每日 8H 自由时间的唯一分配来源。这里是日均预算；AIBounty 可把每日 1H
+ * 合并为连续深挖块，但周总量不能因此扩大。
+ */
+export const BUSINESS_LINE_DAILY_HOURS_2026 = {
+  Hunter: 1,
+  SaaS: 5,
+  Media: 2,
+} as const;
+
+export const DAILY_ALLOCATED_HOURS_2026 = 8;
+
+/**
+ * 晨间日志核心分类与年度业务线的映射。
+ * 核心任务的完成状态只由该分类当天累计的番茄钟时长决定。
+ */
+export const MORNING_CORE_FOCUS_TARGET_SECONDS = {
+  saas: BUSINESS_LINE_DAILY_HOURS_2026.SaaS * 60 * 60,
+  ai_notes: BUSINESS_LINE_DAILY_HOURS_2026.Media * 60 * 60,
+  aibounty: BUSINESS_LINE_DAILY_HOURS_2026.Hunter * 60 * 60,
+} as const;
+
+export type MorningCoreFocusKey = keyof typeof MORNING_CORE_FOCUS_TARGET_SECONDS;
+
+export function isMorningCoreFocusKey(key: string): key is MorningCoreFocusKey {
+  return Object.prototype.hasOwnProperty.call(MORNING_CORE_FOCUS_TARGET_SECONDS, key);
+}
+
+export function getMorningCoreFocusSecondsByKey(
+  entries: ReadonlyArray<{ key: string; duration: number }>,
+): Record<MorningCoreFocusKey, number> {
+  const totals: Record<MorningCoreFocusKey, number> = {
+    saas: 0,
+    ai_notes: 0,
+    aibounty: 0,
+  };
+
+  for (const entry of entries) {
+    if (!isMorningCoreFocusKey(entry.key)) continue;
+    if (!Number.isFinite(entry.duration) || entry.duration <= 0) continue;
+    totals[entry.key] += entry.duration;
+  }
+
+  return totals;
+}
 
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;

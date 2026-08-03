@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,10 @@ interface MonthlyReviewCardProps {
 }
 
 export function MonthlyReviewCard({ month, review }: MonthlyReviewCardProps) {
+    return <MonthlyReviewEditor key={month} month={month} review={review} />;
+}
+
+function MonthlyReviewEditor({ month, review }: MonthlyReviewCardProps) {
     const router = useRouter();
     const [wins, setWins] = useState(review.wins);
     const [losses, setLosses] = useState(review.losses);
@@ -25,13 +29,6 @@ export function MonthlyReviewCard({ month, review }: MonthlyReviewCardProps) {
     const [nextSteps, setNextSteps] = useState(review.nextSteps);
     const [saving, setSaving] = useState(false);
     const [generating, setGenerating] = useState(false);
-
-    useEffect(() => {
-        setWins(review.wins);
-        setLosses(review.losses);
-        setBlockers(review.blockers);
-        setNextSteps(review.nextSteps);
-    }, [review]);
 
     const handleSave = async () => {
         setSaving(true);

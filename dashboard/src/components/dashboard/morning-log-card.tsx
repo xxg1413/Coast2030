@@ -9,6 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer";
+import {
+  MORNING_CORE_FOCUS_TARGET_SECONDS,
+  getMorningCoreFocusSecondsByKey,
+  isMorningCoreFocusKey,
+} from "@/lib/targets";
 
 function updateItem(items: MorningLogItem[], key: string, patch: Partial<MorningLogItem>) {
   return items.map((item) => (item.key === key ? { ...item, ...patch } : item));
@@ -32,9 +37,19 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
   const mountedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const focusSecondsByKey = useMemo(
+    () => getMorningCoreFocusSecondsByKey(pomodoros),
+    [pomodoros],
+  );
+  const effectiveItems = useMemo(
+    () => items.map((item) => isMorningCoreFocusKey(item.key)
+      ? { ...item, completed: focusSecondsByKey[item.key] >= MORNING_CORE_FOCUS_TARGET_SECONDS[item.key] }
+      : item),
+    [focusSecondsByKey, items],
+  );
   const completedCount = useMemo(
-    () => [...items, ...customItems.filter((item) => item.label.trim())].filter((item) => item.completed).length,
-    [items, customItems],
+    () => [...effectiveItems, ...customItems.filter((item) => item.label.trim())].filter((item) => item.completed).length,
+    [effectiveItems, customItems],
   );
   const totalCount = useMemo(
     () => items.length + customItems.filter((item) => item.label.trim()).length,
@@ -43,9 +58,8 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
 
   // 当日番茄钟汇总：完成个数 + 累计专注分钟。
   const pomodoroCount = pomodoros.length;
-  const pomodoroMinutes = useMemo(
-    () => Math.round(pomodoros.reduce((sum, entry) => sum + entry.duration, 0) / 60),
-    [pomodoros],
+  const projectFocusMinutes = Math.round(
+    Object.values(focusSecondsByKey).reduce((sum, seconds) => sum + seconds, 0) / 60,
   );
 
   /**
@@ -145,7 +159,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
               <span>{log.date} · {completedCount}/{totalCount || items.length} 已完成</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                 <Timer className="h-3 w-3" />
-                今日 {pomodoroCount} 个番茄 · {pomodoroMinutes} 分钟专注
+                今日 {pomodoroCount} 个番茄 · {projectFocusMinutes} 分钟分类专注
               </span>
             </div>
           </div>
@@ -173,16 +187,18 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
       </CardHeader>
       <CardContent className="pb-5">
         <div className="grid gap-2 md:grid-cols-4">
-          {items.map((item) => (
+          {effectiveItems.map((item) => (
             <div key={item.key} className="contents">
               <div className="flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50/70 px-3 py-2">
                 <Checkbox
                   checked={item.completed}
+                  disabled={isMorningCoreFocusKey(item.key)}
                   onCheckedChange={(checked) => setItems((current) => updateItem(current, item.key, { completed: Boolean(checked) }))}
                   className="data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
                 />
                 <Input
                   value={item.label}
+                  placeholder={item.key === "work" ? "工作" : undefined}
                   onChange={(event) => setItems((current) => updateItem(current, item.key, { label: event.target.value }))}
                   className="h-8 border-transparent bg-transparent px-1 text-sm font-medium shadow-none focus-visible:ring-1"
                 />
@@ -205,7 +221,9 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
                     onLockChange={(locked) => setLockedPomodoroKey(locked ? item.key : null)}
                     onClose={() => setActivePomodoroKey(null)}
                     onFocusCompleted={() => void recordPomodoro(item.key, item.label)}
-                    onCompleted={() => setItems((current) => updateItem(current, item.key, { completed: true }))}
+                    onCompleted={isMorningCoreFocusKey(item.key)
+                      ? undefined
+                      : () => setItems((current) => updateItem(current, item.key, { completed: true }))}
                   />
                 </div>
               )}

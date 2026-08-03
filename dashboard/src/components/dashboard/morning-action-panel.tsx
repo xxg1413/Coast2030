@@ -14,27 +14,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer";
+import {
+  DAILY_ALLOCATED_HOURS_2026,
+  MORNING_CORE_FOCUS_TARGET_SECONDS,
+  getMorningCoreFocusSecondsByKey,
+  isMorningCoreFocusKey,
+} from "@/lib/targets";
 
 const CORE_DEFINITIONS = [
   {
-    key: "aibounty",
-    goal: "AIBounty",
-    actionPlaceholder: "复现租户越权并保存请求/响应",
-    resultPlaceholder: "已保存 HAR / 未复现：原因…",
-  },
-  {
     key: "saas",
-    goal: "SaaS",
+    goal: "SaaS · 5H",
+    targetSeconds: MORNING_CORE_FOCUS_TARGET_SECONDS.saas,
     actionPlaceholder: "完成一次可验证的获客、交付或产品推进",
     resultPlaceholder: "已完成：证据链接 / 未完成：阻塞原因",
   },
   {
     key: "ai_notes",
-    goal: "AI Notes",
+    goal: "AI Notes · 2H",
+    targetSeconds: MORNING_CORE_FOCUS_TARGET_SECONDS.ai_notes,
     actionPlaceholder: "完成选题、制作或发布中的一个可验证动作",
     resultPlaceholder: "已发布 / 已存草稿 / 未做：原因",
   },
+  {
+    key: "aibounty",
+    goal: "AIBounty · 1H",
+    targetSeconds: MORNING_CORE_FOCUS_TARGET_SECONDS.aibounty,
+    actionPlaceholder: "复现当前单一攻击图并保存请求/响应",
+    resultPlaceholder: "已保存证据 / Blocked / 完整排除：原因…",
+  },
 ] as const;
+
+const WORK_DEFINITION = {
+  key: "work",
+  goal: "工作",
+  actionPlaceholder: "完成一项可验证的工作",
+  resultPlaceholder: "已完成：交付或证据 / 未完成：阻塞原因",
+} as const;
 
 const HABIT_DEFINITIONS = [
   { key: "wake_early", label: "早起" },
@@ -79,17 +95,28 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
     }),
   );
 
+  const pomodoroSecondsByKey = useMemo(
+    () => getMorningCoreFocusSecondsByKey(pomodoros),
+    [pomodoros],
+  );
+
   const coreItems = useMemo(
-    () => CORE_DEFINITIONS.map((definition) => ({
-      ...definition,
-      item: items.find((item) => item.key === definition.key) || {
-        key: definition.key,
-        label: "",
-        result: "",
-        completed: false,
-      },
-    })),
-    [items],
+    () => CORE_DEFINITIONS.map((definition) => {
+      const focusSeconds = pomodoroSecondsByKey[definition.key] || 0;
+      return {
+        ...definition,
+        item: items.find((item) => item.key === definition.key) || {
+          key: definition.key,
+          label: "",
+          result: "",
+          completed: false,
+        },
+        focusSeconds,
+        focusCompleted: focusSeconds >= definition.targetSeconds,
+        focusProgress: Math.min((focusSeconds / definition.targetSeconds) * 100, 100),
+      };
+    }),
+    [items, pomodoroSecondsByKey],
   );
 
   const habitItems = useMemo(
@@ -105,30 +132,41 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
     [items],
   );
 
+  const workItem = useMemo(
+    () => items.find((item) => item.key === WORK_DEFINITION.key) || {
+      key: WORK_DEFINITION.key,
+      label: "",
+      result: "",
+      completed: false,
+    },
+    [items],
+  );
+
   const visibleCustomItems = useMemo(
     () => customItems.filter((item) => item.label.trim() || item.result.trim() || item.key === draftCustomKey),
     [customItems, draftCustomKey],
   );
 
-  const coreCompleted = coreItems.filter(({ item }) => item.completed && item.label.trim()).length;
+  const coreCompleted = coreItems.filter(({ item, focusCompleted }) => focusCompleted && item.label.trim()).length;
   const coreWithResult = coreItems.filter(({ item }) => item.label.trim() && item.result.trim()).length;
   const habitCompleted = habitItems.filter(({ item }) => item.completed && item.label.trim()).length;
-  const pomodoroMinutes = useMemo(
-    () => Math.round(pomodoros.reduce((sum, entry) => sum + entry.duration, 0) / 60),
-    [pomodoros],
+  const projectFocusMinutes = Math.round(
+    coreItems.reduce((sum, entry) => sum + entry.focusSeconds, 0) / 60,
   );
 
-  // 主 CTA「下一项」只从核心 → 补充行动取，永不落到习惯。
+  // 主 CTA「下一项」只从核心 → 工作 → 补充行动取，永不落到习惯。
   const focusTarget = useMemo(() => {
-    const pendingCore = coreItems.find(({ item }) => item.label.trim() && !item.completed);
+    const pendingCore = coreItems.find(({ item, focusCompleted }) => item.label.trim() && !focusCompleted);
     if (pendingCore) return { key: pendingCore.item.key, label: pendingCore.item.label };
+    if (workItem.label.trim() && !workItem.completed) return { key: workItem.key, label: workItem.label };
     const pendingCustom = customItems.find((item) => item.label.trim() && !item.completed);
     if (pendingCustom) return { key: pendingCustom.key, label: pendingCustom.label };
     const completedCore = coreItems.find(({ item }) => item.label.trim());
     if (completedCore) return { key: completedCore.item.key, label: completedCore.item.label };
+    if (workItem.label.trim()) return { key: workItem.key, label: workItem.label };
     const completedCustom = customItems.find((item) => item.label.trim());
     return completedCustom ? { key: completedCustom.key, label: completedCustom.label } : null;
-  }, [coreItems, customItems]);
+  }, [coreItems, customItems, workItem]);
 
   const activeFocusItem = useMemo(() => {
     if (!activePomodoroKey) return null;
@@ -162,6 +200,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
   );
 
   const completeFocusItem = useCallback((key: string) => {
+    if (isMorningCoreFocusKey(key)) return;
     if (items.some((item) => item.key === key)) {
       setItems((current) => updateItem(current, key, { completed: true }));
       return;
@@ -238,7 +277,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
               <span><strong className="text-stone-900">{coreCompleted}/3</strong> 核心推进</span>
               <span><strong className="text-stone-900">{coreWithResult}/3</strong> 已记结果</span>
               <span><strong className="text-stone-900">{habitCompleted}/4</strong> 基础习惯</span>
-              <span><strong className="text-stone-900">{pomodoroMinutes}</strong> 分钟专注</span>
+              <span><strong className="text-stone-900">{projectFocusMinutes}</strong> / {DAILY_ALLOCATED_HOURS_2026 * 60} 分钟分类专注</span>
             </div>
             <Button
               type="button"
@@ -283,25 +322,47 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
           <section aria-labelledby="core-progress-heading" className="min-w-0">
             <div className="mb-2">
               <h3 id="core-progress-heading" className="font-semibold text-stone-900">今日核心推进</h3>
-              <p className="mt-0.5 text-sm text-stone-500">每条写成今天可以验证的最小动作；收工前补实际结果。</p>
+              <p className="mt-0.5 text-sm text-stone-500">每条写成今天可以验证的最小动作；对应分类番茄累计达标后才自动完成。</p>
             </div>
 
             <div className="divide-y divide-stone-200 border-y border-stone-200">
-              {coreItems.map(({ item, goal, actionPlaceholder, resultPlaceholder }) => {
+              {coreItems.map(({ item, goal, targetSeconds, focusSeconds, focusCompleted, focusProgress, actionPlaceholder, resultPlaceholder }) => {
                 const actionId = `morning-core-action-${item.key}`;
                 const resultId = `morning-core-result-${item.key}`;
+                const focusMinutes = Math.round(focusSeconds / 60);
+                const targetMinutes = Math.round(targetSeconds / 60);
                 return (
-                  <div key={item.key} className="grid min-w-0 gap-2 py-3 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">
-                    <label htmlFor={actionId} className="flex min-h-11 items-center gap-3 font-semibold text-stone-800">
+                  <div key={item.key} className="grid min-w-0 gap-2 py-3 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start">
+                    <div className="flex min-h-11 items-center gap-2">
                       <Checkbox
-                        checked={item.completed}
-                        disabled={!item.label.trim()}
-                        onCheckedChange={(checked) => setItems((current) => updateItem(current, item.key, { completed: Boolean(checked) }))}
-                        aria-label={`${goal} 完成状态`}
+                        checked={focusCompleted}
+                        disabled
+                        aria-label={`${goal} 番茄钟达标状态`}
                         className="data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
                       />
-                      <span>{goal}</span>
-                    </label>
+                      <label htmlFor={actionId} className="min-w-0 flex-1 font-semibold text-stone-800">
+                        <span className="block">{goal}</span>
+                        <span className="mt-1 block text-xs font-medium tabular-nums text-stone-500">
+                          {focusMinutes} / {targetMinutes} 分钟
+                        </span>
+                        <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-stone-200" aria-hidden="true">
+                          <span className="block h-full rounded-full bg-emerald-600 transition-[width]" style={{ width: `${focusProgress}%` }} />
+                        </span>
+                      </label>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant={activePomodoroKey === item.key ? "secondary" : "ghost"}
+                        className="h-9 w-9 shrink-0 text-stone-600"
+                        onClick={() => selectFocusItem(item.key)}
+                        disabled={!item.label.trim() || Boolean(lockedPomodoroKey)}
+                        aria-label={`为${goal}分类开始番茄钟`}
+                        aria-pressed={activePomodoroKey === item.key}
+                        title={item.label.trim() ? `计入 ${goal}` : "先填写今日动作"}
+                      >
+                        <Timer className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <div className="space-y-2">
                       <div className="space-y-1">
                         <label htmlFor={actionId} className="text-xs font-medium text-stone-500">动作</label>
@@ -332,6 +393,59 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                   </div>
                 );
               })}
+
+              <div className="grid min-w-0 gap-2 py-3 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start">
+                <div className="flex min-h-11 items-center gap-2">
+                  <Checkbox
+                    checked={workItem.completed}
+                    disabled={!workItem.label.trim()}
+                    onCheckedChange={(checked) => setItems((current) => updateItem(current, workItem.key, { completed: Boolean(checked) }))}
+                    aria-label="工作完成状态"
+                    className="data-[state=checked]:border-cyan-600 data-[state=checked]:bg-cyan-600"
+                  />
+                  <label htmlFor="morning-work-action" className="min-w-0 flex-1 font-semibold text-stone-800">
+                    {WORK_DEFINITION.goal}
+                  </label>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant={activePomodoroKey === workItem.key ? "secondary" : "ghost"}
+                    className="h-9 w-9 shrink-0 text-stone-600"
+                    onClick={() => selectFocusItem(workItem.key)}
+                    disabled={!workItem.label.trim() || Boolean(lockedPomodoroKey)}
+                    aria-label={`为${workItem.label || WORK_DEFINITION.goal}使用番茄钟`}
+                    aria-pressed={activePomodoroKey === workItem.key}
+                    title={workItem.label.trim() ? `为${workItem.label}使用番茄钟` : "先填写工作内容"}
+                  >
+                    <Timer className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label htmlFor="morning-work-action" className="text-xs font-medium text-stone-500">动作</label>
+                    <Input
+                      id="morning-work-action"
+                      value={workItem.label}
+                      placeholder={WORK_DEFINITION.actionPlaceholder}
+                      onChange={(event) => setItems((current) => updateItem(current, workItem.key, {
+                        label: event.target.value,
+                        completed: event.target.value.trim() ? workItem.completed : false,
+                      }))}
+                      className="h-11 border-stone-200 bg-stone-50/70 px-3 text-sm shadow-none hover:bg-stone-100/70 focus-visible:bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="morning-work-result" className="text-xs font-medium text-stone-500">结果</label>
+                    <Input
+                      id="morning-work-result"
+                      value={workItem.result}
+                      placeholder={WORK_DEFINITION.resultPlaceholder}
+                      onChange={(event) => setItems((current) => updateItem(current, workItem.key, { result: event.target.value }))}
+                      className="h-11 border-stone-200 bg-white px-3 text-sm shadow-none hover:bg-stone-50 focus-visible:bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-3 space-y-3">
@@ -458,7 +572,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
               onLockChange={(locked) => setLockedPomodoroKey(locked ? activeFocusItem.key : null)}
               onClose={() => setActivePomodoroKey(null)}
               onFocusCompleted={() => void recordPomodoro(activeFocusItem.key, activeFocusItem.label)}
-              onCompleted={() => completeFocusItem(activeFocusItem.key)}
+              onCompleted={isMorningCoreFocusKey(activeFocusItem.key) ? undefined : () => completeFocusItem(activeFocusItem.key)}
             />
           </div>
         )}

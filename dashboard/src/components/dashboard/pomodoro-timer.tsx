@@ -13,7 +13,7 @@ interface PomodoroTimerProps {
   label: string;
   /** 每次专注完成时触发（用于记录一个番茄）。 */
   onFocusCompleted?: () => void;
-  /** 专注完成时同时勾选对应晨间日志项。 */
+  /** 非核心项目可在单次专注完成后同步勾选；核心项目由分类累计时长判定。 */
   onCompleted?: () => void;
   /** 锁定状态变化时通知父组件：一旦开始就无法被收起。 */
   onLockChange?: (locked: boolean) => void;
@@ -124,15 +124,6 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
     deadlineRef.current = null;
   };
 
-  const finishFocus = () => {
-    setRemaining(0);
-    setRunning(false);
-    deadlineRef.current = null;
-    setCompleted(true);
-    onFocusCompleted?.();
-    onCompleted?.();
-  };
-
   const progress = ((totalForPhase - remaining) / totalForPhase) * 100;
   const isUrgent = remaining <= 60 && remaining > 0 && running;
   const isBreak = phase === "break";
@@ -224,12 +215,6 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
             <RotateCcw className="h-4 w-4" />
             重置
           </Button>
-          {!completed && !isBreak && (
-            <Button size="sm" variant="outline" onClick={finishFocus}>
-              <Check className="h-4 w-4" />
-              直接完成
-            </Button>
-          )}
           {completed && (
             <Button size="sm" onClick={startBreak} className="bg-cyan-600 hover:bg-cyan-600/90">
               <Coffee className="h-4 w-4" />

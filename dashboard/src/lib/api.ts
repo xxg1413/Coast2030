@@ -1,5 +1,11 @@
 import { getDB } from "./db";
-import { BUSINESS_LINE_TARGETS_2026, YEAR_TARGETS as ANNUAL_YEAR_TARGETS } from "./targets";
+import {
+    BUSINESS_LINE_TARGETS_2026,
+    MORNING_CORE_FOCUS_TARGET_SECONDS,
+    YEAR_TARGETS as ANNUAL_YEAR_TARGETS,
+    getMorningCoreFocusSecondsByKey,
+    isMorningCoreFocusKey,
+} from "./targets";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -834,6 +840,7 @@ const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
     { key: "aibounty", label: "", result: "", completed: false },
     { key: "saas", label: "", result: "", completed: false },
     { key: "ai_notes", label: "", result: "", completed: false },
+    { key: "work", label: "", result: "", completed: false },
     { key: "wake_early", label: "早起", result: "", completed: false },
     { key: "run", label: "跑步", result: "", completed: false },
     { key: "daily_input", label: "每日输入", result: "", completed: false },
@@ -921,6 +928,21 @@ function parsePomodoroEntries(raw: string | null | undefined): PomodoroEntry[] {
     }
 }
 
+function applyCoreFocusCompletion(
+    items: MorningLogItem[],
+    pomodoros: PomodoroEntry[],
+): MorningLogItem[] {
+    const secondsByKey = getMorningCoreFocusSecondsByKey(pomodoros);
+
+    return items.map((item) => {
+        if (!isMorningCoreFocusKey(item.key)) return item;
+        return {
+            ...item,
+            completed: secondsByKey[item.key] >= MORNING_CORE_FOCUS_TARGET_SECONDS[item.key],
+        };
+    });
+}
+
 export async function getMorningLog(date?: string): Promise<MorningLog> {
     await ensureMorningLogsTable();
     const db = await getDB();
@@ -930,11 +952,15 @@ export async function getMorningLog(date?: string): Promise<MorningLog> {
         .bind(targetDate)
         .first<{ items_json: string; custom_json: string; pomodoro_json: string }>();
 
+    const pomodoros = parsePomodoroEntries(row?.pomodoro_json);
     return {
         date: targetDate,
-        items: parseMorningLogItems(row?.items_json, DEFAULT_MORNING_LOG_ITEMS),
+        items: applyCoreFocusCompletion(
+            parseMorningLogItems(row?.items_json, DEFAULT_MORNING_LOG_ITEMS),
+            pomodoros,
+        ),
         customItems: parseMorningLogItems(row?.custom_json, DEFAULT_CUSTOM_MORNING_LOG_ITEMS),
-        pomodoros: parsePomodoroEntries(row?.pomodoro_json),
+        pomodoros,
     };
 }
 
@@ -942,7 +968,15 @@ export async function saveMorningLog(input: { date?: string; items?: unknown; cu
     await ensureMorningLogsTable();
     const db = await getDB();
     const targetDate = normalizeDate(input.date) || getCurrentDate();
-    const items = normalizeMorningLogItems(input.items, DEFAULT_MORNING_LOG_ITEMS);
+    const row = await db
+        .prepare("SELECT pomodoro_json FROM morning_logs WHERE log_date = ?")
+        .bind(targetDate)
+        .first<{ pomodoro_json: string }>();
+    const pomodoros = parsePomodoroEntries(row?.pomodoro_json);
+    const items = applyCoreFocusCompletion(
+        normalizeMorningLogItems(input.items, DEFAULT_MORNING_LOG_ITEMS),
+        pomodoros,
+    );
     const customItems = normalizeMorningLogItems(input.customItems, DEFAULT_CUSTOM_MORNING_LOG_ITEMS);
 
     // 仅写入 items / custom；番茄记录由 addMorningLogPomodoro 原子追加，

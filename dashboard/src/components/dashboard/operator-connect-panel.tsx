@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   Bot,
   Check,
@@ -35,6 +35,10 @@ async function copyText(value: string): Promise<void> {
   await navigator.clipboard.writeText(value);
 }
 
+const subscribeToOrigin = () => () => {};
+const getBrowserOrigin = () => window.location.origin;
+const getServerOrigin = () => "";
+
 export function OperatorConnectPanel({
   initialTokens,
   initialActions,
@@ -42,17 +46,14 @@ export function OperatorConnectPanel({
   initialTokens: OperatorAccessToken[];
   initialActions: OperatorActionRequest[];
 }) {
-  const [endpoint, setEndpoint] = useState("/mcp");
+  const origin = useSyncExternalStore(subscribeToOrigin, getBrowserOrigin, getServerOrigin);
+  const endpoint = origin ? `${origin}/mcp` : "/mcp";
   const [tokens, setTokens] = useState(initialTokens);
   const [actions, setActions] = useState(initialActions);
   const [newToken, setNewToken] = useState("");
   const [busy, setBusy] = useState("");
   const [copied, setCopied] = useState("");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setEndpoint(`${window.location.origin}/mcp`);
-  }, []);
 
   const connectCommand = useMemo(() => {
     if (!newToken) return "";
