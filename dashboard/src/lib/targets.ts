@@ -44,34 +44,39 @@ export const BUSINESS_LINE_DAILY_HOURS_2026 = {
 export const DAILY_ALLOCATED_HOURS_2026 = 8;
 
 /**
- * 晨间日志核心分类与年度业务线的映射。
- * 核心任务的完成状态只由该分类当天累计的番茄钟时长决定。
+ * 晨间日志四个核心分类的每日番茄钟目标。
+ * 每完成一次倒计时累计 1 个；达到目标后仍可继续累计，不封顶。
  */
-export const MORNING_CORE_FOCUS_TARGET_SECONDS = {
-  saas: BUSINESS_LINE_DAILY_HOURS_2026.SaaS * 60 * 60,
-  ai_notes: BUSINESS_LINE_DAILY_HOURS_2026.Media * 60 * 60,
-  aibounty: BUSINESS_LINE_DAILY_HOURS_2026.Hunter * 60 * 60,
+export const MORNING_CORE_POMODORO_TARGETS = {
+  saas: 5,
+  ai_notes: 2,
+  aibounty: 1,
+  work: 4,
 } as const;
 
-export type MorningCoreFocusKey = keyof typeof MORNING_CORE_FOCUS_TARGET_SECONDS;
+export const DAILY_CORE_POMODORO_TARGET_2026 = Object.values(MORNING_CORE_POMODORO_TARGETS)
+  .reduce((sum, target) => sum + target, 0);
+
+export type MorningCoreFocusKey = keyof typeof MORNING_CORE_POMODORO_TARGETS;
 
 export function isMorningCoreFocusKey(key: string): key is MorningCoreFocusKey {
-  return Object.prototype.hasOwnProperty.call(MORNING_CORE_FOCUS_TARGET_SECONDS, key);
+  return Object.prototype.hasOwnProperty.call(MORNING_CORE_POMODORO_TARGETS, key);
 }
 
-export function getMorningCoreFocusSecondsByKey(
+export function getMorningCorePomodoroCountsByKey(
   entries: ReadonlyArray<{ key: string; duration: number }>,
 ): Record<MorningCoreFocusKey, number> {
   const totals: Record<MorningCoreFocusKey, number> = {
     saas: 0,
     ai_notes: 0,
     aibounty: 0,
+    work: 0,
   };
 
   for (const entry of entries) {
     if (!isMorningCoreFocusKey(entry.key)) continue;
     if (!Number.isFinite(entry.duration) || entry.duration <= 0) continue;
-    totals[entry.key] += entry.duration;
+    totals[entry.key] += 1;
   }
 
   return totals;

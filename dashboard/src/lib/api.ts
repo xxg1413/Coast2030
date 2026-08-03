@@ -1,9 +1,9 @@
 import { getDB } from "./db";
 import {
     BUSINESS_LINE_TARGETS_2026,
-    MORNING_CORE_FOCUS_TARGET_SECONDS,
+    MORNING_CORE_POMODORO_TARGETS,
     YEAR_TARGETS as ANNUAL_YEAR_TARGETS,
-    getMorningCoreFocusSecondsByKey,
+    getMorningCorePomodoroCountsByKey,
     isMorningCoreFocusKey,
 } from "./targets";
 import fs from "node:fs/promises";
@@ -932,13 +932,13 @@ function applyCoreFocusCompletion(
     items: MorningLogItem[],
     pomodoros: PomodoroEntry[],
 ): MorningLogItem[] {
-    const secondsByKey = getMorningCoreFocusSecondsByKey(pomodoros);
+    const countsByKey = getMorningCorePomodoroCountsByKey(pomodoros);
 
     return items.map((item) => {
         if (!isMorningCoreFocusKey(item.key)) return item;
         return {
             ...item,
-            completed: secondsByKey[item.key] >= MORNING_CORE_FOCUS_TARGET_SECONDS[item.key],
+            completed: countsByKey[item.key] >= MORNING_CORE_POMODORO_TARGETS[item.key],
         };
     });
 }

@@ -1,13 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Coffee, Pause, Play, RotateCcw, Timer as TimerIcon } from "lucide-react";
+import { Bell, BellOff, Check, Coffee, Pause, Play, RotateCcw, Timer as TimerIcon, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const FOCUS_DURATION = 30 * 60; // 30 分钟专注
 const BREAK_DURATION = 5 * 60; // 5 分钟短休息
+const BROWSER_REMINDER_STORAGE_KEY = "coast-pomodoro-browser-reminder";
 
 type Phase = "focus" | "break" | "idle";
+type ReminderPhase = Exclude<Phase, "idle">;
+type NotificationState = NotificationPermission | "unsupported";
+
+type WindowWithWebkitAudio = Window & {
+  webkitAudioContext?: typeof AudioContext;
+};
 
 interface PomodoroTimerProps {
   label: string;
@@ -37,8 +44,87 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
   const [running, setRunning] = useState(false);
   const [remaining, setRemaining] = useState(FOCUS_DURATION);
   const [completed, setCompleted] = useState(false);
+  const [browserReminderEnabled, setBrowserReminderEnabled] = useState(false);
+  const [notificationState, setNotificationState] = useState<NotificationState>("default");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const deadlineRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    const initializeReminder = window.setTimeout(() => {
+      if (!("Notification" in window)) {
+        setNotificationState("unsupported");
+        return;
+      }
+
+      setNotificationState(Notification.permission);
+      try {
+        setBrowserReminderEnabled(
+          Notification.permission === "granted"
+          && window.localStorage.getItem(BROWSER_REMINDER_STORAGE_KEY) === "enabled",
+        );
+      } catch {
+        setBrowserReminderEnabled(false);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(initializeReminder);
+  }, []);
+
+  const getAudioContext = useCallback(async () => {
+    const AudioContextConstructor = window.AudioContext
+      || (window as WindowWithWebkitAudio).webkitAudioContext;
+    if (!AudioContextConstructor) return null;
+
+    const context = audioContextRef.current || new AudioContextConstructor();
+    audioContextRef.current = context;
+    if (context.state === "suspended") {
+      try {
+        await context.resume();
+      } catch {
+        return null;
+      }
+    }
+    return context;
+  }, []);
+
+  const playCompletionSound = useCallback(async (completedPhase: ReminderPhase) => {
+    const context = await getAudioContext();
+    if (!context) return;
+
+    const frequencies = completedPhase === "focus" ? [784, 988, 1175] : [660, 523];
+    const now = context.currentTime;
+    frequencies.forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const startAt = now + index * 0.16;
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(frequency, startAt);
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.18, startAt + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.2);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + 0.22);
+    });
+  }, [getAudioContext]);
+
+  const announceCompletion = useCallback((completedPhase: ReminderPhase) => {
+    void playCompletionSound(completedPhase);
+    if (!browserReminderEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+
+    try {
+      const isFocus = completedPhase === "focus";
+      new Notification(isFocus ? "番茄钟完成" : "休息结束", {
+        body: isFocus ? `${label} · 已完成 30 分钟专注` : "可以开始下一轮专注了。",
+        icon: "/icon.svg",
+        tag: `coast-pomodoro-${completedPhase}`,
+      });
+    } catch {
+      // 系统通知失败时仍保留声音和页面内完成状态。
+    }
+  }, [browserReminderEnabled, label, playCompletionSound]);
 
   // 一旦专注已开始（进度被记下），面板即被锁定：不可被父组件收起。
   // 仅在重置回初始态、或专注完成后才解锁。
@@ -62,13 +148,16 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
         setCompleted(true);
         onFocusCompleted?.();
         onCompleted?.();
+        announceCompletion("focus");
       } else {
-        setPhase("idle");
+        setPhase("focus");
+        setRemaining(FOCUS_DURATION);
+        announceCompletion("break");
       }
       return;
     }
     setRemaining(diff);
-  }, [onFocusCompleted, onCompleted, phase]);
+  }, [announceCompletion, onFocusCompleted, onCompleted, phase]);
 
   useEffect(() => {
     if (!running) {
@@ -104,9 +193,41 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
       deadlineRef.current = null;
     } else {
       // 开始/恢复：以剩余时间重设 deadline。
+      void getAudioContext();
       deadlineRef.current = Date.now() + remaining * 1000;
       setRunning(true);
     }
+  };
+
+  const toggleBrowserReminder = async () => {
+    if (!("Notification" in window)) {
+      setNotificationState("unsupported");
+      return;
+    }
+
+    if (browserReminderEnabled) {
+      setBrowserReminderEnabled(false);
+      try {
+        window.localStorage.removeItem(BROWSER_REMINDER_STORAGE_KEY);
+      } catch {
+        // 本地设置不可写时只保留当前页面状态。
+      }
+      return;
+    }
+
+    const permission = Notification.permission === "granted"
+      ? "granted"
+      : await Notification.requestPermission();
+    setNotificationState(permission);
+    if (permission !== "granted") return;
+
+    setBrowserReminderEnabled(true);
+    try {
+      window.localStorage.setItem(BROWSER_REMINDER_STORAGE_KEY, "enabled");
+    } catch {
+      // 本地设置不可写时仍在当前页面开启提醒。
+    }
+    void playCompletionSound("focus");
   };
 
   const handleReset = () => {
@@ -120,6 +241,7 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
   const startBreak = () => {
     setPhase("break");
     setRemaining(BREAK_DURATION);
+    setCompleted(false);
     setRunning(false);
     deadlineRef.current = null;
   };
@@ -196,6 +318,10 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
                   ? "保持专注，专注这一件事。"
                   : "点击开始进入 30 分钟专注。"}
           </p>
+          <p className="mt-1 inline-flex items-center gap-1 text-xs text-stone-500">
+            <Volume2 className="h-3.5 w-3.5" />
+            完成时响铃{browserReminderEnabled ? "并发送浏览器通知" : ""}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -214,6 +340,28 @@ export function PomodoroTimer({ label, onFocusCompleted, onCompleted, onLockChan
           <Button size="sm" variant="outline" onClick={handleReset}>
             <RotateCcw className="h-4 w-4" />
             重置
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void toggleBrowserReminder()}
+            disabled={notificationState === "denied" || notificationState === "unsupported"}
+            title={notificationState === "denied"
+              ? "浏览器已阻止通知，请在站点设置中手动允许"
+              : notificationState === "unsupported"
+                ? "当前浏览器不支持系统通知"
+                : browserReminderEnabled
+                  ? "关闭浏览器系统通知"
+                  : "开启浏览器系统通知"}
+          >
+            {browserReminderEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+            {browserReminderEnabled
+              ? "浏览器提醒已开启"
+              : notificationState === "denied"
+                ? "通知已被阻止"
+                : notificationState === "unsupported"
+                  ? "不支持通知"
+                  : "开启浏览器提醒"}
           </Button>
           {completed && (
             <Button size="sm" onClick={startBreak} className="bg-cyan-600 hover:bg-cyan-600/90">

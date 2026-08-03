@@ -10,8 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer";
 import {
-  MORNING_CORE_FOCUS_TARGET_SECONDS,
-  getMorningCoreFocusSecondsByKey,
+  MORNING_CORE_POMODORO_TARGETS,
+  getMorningCorePomodoroCountsByKey,
   isMorningCoreFocusKey,
 } from "@/lib/targets";
 
@@ -37,15 +37,15 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
   const mountedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const focusSecondsByKey = useMemo(
-    () => getMorningCoreFocusSecondsByKey(pomodoros),
+  const pomodoroCountsByKey = useMemo(
+    () => getMorningCorePomodoroCountsByKey(pomodoros),
     [pomodoros],
   );
   const effectiveItems = useMemo(
     () => items.map((item) => isMorningCoreFocusKey(item.key)
-      ? { ...item, completed: focusSecondsByKey[item.key] >= MORNING_CORE_FOCUS_TARGET_SECONDS[item.key] }
+      ? { ...item, completed: pomodoroCountsByKey[item.key] >= MORNING_CORE_POMODORO_TARGETS[item.key] }
       : item),
-    [focusSecondsByKey, items],
+    [items, pomodoroCountsByKey],
   );
   const completedCount = useMemo(
     () => [...effectiveItems, ...customItems.filter((item) => item.label.trim())].filter((item) => item.completed).length,
@@ -58,9 +58,8 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
 
   // 当日番茄钟汇总：完成个数 + 累计专注分钟。
   const pomodoroCount = pomodoros.length;
-  const projectFocusMinutes = Math.round(
-    Object.values(focusSecondsByKey).reduce((sum, seconds) => sum + seconds, 0) / 60,
-  );
+  const classifiedPomodoroCount = Object.values(pomodoroCountsByKey)
+    .reduce((sum, count) => sum + count, 0);
 
   /**
    * 专注完成时记录一个番茄：先乐观追加到本地状态，再通过独立接口原子持久化。
@@ -159,7 +158,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
               <span>{log.date} · {completedCount}/{totalCount || items.length} 已完成</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                 <Timer className="h-3 w-3" />
-                今日 {pomodoroCount} 个番茄 · {projectFocusMinutes} 分钟分类专注
+                今日 {pomodoroCount} 个番茄 · {classifiedPomodoroCount} 个分类番茄
               </span>
             </div>
           </div>
@@ -198,7 +197,7 @@ export function MorningLogCard({ log }: { log: MorningLog }) {
                 />
                 <Input
                   value={item.label}
-                  placeholder={item.key === "work" ? "工作" : undefined}
+                  placeholder={item.key === "work" ? "Work" : undefined}
                   onChange={(event) => setItems((current) => updateItem(current, item.key, { label: event.target.value }))}
                   className="h-8 border-transparent bg-transparent px-1 text-sm font-medium shadow-none focus-visible:ring-1"
                 />
