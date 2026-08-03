@@ -14,10 +14,14 @@ function updateItem(items: MorningLogItem[], key: string, patch: Partial<Morning
   return items.map((item) => (item.key === key ? { ...item, ...patch } : item));
 }
 
+function withResult(items: MorningLogItem[]): MorningLogItem[] {
+  return items.map((item) => ({ ...item, result: item.result || "" }));
+}
+
 export function MorningLogCard({ log }: { log: MorningLog }) {
   const router = useRouter();
-  const [items, setItems] = useState(log.items);
-  const [customItems, setCustomItems] = useState(log.customItems);
+  const [items, setItems] = useState(() => withResult(log.items));
+  const [customItems, setCustomItems] = useState(() => withResult(log.customItems));
   const [pomodoros, setPomodoros] = useState<PomodoroEntry[]>(log.pomodoros);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);

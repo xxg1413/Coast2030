@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         return {
           goalArea,
           label: item?.label || "",
+          result: item?.result || "",
           completed: item?.completed || false,
         };
       }),

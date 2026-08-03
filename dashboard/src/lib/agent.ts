@@ -30,6 +30,7 @@ export interface AgentPlannerInput {
   coreActions: Array<{
     goalArea: AgentGoalArea;
     label: string;
+    result?: string;
     completed: boolean;
   }>;
   externalTasks: AgentPlannerExternalTask[];

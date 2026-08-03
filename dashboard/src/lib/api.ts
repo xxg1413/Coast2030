@@ -806,7 +806,10 @@ export async function deleteDailyTask(id: string): Promise<boolean> {
 
 export interface MorningLogItem {
     key: string;
+    /** 动作（核心/补充）或习惯名。 */
     label: string;
+    /** 实际结果；习惯固定为空字符串。 */
+    result: string;
     completed: boolean;
 }
 
@@ -828,19 +831,19 @@ export interface MorningLog {
 }
 
 const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
-    { key: "aibounty", label: "", completed: false },
-    { key: "saas", label: "", completed: false },
-    { key: "ai_notes", label: "", completed: false },
-    { key: "wake_early", label: "早起", completed: false },
-    { key: "run", label: "跑步", completed: false },
-    { key: "daily_input", label: "每日输入", completed: false },
-    { key: "daily_review", label: "每日复盘", completed: false },
+    { key: "aibounty", label: "", result: "", completed: false },
+    { key: "saas", label: "", result: "", completed: false },
+    { key: "ai_notes", label: "", result: "", completed: false },
+    { key: "wake_early", label: "早起", result: "", completed: false },
+    { key: "run", label: "跑步", result: "", completed: false },
+    { key: "daily_input", label: "每日输入", result: "", completed: false },
+    { key: "daily_review", label: "每日复盘", result: "", completed: false },
 ];
 
 const DEFAULT_CUSTOM_MORNING_LOG_ITEMS: MorningLogItem[] = [
-    { key: "custom_1", label: "", completed: false },
-    { key: "custom_2", label: "", completed: false },
-    { key: "custom_3", label: "", completed: false },
+    { key: "custom_1", label: "", result: "", completed: false },
+    { key: "custom_2", label: "", result: "", completed: false },
+    { key: "custom_3", label: "", result: "", completed: false },
 ];
 
 /** 番茄钟默认专注时长（秒）= 30 分钟。 */
@@ -872,6 +875,7 @@ function parseMorningLogItems(raw: string | null | undefined, fallback: MorningL
             return {
                 key: item.key,
                 label: String(existing?.label ?? fallbackByKey.get(item.key)?.label ?? item.label),
+                result: String(existing?.result ?? fallbackByKey.get(item.key)?.result ?? item.result ?? ""),
                 completed: Boolean(existing?.completed),
             };
         });
@@ -885,9 +889,11 @@ function normalizeMorningLogItems(items: unknown, fallback: MorningLogItem[]): M
     return fallback.map((item) => {
         const existing = rows.find((row) => row?.key === item.key) as Partial<MorningLogItem> | undefined;
         const label = String(existing?.label ?? item.label).trim();
+        const result = String(existing?.result ?? item.result ?? "").trim();
         return {
             key: item.key,
             label,
+            result,
             completed: Boolean(existing?.completed),
         };
     });
