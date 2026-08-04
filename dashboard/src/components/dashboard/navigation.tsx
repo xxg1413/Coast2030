@@ -1,6 +1,6 @@
 /* Hallmark · component: navigation · genre: modern-minimal · nav: N5 floating pill
- * states: default · hover · focus · active · disabled · loading · error · success
- * rationale: personal workbench needs two primary destinations and a compact project disclosure
+ * states: default · hover · focus · active · disabled
+ * rationale: 首页/工作台双主入口；业务线与 Operator 收进次级菜单
  */
 "use client";
 
@@ -20,31 +20,42 @@ import {
   X,
 } from "lucide-react";
 
-const PROJECT_ITEMS = [
-  { name: "Product Lab", href: "/productlab", icon: Layers },
-  { name: "AIBounty", href: "/aibounty", icon: Shield },
-  { name: "AI Notes", href: "/ainotes", icon: FileText },
+const PRIMARY_ITEMS = [
+  { name: "2030", href: "/", icon: Home, match: (pathname: string) => pathname === "/" },
+  {
+    name: "2026",
+    href: "/2026",
+    icon: CalendarCheck,
+    match: (pathname: string) => pathname === "/2026" || pathname.startsWith("/2026/"),
+  },
+] as const;
+
+const MORE_ITEMS = [
+  { name: "Product Lab", href: "/productlab", icon: Layers, group: "projects" as const },
+  { name: "AIBounty", href: "/aibounty", icon: Shield, group: "projects" as const },
+  { name: "AI Notes", href: "/ainotes", icon: FileText, group: "projects" as const },
+  { name: "Operator", href: "/operator", icon: Bot, group: "tools" as const },
 ] as const;
 
 export function Navigation() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
-  const [projectsOpen, setProjectsOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const projectIsActive = PROJECT_ITEMS.some((item) => pathname.startsWith(item.href));
+  const moreIsActive = MORE_ITEMS.some((item) => pathname.startsWith(item.href));
 
   useEffect(() => {
-    if (!projectsOpen && !mobileOpen) return;
+    if (!moreOpen && !mobileOpen) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setProjectsOpen(false);
+        setMoreOpen(false);
         setMobileOpen(false);
       }
     };
     const closeOnOutsidePress = (event: PointerEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setProjectsOpen(false);
+        setMoreOpen(false);
         setMobileOpen(false);
       }
     };
@@ -55,14 +66,14 @@ export function Navigation() {
       window.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("pointerdown", closeOnOutsidePress);
     };
-  }, [mobileOpen, projectsOpen]);
+  }, [mobileOpen, moreOpen]);
 
   if (pathname === "/login") {
     return null;
   }
 
   const closeMenus = () => {
-    setProjectsOpen(false);
+    setMoreOpen(false);
     setMobileOpen(false);
   };
 
@@ -77,61 +88,52 @@ export function Navigation() {
         </Link>
 
         <nav className="coast-nav-desktop" aria-label="主导航">
-          <Link
-            href="/"
-            className="coast-nav-link"
-            data-active={pathname === "/" ? "true" : undefined}
-            aria-current={pathname === "/" ? "page" : undefined}
-          >
-            <Home aria-hidden="true" />
-            2030
-          </Link>
-          <Link
-            href="/2026"
-            className="coast-nav-link"
-            data-active={pathname === "/2026" ? "true" : undefined}
-            aria-current={pathname === "/2026" ? "page" : undefined}
-          >
-            <CalendarCheck aria-hidden="true" />
-            2026 工作台
-          </Link>
-          <Link
-            href="/operator"
-            className="coast-nav-link"
-            data-active={pathname === "/operator" ? "true" : undefined}
-            aria-current={pathname === "/operator" ? "page" : undefined}
-          >
-            <Bot aria-hidden="true" />
-            Operator
-          </Link>
+          {PRIMARY_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = item.match(pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="coast-nav-link"
+                data-active={active ? "true" : undefined}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon aria-hidden="true" />
+                {item.name}
+              </Link>
+            );
+          })}
           <div className="coast-project-menu">
             <button
               type="button"
               className="coast-nav-link"
-              data-active={projectIsActive ? "true" : undefined}
-              aria-expanded={projectsOpen}
-              aria-controls="coast-project-links"
-              onClick={() => setProjectsOpen((open) => !open)}
+              data-active={moreIsActive ? "true" : undefined}
+              aria-expanded={moreOpen}
+              aria-controls="coast-more-links"
+              onClick={() => setMoreOpen((open) => !open)}
             >
-              项目
-              <ChevronDown aria-hidden="true" data-open={projectsOpen ? "true" : undefined} />
+              更多
+              <ChevronDown aria-hidden="true" data-open={moreOpen ? "true" : undefined} />
             </button>
-            {projectsOpen ? (
-              <div id="coast-project-links" className="coast-project-popover">
-                {PROJECT_ITEMS.map((item) => {
+            {moreOpen ? (
+              <div id="coast-more-links" className="coast-project-popover">
+                {MORE_ITEMS.map((item, index) => {
                   const Icon = item.icon;
                   const active = pathname.startsWith(item.href);
+                  const showDivider = index > 0 && item.group !== MORE_ITEMS[index - 1]?.group;
                   return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={closeMenus}
-                      aria-current={active ? "page" : undefined}
-                      data-active={active ? "true" : undefined}
-                    >
-                      <Icon aria-hidden="true" />
-                      {item.name}
-                    </Link>
+                    <div key={item.href} className={showDivider ? "coast-project-popover__group" : undefined}>
+                      <Link
+                        href={item.href}
+                        onClick={closeMenus}
+                        aria-current={active ? "page" : undefined}
+                        data-active={active ? "true" : undefined}
+                      >
+                        <Icon aria-hidden="true" />
+                        {item.name}
+                      </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -146,7 +148,7 @@ export function Navigation() {
           aria-controls="coast-mobile-menu"
           aria-label={mobileOpen ? "关闭导航" : "打开导航"}
           onClick={() => {
-            setProjectsOpen(false);
+            setMoreOpen(false);
             setMobileOpen((open) => !open);
           }}
         >
@@ -156,23 +158,42 @@ export function Navigation() {
 
       {mobileOpen ? (
         <nav id="coast-mobile-menu" className="coast-mobile-menu" aria-label="移动导航">
-          <Link href="/" onClick={closeMenus} aria-current={pathname === "/" ? "page" : undefined}>
-            <Home aria-hidden="true" />
-            2030 总览
-          </Link>
-          <Link href="/2026" onClick={closeMenus} aria-current={pathname === "/2026" ? "page" : undefined}>
-            <CalendarCheck aria-hidden="true" />
-            2026 工作台
-          </Link>
-          <Link
-            href="/operator"
-            onClick={closeMenus}
-            aria-current={pathname === "/operator" ? "page" : undefined}
-          >
-            <Bot aria-hidden="true" />
-            Coast Operator
-          </Link>
-          {PROJECT_ITEMS.map((item) => {
+          {PRIMARY_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = item.match(pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMenus}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon aria-hidden="true" />
+                {item.name === "2030" ? "2030 总览" : "2026 工作台"}
+              </Link>
+            );
+          })}
+          <div className="coast-mobile-menu__section" role="presentation">
+            业务线
+          </div>
+          {MORE_ITEMS.filter((item) => item.group === "projects").map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeMenus}
+                aria-current={pathname.startsWith(item.href) ? "page" : undefined}
+              >
+                <Icon aria-hidden="true" />
+                {item.name}
+              </Link>
+            );
+          })}
+          <div className="coast-mobile-menu__section" role="presentation">
+            工具
+          </div>
+          {MORE_ITEMS.filter((item) => item.group === "tools").map((item) => {
             const Icon = item.icon;
             return (
               <Link

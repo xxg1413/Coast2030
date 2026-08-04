@@ -26,6 +26,8 @@ interface AssetProgressCardProps {
   target: number;
   defaultDate: string;
   milestones?: Record<number, number>;
+  /** 首页首屏用：只保留摘要、里程碑与录入入口。 */
+  compact?: boolean;
 }
 
 interface ChartPoint {
@@ -54,7 +56,13 @@ function buildNetWorthChartPoints(snapshots: AssetSnapshot[]): ChartPoint[] {
     }));
 }
 
-export function AssetProgressCard({ snapshots, target, defaultDate, milestones }: AssetProgressCardProps) {
+export function AssetProgressCard({
+  snapshots,
+  target,
+  defaultDate,
+  milestones,
+  compact = false,
+}: AssetProgressCardProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -72,7 +80,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
   const progress = target > 0 ? Math.min(Math.max((currentNetWorth / target) * 100, 0), 100) : 0;
   const gap = Math.max(target - currentNetWorth, 0);
   const delta = latest && previous ? latest.netWorth - previous.netWorth : 0;
-  const chartPoints = buildNetWorthChartPoints(snapshots);
+  const chartPoints = compact ? [] : buildNetWorthChartPoints(snapshots);
   const minValue = chartPoints.length ? Math.min(...chartPoints.map((point) => point.value)) : 0;
   const maxValue = chartPoints.length ? Math.max(...chartPoints.map((point) => point.value)) : 0;
   const valueRange = Math.max(maxValue - minValue, 1);
@@ -148,14 +156,18 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
   ];
 
   return (
-    <Card className="glass-panel py-0">
-      <CardHeader className="pb-2">
+    <Card className={`glass-panel py-0 ${compact ? "coast-asset-card--compact" : ""}`}>
+      <CardHeader className={compact ? "pb-1.5 pt-3" : "pb-2"}>
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-sm text-stone-500">2030 资产目标进度</p>
-            <CardTitle className="mt-1 text-xl">{formatMoney(currentNetWorth)}</CardTitle>
-            <p className="mt-2 text-sm text-stone-500">
-              {latest ? `最新快照 ${latest.snapshotDate}` : "还没有资产快照，先录入第一条。"}
+            <CardTitle className={`mt-1 ${compact ? "text-lg" : "text-xl"}`}>
+              {latest ? formatMoney(currentNetWorth) : "未记录"}
+            </CardTitle>
+            <p className={`text-sm text-stone-500 ${compact ? "mt-1" : "mt-2"}`}>
+              {latest
+                ? `最新快照 ${latest.snapshotDate}${!compact && previous ? ` · 较上次 ${delta >= 0 ? "+" : ""}${formatMoney(delta)}` : ""}`
+                : "还没有资产快照，先录入第一条。"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -164,7 +176,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2" size={compact ? "sm" : "default"}>
                   <PlusCircle className="h-4 w-4" />
                   录入快照
                 </Button>
@@ -243,7 +255,7 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className={compact ? "space-y-3 pb-3" : "space-y-4"}>
         <div className="coast-asset-stats">
           {statItems.map((item) => {
             const Icon = item.icon;
@@ -265,16 +277,16 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
         </div>
 
         <div>
-          <div className="mb-2 flex items-center justify-between text-sm">
+          <div className={`flex items-center justify-between text-sm ${compact ? "mb-1.5" : "mb-2"}`}>
             <span className="text-stone-500">目标完成率</span>
-            <span className="font-medium">{progress.toFixed(2)}%</span>
+            <span className="font-medium tabular-nums">{progress.toFixed(2)}%</span>
           </div>
-          <Progress value={progress} className="h-3 bg-stone-200" indicatorClassName="bg-cyan-700" />
+          <Progress value={progress} className={`${compact ? "h-2" : "h-3"} bg-stone-200`} indicatorClassName="bg-cyan-700" />
         </div>
 
         {milestones && (
           <div className="coast-asset-milestones">
-            <p className="text-sm font-medium text-stone-900 mb-3">年度净资产里程碑</p>
+            {!compact && <p className="text-sm font-medium text-stone-900 mb-3">年度净资产里程碑</p>}
             <div className="grid grid-cols-5 gap-2">
               {Object.entries(milestones).map(([year, milestone]) => {
                 const currentYear = new Date().getFullYear();
@@ -299,80 +311,82 @@ export function AssetProgressCard({ snapshots, target, defaultDate, milestones }
           </div>
         )}
 
-        <div className="coast-asset-grid">
-          <div className="coast-asset-panel">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-stone-900">净资产趋势</p>
-              <span className={`flex items-center gap-1 text-sm ${delta >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                {delta >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                {latest && previous ? `${delta >= 0 ? "+" : ""}${formatMoney(delta)}` : "暂无对比"}
-              </span>
-            </div>
-            <div className="mt-4">
-              {chartCoordinates.length >= 2 ? (
-                <div className="space-y-3">
-                  <div className="coast-asset-chart">
-                    <svg
-                      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                      className="h-40 w-full overflow-visible"
-                      role="img"
-                      aria-label="最近六次净资产快照趋势"
-                    >
-                      <line x1="0" y1={chartHeight - paddingBottom} x2={chartWidth} y2={chartHeight - paddingBottom} stroke="var(--color-rule)" strokeWidth="1" />
-                      {areaPath && (
-                        <path d={areaPath} fill="var(--color-accent-soft)" />
-                      )}
-                      <path
-                        d={chartPath}
-                        fill="none"
-                        stroke="var(--color-accent)"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      {chartCoordinates.map((point) => (
-                        <g key={point.id}>
-                          <circle cx={point.x} cy={point.y} r="4.5" fill="var(--color-paper-2)" stroke="var(--color-accent)" strokeWidth="2" />
-                        </g>
-                      ))}
-                    </svg>
-                  </div>
-                  <div className="flex items-start justify-between gap-2 text-xs text-stone-500">
-                    {chartCoordinates.map((point) => (
-                      <div key={point.id} className="min-w-0 flex-1 text-center">
-                        <div>{point.label}</div>
-                        <div className="mt-1 text-stone-700">{formatMoney(point.value)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <EmptyState message="至少需要两条资产快照，才能显示净资产趋势。" />
-              )}
-            </div>
-          </div>
-
-          <div className="coast-asset-panel">
-            <p className="text-sm font-medium text-stone-900">最近快照</p>
-            <div className="mt-3 space-y-2">
-              {snapshots.length ? (
-                snapshots.map((snapshot) => (
-                  <div key={snapshot.id} className="coast-snapshot-row">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-stone-700">{snapshot.snapshotDate}</span>
-                      <span className="font-medium text-stone-900">{formatMoney(snapshot.netWorth)}</span>
+        {!compact && (
+          <div className="coast-asset-grid">
+            <div className="coast-asset-panel">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-stone-900">净资产趋势</p>
+                <span className={`flex items-center gap-1 text-sm ${delta >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                  {delta >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+                  {latest && previous ? `${delta >= 0 ? "+" : ""}${formatMoney(delta)}` : "暂无对比"}
+                </span>
+              </div>
+              <div className="mt-4">
+                {chartCoordinates.length >= 2 ? (
+                  <div className="space-y-3">
+                    <div className="coast-asset-chart">
+                      <svg
+                        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                        className="h-40 w-full overflow-visible"
+                        role="img"
+                        aria-label="最近六次净资产快照趋势"
+                      >
+                        <line x1="0" y1={chartHeight - paddingBottom} x2={chartWidth} y2={chartHeight - paddingBottom} stroke="var(--color-rule)" strokeWidth="1" />
+                        {areaPath && (
+                          <path d={areaPath} fill="var(--color-accent-soft)" />
+                        )}
+                        <path
+                          d={chartPath}
+                          fill="none"
+                          stroke="var(--color-accent)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        {chartCoordinates.map((point) => (
+                          <g key={point.id}>
+                            <circle cx={point.x} cy={point.y} r="4.5" fill="var(--color-paper-2)" stroke="var(--color-accent)" strokeWidth="2" />
+                          </g>
+                        ))}
+                      </svg>
                     </div>
-                    {snapshot.notes ? (
-                      <div className="mt-1 line-clamp-2 text-xs text-stone-500">{snapshot.notes}</div>
-                    ) : null}
+                    <div className="flex items-start justify-between gap-2 text-xs text-stone-500">
+                      {chartCoordinates.map((point) => (
+                        <div key={point.id} className="min-w-0 flex-1 text-center">
+                          <div>{point.label}</div>
+                          <div className="mt-1 text-stone-700">{formatMoney(point.value)}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))
-              ) : (
-                <EmptyState message="还没有资产快照。" />
-              )}
+                ) : (
+                  <EmptyState message="至少需要两条资产快照，才能显示净资产趋势。" />
+                )}
+              </div>
+            </div>
+
+            <div className="coast-asset-panel">
+              <p className="text-sm font-medium text-stone-900">最近快照</p>
+              <div className="mt-3 space-y-2">
+                {snapshots.length ? (
+                  snapshots.map((snapshot) => (
+                    <div key={snapshot.id} className="coast-snapshot-row">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-stone-700">{snapshot.snapshotDate}</span>
+                        <span className="font-medium text-stone-900">{formatMoney(snapshot.netWorth)}</span>
+                      </div>
+                      {snapshot.notes ? (
+                        <div className="mt-1 line-clamp-2 text-xs text-stone-500">{snapshot.notes}</div>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState message="还没有资产快照。" />
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

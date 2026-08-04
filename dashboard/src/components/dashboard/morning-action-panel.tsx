@@ -26,28 +26,28 @@ const CORE_DEFINITIONS = [
     key: "saas",
     goal: "SaaS · 5 个番茄钟",
     targetPomodoros: MORNING_CORE_POMODORO_TARGETS.saas,
-    actionPlaceholder: "完成一次可验证的获客、交付或产品推进",
+    taskPlaceholder: "今天要推进的可验证任务",
     resultPlaceholder: "已完成：证据链接 / 未完成：阻塞原因",
   },
   {
     key: "ai_notes",
     goal: "AI Notes · 2 个番茄钟",
     targetPomodoros: MORNING_CORE_POMODORO_TARGETS.ai_notes,
-    actionPlaceholder: "完成选题、制作或发布中的一个可验证动作",
+    taskPlaceholder: "今天的选题、制作或发布任务",
     resultPlaceholder: "已发布 / 已存草稿 / 未做：原因",
   },
   {
     key: "aibounty",
     goal: "AIBounty · 1 个番茄钟",
     targetPomodoros: MORNING_CORE_POMODORO_TARGETS.aibounty,
-    actionPlaceholder: "复现当前单一攻击图并保存请求/响应",
+    taskPlaceholder: "今天要复现的攻击图或排查点",
     resultPlaceholder: "已保存证据 / Blocked / 完整排除：原因…",
   },
   {
     key: "work",
     goal: "Work · 4 个番茄钟",
     targetPomodoros: MORNING_CORE_POMODORO_TARGETS.work,
-    actionPlaceholder: "完成一项可验证的工作",
+    taskPlaceholder: "今天要完成的可验证工作",
     resultPlaceholder: "已完成：交付或证据 / 未完成：阻塞原因",
   },
 ] as const;
@@ -247,7 +247,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
               晨间作战
             </CardTitle>
             <p className="mt-1 text-sm text-stone-500">
-              {log.date} · 先写下今天可验证的动作，收工前补结果
+              {log.date} · 先写下今天的任务，番茄钟达标后再补结果
             </p>
           </div>
 
@@ -300,13 +300,14 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
           <section aria-labelledby="core-progress-heading" className="min-w-0">
             <div className="mb-2">
               <h3 id="core-progress-heading" className="font-semibold text-stone-900">今日核心推进</h3>
-              <p className="mt-0.5 text-sm text-stone-500">每条写成今天可以验证的最小动作；对应分类番茄累计达标后才自动完成。</p>
+              <p className="mt-0.5 text-sm text-stone-500">先写今天的任务；分类番茄累计达标后，再填写结果。</p>
             </div>
 
             <div className="divide-y divide-stone-200 border-y border-stone-200">
-              {coreItems.map(({ item, goal, targetPomodoros, pomodoroCount, focusCompleted, focusProgress, actionPlaceholder, resultPlaceholder }) => {
-                const actionId = `morning-core-action-${item.key}`;
+              {coreItems.map(({ item, goal, targetPomodoros, pomodoroCount, focusCompleted, focusProgress, taskPlaceholder, resultPlaceholder }) => {
+                const taskId = `morning-core-task-${item.key}`;
                 const resultId = `morning-core-result-${item.key}`;
+                const showResult = focusCompleted || Boolean(item.result.trim());
                 return (
                   <div key={item.key} className="grid min-w-0 gap-2 py-3 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start">
                     <div className="flex min-h-11 items-center gap-2">
@@ -316,7 +317,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                         aria-label={`${goal} 番茄钟达标状态`}
                         className="data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
                       />
-                      <label htmlFor={actionId} className="min-w-0 flex-1 font-semibold text-stone-800">
+                      <label htmlFor={taskId} className="min-w-0 flex-1 font-semibold text-stone-800">
                         <span className="block">{goal}</span>
                         <span className="mt-1 block text-xs font-medium tabular-nums text-stone-500">
                           {pomodoroCount} / {targetPomodoros} 个番茄钟
@@ -334,18 +335,18 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                         disabled={!item.label.trim() || (lockedPomodoro && activePomodoroKey !== item.key)}
                         aria-label={`为${goal}分类开始番茄钟`}
                         aria-pressed={activePomodoroKey === item.key}
-                        title={item.label.trim() ? `计入 ${goal}` : "先填写今日动作"}
+                        title={item.label.trim() ? `计入 ${goal}` : "先填写今日任务"}
                       >
                         <Timer className="h-4 w-4" />
                       </Button>
                     </div>
                     <div className="space-y-2">
                       <div className="space-y-1">
-                        <label htmlFor={actionId} className="text-xs font-medium text-stone-500">动作</label>
+                        <label htmlFor={taskId} className="text-xs font-medium text-stone-500">任务</label>
                         <Input
-                          id={actionId}
+                          id={taskId}
                           value={item.label}
-                          placeholder={actionPlaceholder}
+                          placeholder={taskPlaceholder}
                           onChange={(event) => setItems((current) => updateItem(current, item.key, {
                             label: event.target.value,
                             completed: event.target.value.trim() ? item.completed : false,
@@ -353,18 +354,20 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                           className="h-11 border-stone-200 bg-stone-50/70 px-3 text-sm shadow-none hover:bg-stone-100/70 focus-visible:bg-white"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label htmlFor={resultId} className="text-xs font-medium text-stone-500">结果</label>
-                        <Input
-                          id={resultId}
-                          value={item.result}
-                          placeholder={resultPlaceholder}
-                          onChange={(event) => setItems((current) => updateItem(current, item.key, {
-                            result: event.target.value,
-                          }))}
-                          className="h-11 border-stone-200 bg-white px-3 text-sm shadow-none hover:bg-stone-50 focus-visible:bg-white"
-                        />
-                      </div>
+                      {showResult && (
+                        <div className="space-y-1">
+                          <label htmlFor={resultId} className="text-xs font-medium text-stone-500">结果</label>
+                          <Input
+                            id={resultId}
+                            value={item.result}
+                            placeholder={resultPlaceholder}
+                            onChange={(event) => setItems((current) => updateItem(current, item.key, {
+                              result: event.target.value,
+                            }))}
+                            className="h-11 border-stone-200 bg-white px-3 text-sm shadow-none hover:bg-stone-50 focus-visible:bg-white"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -374,11 +377,12 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
 
             <div className="mt-3 space-y-3">
               {visibleCustomItems.map((item) => {
-                const actionId = `morning-custom-action-${item.key}`;
+                const taskId = `morning-custom-task-${item.key}`;
                 const resultId = `morning-custom-result-${item.key}`;
+                const showResult = item.completed || Boolean(item.result.trim());
                 return (
                   <div key={item.key} className="grid min-w-0 gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:items-start">
-                    <label htmlFor={actionId} className="flex min-h-11 items-center gap-3 text-sm font-medium text-stone-600">
+                    <label htmlFor={taskId} className="flex min-h-11 items-center gap-3 text-sm font-medium text-stone-600">
                       <Checkbox
                         checked={item.completed}
                         disabled={!item.label.trim()}
@@ -390,11 +394,11 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                     </label>
                     <div className="space-y-2">
                       <div className="space-y-1">
-                        <label htmlFor={actionId} className="text-xs font-medium text-stone-500">动作</label>
+                        <label htmlFor={taskId} className="text-xs font-medium text-stone-500">任务</label>
                         <Input
-                          id={actionId}
+                          id={taskId}
                           value={item.label}
-                          placeholder="一次性可验证行动"
+                          placeholder="一次性可验证任务"
                           onBlur={() => {
                             if (!item.label.trim() && !item.result.trim()) setDraftCustomKey(null);
                           }}
@@ -405,21 +409,23 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                           className="h-11 border-stone-200 bg-white px-3 text-sm shadow-none"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label htmlFor={resultId} className="text-xs font-medium text-stone-500">结果</label>
-                        <Input
-                          id={resultId}
-                          value={item.result}
-                          placeholder="实际结果或未完成原因"
-                          onBlur={() => {
-                            if (!item.label.trim() && !item.result.trim()) setDraftCustomKey(null);
-                          }}
-                          onChange={(event) => setCustomItems((current) => updateItem(current, item.key, {
-                            result: event.target.value,
-                          }))}
-                          className="h-11 border-stone-200 bg-white px-3 text-sm shadow-none"
-                        />
-                      </div>
+                      {showResult && (
+                        <div className="space-y-1">
+                          <label htmlFor={resultId} className="text-xs font-medium text-stone-500">结果</label>
+                          <Input
+                            id={resultId}
+                            value={item.result}
+                            placeholder="实际结果或未完成原因"
+                            onBlur={() => {
+                              if (!item.label.trim() && !item.result.trim()) setDraftCustomKey(null);
+                            }}
+                            onChange={(event) => setCustomItems((current) => updateItem(current, item.key, {
+                              result: event.target.value,
+                            }))}
+                            className="h-11 border-stone-200 bg-white px-3 text-sm shadow-none"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
