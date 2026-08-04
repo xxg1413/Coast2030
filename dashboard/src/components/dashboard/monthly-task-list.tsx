@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState } from "./empty-state";
+import { TaskPomodoroButton } from "./task-pomodoro";
 
 interface TaskItem {
   id: string;
@@ -158,19 +159,22 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
                     {GOAL_LABELS[task.goalArea]}
                   </span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90 hover:bg-destructive/10 shrink-0"
-                  onClick={() => handleDelete(task)}
-                  disabled={deleting === task.id}
-                >
-                  {deleting === task.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                </Button>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <TaskPomodoroButton taskKey={`monthly:${task.id}`} label={task.text} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                    onClick={() => handleDelete(task)}
+                    disabled={deleting === task.id}
+                  >
+                    {deleting === task.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
             );
           })}

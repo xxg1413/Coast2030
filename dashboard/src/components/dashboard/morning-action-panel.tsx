@@ -8,12 +8,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Check, Loader2, Plus, Sunrise, Timer } from "lucide-react";
-import type { MorningLog, MorningLogItem, PomodoroEntry } from "@/lib/api";
+import type { MorningLog, MorningLogItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { PomodoroTimer } from "@/components/dashboard/pomodoro-timer";
+import { usePomodoroSession } from "@/components/dashboard/task-pomodoro";
 import {
   DAILY_CORE_POMODORO_TARGET_2026,
   MORNING_CORE_POMODORO_TARGETS,
@@ -54,9 +54,12 @@ const CORE_DEFINITIONS = [
 
 const HABIT_DEFINITIONS = [
   { key: "wake_early", label: "早起" },
+  { key: "morning_journal", label: "晨间日志" },
   { key: "run", label: "跑步" },
   { key: "daily_input", label: "每日输入" },
-  { key: "daily_review", label: "每日复盘" },
+  { key: "daily_output", label: "每日输出" },
+  { key: "daily_acquisition", label: "每日获客" },
+  { key: "daily_review", label: "晚间复盘" },
 ] as const;
 
 const LEGACY_CORE_LABELS = new Set(["AIBounty", "SaaS", "AINotes", "AI Notes"]);
@@ -77,15 +80,13 @@ function normalizeInitialItems(items: MorningLogItem[]) {
 
 export function MorningActionPanel({ log }: { log: MorningLog }) {
   const router = useRouter();
+  const pomodoroSession = usePomodoroSession();
   const [items, setItems] = useState(() => normalizeInitialItems(log.items));
   const [customItems, setCustomItems] = useState(() =>
     log.customItems.map((item) => ({ ...item, result: item.result || "" })),
   );
-  const [pomodoros, setPomodoros] = useState<PomodoroEntry[]>(log.pomodoros);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
-  const [activePomodoroKey, setActivePomodoroKey] = useState<string | null>(null);
-  const [lockedPomodoroKey, setLockedPomodoroKey] = useState<string | null>(null);
   const [draftCustomKey, setDraftCustomKey] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastQueuedPayloadRef = useRef(
@@ -94,6 +95,10 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
       customItems: log.customItems.map((item) => ({ ...item, result: item.result || "" })),
     }),
   );
+
+  const pomodoros = pomodoroSession?.pomodoros ?? log.pomodoros;
+  const activePomodoroKey = pomodoroSession?.activeKey ?? null;
+  const lockedPomodoro = Boolean(pomodoroSession?.locked);
 
   const pomodoroCountsByKey = useMemo(
     () => getMorningCorePomodoroCountsByKey(pomodoros),
@@ -154,37 +159,6 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
     return completedCustom ? { key: completedCustom.key, label: completedCustom.label } : null;
   }, [coreItems, customItems]);
 
-  const activeFocusItem = useMemo(() => {
-    if (!activePomodoroKey) return null;
-    const item = [...items, ...customItems].find((entry) => entry.key === activePomodoroKey);
-    return item?.label.trim() ? item : null;
-  }, [activePomodoroKey, customItems, items]);
-
-  const recordPomodoro = useCallback(
-    async (key: string, label: string) => {
-      const optimistic: PomodoroEntry = {
-        key,
-        label,
-        duration: 30 * 60,
-        completedAt: new Date().toISOString(),
-      };
-      setPomodoros((current) => [...current, optimistic]);
-      try {
-        const response = await fetch("/api/morning-log/pomodoro/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ date: log.date, key, label }),
-        });
-        if (!response.ok) throw new Error(`Pomodoro add failed: ${response.status}`);
-      } catch {
-        setPomodoros((current) => current.filter((entry) => entry !== optimistic));
-        setError(true);
-        window.setTimeout(() => setError(false), 3000);
-      }
-    },
-    [log.date],
-  );
-
   const completeFocusItem = useCallback((key: string) => {
     if (isMorningCoreFocusKey(key)) return;
     if (items.some((item) => item.key === key)) {
@@ -193,6 +167,16 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
     }
     setCustomItems((current) => updateItem(current, key, { completed: true }));
   }, [items]);
+
+  const startPomodoroForKey = useCallback(
+    (key: string, label: string) => {
+      if (!pomodoroSession || !label.trim()) return;
+      pomodoroSession.start(key, label, {
+        onCompleted: isMorningCoreFocusKey(key) ? undefined : () => completeFocusItem(key),
+      });
+    },
+    [completeFocusItem, pomodoroSession],
+  );
 
   const save = useCallback(async () => {
     setSaving(true);
@@ -233,13 +217,22 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
   };
 
   const toggleFocusPanel = () => {
-    if (lockedPomodoroKey) return;
-    setActivePomodoroKey((current) => (current ? null : focusTarget?.key || null));
+    if (!focusTarget) return;
+    if (lockedPomodoro) {
+      pomodoroSession?.openDialog();
+      return;
+    }
+    startPomodoroForKey(focusTarget.key, focusTarget.label);
   };
 
   const selectFocusItem = (key: string) => {
-    if (lockedPomodoroKey) return;
-    setActivePomodoroKey((current) => (current === key ? null : key));
+    const item = [...items, ...customItems].find((entry) => entry.key === key);
+    if (!item?.label.trim()) return;
+    if (lockedPomodoro) {
+      if (activePomodoroKey === key) pomodoroSession?.openDialog();
+      return;
+    }
+    startPomodoroForKey(key, item.label);
   };
 
   const hasUnusedCustomSlot = customItems.some((item) => !item.label.trim() && !item.result.trim());
@@ -262,20 +255,19 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
             <div className="flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-stone-50/70 px-3 py-2 text-xs text-stone-600 tabular-nums">
               <span><strong className="text-stone-900">{coreCompleted}/{CORE_DEFINITIONS.length}</strong> 核心推进</span>
               <span><strong className="text-stone-900">{coreWithResult}/{CORE_DEFINITIONS.length}</strong> 已记结果</span>
-              <span><strong className="text-stone-900">{habitCompleted}/4</strong> 基础习惯</span>
+              <span><strong className="text-stone-900">{habitCompleted}/{HABIT_DEFINITIONS.length}</strong> 基础习惯</span>
               <span><strong className="text-stone-900">{classifiedPomodoroCount}</strong> / {DAILY_CORE_POMODORO_TARGET_2026} 个分类番茄钟</span>
             </div>
             <Button
               type="button"
               className="h-11 whitespace-nowrap bg-stone-900 px-4 text-stone-50 hover:bg-stone-800 active:translate-y-px"
               onClick={toggleFocusPanel}
-              disabled={!focusTarget || Boolean(lockedPomodoroKey)}
-              aria-expanded={Boolean(activePomodoroKey)}
-              aria-controls="morning-focus-panel"
+              disabled={!focusTarget && !lockedPomodoro}
+              aria-expanded={Boolean(pomodoroSession?.open)}
               title={!focusTarget ? "先填写一条核心推进" : undefined}
             >
               <Timer className="h-4 w-4" />
-              {activePomodoroKey ? "收起专注" : "开始专注"}
+              {lockedPomodoro || activePomodoroKey ? "打开专注" : "开始专注"}
             </Button>
           </div>
         </div>
@@ -339,7 +331,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                         variant={activePomodoroKey === item.key ? "secondary" : "ghost"}
                         className="h-9 w-9 shrink-0 text-stone-600"
                         onClick={() => selectFocusItem(item.key)}
-                        disabled={!item.label.trim() || Boolean(lockedPomodoroKey)}
+                        disabled={!item.label.trim() || (lockedPomodoro && activePomodoroKey !== item.key)}
                         aria-label={`为${goal}分类开始番茄钟`}
                         aria-pressed={activePomodoroKey === item.key}
                         title={item.label.trim() ? `计入 ${goal}` : "先填写今日动作"}
@@ -482,7 +474,7 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                       variant={activePomodoroKey === item.key ? "secondary" : "ghost"}
                       className="h-9 w-9 text-stone-600"
                       onClick={() => selectFocusItem(item.key)}
-                      disabled={!item.label.trim() || Boolean(lockedPomodoroKey)}
+                      disabled={!item.label.trim() || (lockedPomodoro && activePomodoroKey !== item.key)}
                       aria-label={`为${item.label || label}使用番茄钟`}
                       aria-pressed={activePomodoroKey === item.key}
                       title={item.label.trim() ? `为${item.label}使用番茄钟` : "先填写习惯名称"}
@@ -495,19 +487,6 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
             </div>
           </section>
         </div>
-
-        {activeFocusItem && (
-          <div id="morning-focus-panel" className="mt-4">
-            <PomodoroTimer
-              key={activeFocusItem.key}
-              label={activeFocusItem.label}
-              onLockChange={(locked) => setLockedPomodoroKey(locked ? activeFocusItem.key : null)}
-              onClose={() => setActivePomodoroKey(null)}
-              onFocusCompleted={() => void recordPomodoro(activeFocusItem.key, activeFocusItem.label)}
-              onCompleted={isMorningCoreFocusKey(activeFocusItem.key) ? undefined : () => completeFocusItem(activeFocusItem.key)}
-            />
-          </div>
-        )}
       </CardContent>
     </Card>
   );

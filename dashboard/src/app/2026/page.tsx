@@ -27,6 +27,7 @@ import { MonthFilter } from "@/components/dashboard/month-filter";
 import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
+import { PomodoroSessionProvider } from "@/components/dashboard/task-pomodoro";
 import { getIncomeTypeConfig } from "@/lib/income-types";
 import {
   BUSINESS_LINE_TARGETS_2026,
@@ -163,22 +164,24 @@ export default async function Year2026Page({ searchParams }: Props) {
           <AgentControlPanel overview={agentOverview} />
         </section>
 
-        <section className="coast-primary-workbench" aria-label="2026 晨间行动">
-          <MorningActionPanel log={morningLog} />
-        </section>
+        <PomodoroSessionProvider focusDate={currentDate} initialPomodoros={morningLog.pomodoros}>
+          <section className="coast-primary-workbench" aria-label="2026 晨间行动">
+            <MorningActionPanel log={morningLog} />
+          </section>
 
-        <section className="space-y-4">
-          <div>
-            <p className="text-sm text-stone-500">任务列表</p>
-            <h2 className="mt-1 text-xl font-semibold">执行与任务</h2>
-          </div>
-          <div className="grid gap-3 xl:grid-cols-3">
-            <WeeklyFocusList tasks={weeklyFocus.tasks} title={weeklyFocus.title} />
-            <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={selectableMonths} />
-            <DailyTaskList date={currentDay} tasks={dailyTasks} />
-            <ExternalTaskList tasks={externalTasks} health={externalHealth} />
-          </div>
-        </section>
+          <section className="space-y-4">
+            <div>
+              <p className="text-sm text-stone-500">任务列表</p>
+              <h2 className="mt-1 text-xl font-semibold">执行与任务</h2>
+            </div>
+            <div className="grid gap-3 xl:grid-cols-3">
+              <WeeklyFocusList tasks={weeklyFocus.tasks} title={weeklyFocus.title} />
+              <MonthlyTaskList tasks={monthlyTasks} month={currentTaskMonth} months={selectableMonths} />
+              <DailyTaskList date={currentDay} tasks={dailyTasks} />
+              <ExternalTaskList tasks={externalTasks} health={externalHealth} />
+            </div>
+          </section>
+        </PomodoroSessionProvider>
 
         <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
           <Card className="glass-panel py-0">

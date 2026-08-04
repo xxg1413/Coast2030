@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Crosshair, Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { EmptyState } from "./empty-state";
+import { TaskPomodoroButton } from "./task-pomodoro";
 
 interface WeeklyFocusTask {
   id: string;
@@ -132,19 +133,22 @@ export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: Week
                   </span>
                 </div>
 
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10 shrink-0"
-                  onClick={() => handleDelete(task.id)}
-                  disabled={disabled}
-                >
-                  {deleting === task.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                </Button>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <TaskPomodoroButton taskKey={`weekly:${task.id}`} label={task.text} />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:bg-destructive/10"
+                    onClick={() => handleDelete(task.id)}
+                    disabled={disabled}
+                  >
+                    {deleting === task.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
             );
           })}

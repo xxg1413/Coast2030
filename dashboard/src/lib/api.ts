@@ -842,10 +842,18 @@ const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
     { key: "ai_notes", label: "", result: "", completed: false },
     { key: "work", label: "", result: "", completed: false },
     { key: "wake_early", label: "早起", result: "", completed: false },
+    { key: "morning_journal", label: "晨间日志", result: "", completed: false },
     { key: "run", label: "跑步", result: "", completed: false },
     { key: "daily_input", label: "每日输入", result: "", completed: false },
-    { key: "daily_review", label: "每日复盘", result: "", completed: false },
+    { key: "daily_output", label: "每日输出", result: "", completed: false },
+    { key: "daily_acquisition", label: "每日获客", result: "", completed: false },
+    { key: "daily_review", label: "晚间复盘", result: "", completed: false },
 ];
+
+/** 旧默认文案 → 新默认文案；仅在用户未自定义时生效。 */
+const LEGACY_MORNING_LOG_LABELS: Record<string, string> = {
+    "每日复盘": "晚间复盘",
+};
 
 const DEFAULT_CUSTOM_MORNING_LOG_ITEMS: MorningLogItem[] = [
     { key: "custom_1", label: "", result: "", completed: false },
@@ -872,6 +880,12 @@ async function ensureMorningLogsTable() {
     `);
 }
 
+function resolveMorningLogLabel(storedLabel: unknown, fallbackLabel: string): string {
+    const label = String(storedLabel ?? fallbackLabel).trim();
+    if (!label) return fallbackLabel;
+    return LEGACY_MORNING_LOG_LABELS[label] ?? label;
+}
+
 function parseMorningLogItems(raw: string | null | undefined, fallback: MorningLogItem[]): MorningLogItem[] {
     try {
         const parsed = JSON.parse(raw || "[]");
@@ -879,10 +893,11 @@ function parseMorningLogItems(raw: string | null | undefined, fallback: MorningL
         const fallbackByKey = new Map(fallback.map((item) => [item.key, item]));
         return fallback.map((item) => {
             const existing = parsed.find((row) => row?.key === item.key);
+            const fallbackItem = fallbackByKey.get(item.key);
             return {
                 key: item.key,
-                label: String(existing?.label ?? fallbackByKey.get(item.key)?.label ?? item.label),
-                result: String(existing?.result ?? fallbackByKey.get(item.key)?.result ?? item.result ?? ""),
+                label: resolveMorningLogLabel(existing?.label, fallbackItem?.label ?? item.label),
+                result: String(existing?.result ?? fallbackItem?.result ?? item.result ?? ""),
                 completed: Boolean(existing?.completed),
             };
         });
@@ -895,7 +910,7 @@ function normalizeMorningLogItems(items: unknown, fallback: MorningLogItem[]): M
     const rows = Array.isArray(items) ? items : [];
     return fallback.map((item) => {
         const existing = rows.find((row) => row?.key === item.key) as Partial<MorningLogItem> | undefined;
-        const label = String(existing?.label ?? item.label).trim();
+        const label = resolveMorningLogLabel(existing?.label, item.label);
         const result = String(existing?.result ?? item.result ?? "").trim();
         return {
             key: item.key,

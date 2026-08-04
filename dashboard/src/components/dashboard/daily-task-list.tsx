@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, ListChecks, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { EmptyState } from "./empty-state";
+import { TaskPomodoroButton } from "./task-pomodoro";
 
 interface DailyTask {
   id: string;
@@ -222,15 +223,18 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                           </Button>
                         </>
                       ) : (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-stone-500 hover:text-stone-700"
-                          onClick={() => startEdit(task)}
-                          disabled={disabled}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
+                        <>
+                          <TaskPomodoroButton taskKey={`daily:${task.id}`} label={task.text} />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-stone-500 hover:text-stone-700"
+                            onClick={() => startEdit(task)}
+                            disabled={disabled}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
                       )}
 
                       <Button
