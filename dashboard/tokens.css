@@ -1,0 +1,66 @@
+/* Coast2030 design tokens — source of truth for paper/ink/accent workbench UI */
+:root {
+  color-scheme: light;
+
+  --color-paper: #f5f0e6;
+  --color-paper-2: #fdfaf4;
+  --color-paper-3: #ede5d8;
+  --color-ink: #171009;
+  --color-ink-2: #2f2419;
+  --color-rule: #dcd3c6;
+  --color-rule-2: #aea394;
+  --color-muted: #6f6457;
+  --color-neutral: #4b4034;
+  --color-accent: #007373;
+  --color-accent-ink: #fcfaf6;
+  --color-accent-soft: #bde8e4;
+  --color-accent-strong: #005b5c;
+  --color-focus: #002a2a;
+  --color-success: #037441;
+  --color-warning: #a26e22;
+  --color-danger: #be3029;
+
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-outlier: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-display: clamp(2rem, 5vw, 4.5rem);
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  --rule-hair: 1px;
+  --rule-fine: 2px;
+
+  --radius-input: 0.75rem;
+  --radius-card: 1.125rem;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px #1915110d;
+  --shadow-nav: 0 8px 28px #1b150c17;
+
+  --dur-micro: 0.12s;
+  --dur-short: 0.22s;
+  --dur-long: 0.42s;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --display-style: normal;
+  --display-weight: 800;
+  --tracking-display: -0.035em;
+  --tracking-label: 0.06em;
+
+  --z-dropdown: 100;
+  --z-sticky: 200;
+}
