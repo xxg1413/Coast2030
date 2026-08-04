@@ -467,6 +467,129 @@ button:disabled,
   padding-block: var(--space-sm);
 }
 
+/* 2026 workbench: dense execution board */
+.coast-workbench {
+  min-width: 0;
+  padding-block: var(--space-sm) var(--space-md);
+}
+
+.coast-workbench-board {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.coast-workbench-board__header {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-sm) var(--space-md);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+
+.coast-workbench-board__brand {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+
+.coast-workbench-board__brand h1 {
+  margin-top: var(--space-2xs);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+}
+
+.coast-workbench-board__brand > p:last-child {
+  margin-top: var(--space-2xs);
+  max-width: 36rem;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.coast-workbench-board__pulse {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.coast-workbench-board__pulse > div {
+  min-width: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-input);
+  background: var(--color-paper-2);
+}
+
+.coast-workbench-board__pulse dt {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+
+.coast-workbench-board__pulse dd {
+  margin-top: 0.15rem;
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+}
+
+.coast-workbench-board__pulse dd span {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: 550;
+}
+
+.coast-workbench-board__morning {
+  min-width: 0;
+}
+
+.coast-workbench-board__tasks,
+.coast-workbench-board__income,
+.coast-workbench-board__transactions,
+.coast-workbench-board__lines {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.coast-workbench-board__task-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+}
+
+.coast-workbench-board__income-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm) var(--space-md);
+}
+
+.coast-workbench-board__income-stats > div {
+  min-width: 0;
+  padding-bottom: var(--space-sm);
+  border-bottom: var(--rule-hair) solid color-mix(in oklab, var(--color-rule) 70%, transparent);
+}
+
+.coast-workbench-board__line-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-sm);
+}
+
 .coast-section-heading--compact {
   margin-bottom: 0;
 }
@@ -1568,6 +1691,20 @@ button:disabled,
   }
 }
 
+@media (min-width: 40rem) {
+  .coast-workbench-board__pulse {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .coast-workbench-board__line-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .coast-workbench-board__line-grid > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (min-width: 60rem) {
   .coast-home {
     padding-top: var(--space-lg);
@@ -1584,6 +1721,38 @@ button:disabled,
 
   .coast-overview-board__header {
     padding-block: var(--space-2xs) var(--space-sm);
+  }
+
+  .coast-workbench {
+    padding-block: var(--space-sm) var(--space-lg);
+  }
+
+  .coast-workbench-board {
+    gap: var(--space-sm);
+  }
+
+  .coast-workbench-board__header {
+    padding-block: var(--space-2xs) var(--space-sm);
+  }
+
+  .coast-workbench-board__task-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .coast-workbench-board__task-grid > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .coast-workbench-board__income-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .coast-workbench-board__line-grid {
+    grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
+  }
+
+  .coast-workbench-board__line-grid > :first-child {
+    grid-column: auto;
   }
 
   .coast-workbench-grid {
