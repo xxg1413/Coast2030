@@ -40,7 +40,6 @@ export function SaaSGrowthPortfolio({ currentMonth }: { currentMonth: string }) 
               <p className="coast-growth-card__offer">卖：{product.offer}</p>
               <p className="coast-direction-row__next">客户：{product.customer}</p>
               <div className="coast-growth-card__gate">
-                <strong>{product.acquisition}</strong>
                 <span>{product.paidGate}</span>
               </div>
               <a className="coast-text-link" href={product.href} target="_blank" rel="noreferrer">
@@ -51,7 +50,7 @@ export function SaaSGrowthPortfolio({ currentMonth }: { currentMonth: string }) 
         })}
       </div>
       <p className="coast-growth-portfolio__rule">
-        执行底线：DeepFeather 每周 25 个精准账户常驻；当月主攻加大触达。内容只看可归因访问、对话和成交，不以播放量代替获客。
+        DeepFeather 持续获客，当月项目集中成交。内容只看可归因访问、对话和成交，不以播放量代替获客。
       </p>
     </section>
   );
