@@ -287,8 +287,8 @@ export default async function Year2026Page({ searchParams }: Props) {
                 <p className="text-xs text-stone-300">2026 唯一组合目标 · 已结算现金</p>
                 <p className="mt-1 text-2xl font-black">{formatMoney(yearIncome)} / ¥1,000,000</p>
                 <div className="mt-3 border-t border-stone-700 pt-3">
-                  <p className="text-sm font-semibold text-stone-200">OpenBot ¥50万 · OneBot ¥25万</p>
-                  <p className="mt-1 text-sm font-semibold text-stone-200">KOL.tools ¥15万 · DeepFeather ¥10万</p>
+                  <p className="text-sm font-semibold text-stone-200">9月 OpenBot · 10月 OneBot · 11月 KOL.tools</p>
+                  <p className="mt-1 text-sm font-semibold text-stone-200">12月 MutNPC · DeepFeather 9–12月持续获客</p>
                   <p className="mt-2 text-xs text-stone-400">Hunter 0H · 内容获客 2H/天 · 机动 1H/天</p>
                 </div>
               </CardContent>

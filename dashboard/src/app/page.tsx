@@ -54,9 +54,9 @@ export default async function Home() {
     {
       key: "saas",
       role: "唯一收入主线 · 5H/天",
-      title: "四个海外 SaaS",
+      title: "海外 SaaS 组合",
       measure: `${formatMoney(saasIncome)} / ${formatMoney(BUSINESS_LINE_TARGETS_2026.SaaS)}`,
-      next: "OpenBot、OneBot、KOL.tools、DeepFeather 全部持续获客，按月切换成交主攻。",
+      next: "DeepFeather 四个月持续获客；OpenBot、OneBot、KOL.tools、MutNPC 按月成交主攻。",
       href: "/productlab",
       linkLabel: "Product Lab",
       meta: "¥100 万",
@@ -93,7 +93,7 @@ export default async function Home() {
               Coast2030 · 五年总盘
             </p>
             <h1 id="home-heading">2030 总览</h1>
-            <p>长期资产、年度进度与四个海外 SaaS；执行细节在 2026 工作台。</p>
+            <p>长期资产、年度进度与海外 SaaS 增长组合；执行细节在 2026 工作台。</p>
           </div>
           <Link className="coast-button coast-button--primary" href="/2026">
             进入 2026 工作台
