@@ -7,7 +7,6 @@ import {
   getBeijingCurrentYearMonth,
   getAvailableMonths,
   getDailyTasks,
-  getAIBountyGoalProgress,
   getExternalTasks,
   getExternalSourceHealth,
   getIncomeComposition,
@@ -28,6 +27,7 @@ import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
 import { PomodoroSessionProvider } from "@/components/dashboard/task-pomodoro";
+import { SaaSGrowthPortfolio } from "@/components/dashboard/saas-growth-portfolio";
 import { getIncomeTypeConfig } from "@/lib/income-types";
 import {
   BUSINESS_LINE_TARGETS_2026,
@@ -68,13 +68,10 @@ export default async function Year2026Page({ searchParams }: Props) {
     dailyTasks,
     externalTasks,
     externalHealth,
-    aiBountyGoal,
     transactions,
     monthlyIncome,
     yearIncome,
-    hunterIncome,
     saasIncome,
-    mediaIncome,
     composition,
   ] =
     await Promise.all([
@@ -84,13 +81,10 @@ export default async function Year2026Page({ searchParams }: Props) {
       getDailyTasks(currentDay),
       getExternalTasks(),
       getExternalSourceHealth(),
-      getAIBountyGoalProgress(),
       getTransactions(currentMonth),
       getTotalIncome(currentMonth),
       getYearIncome(2026),
-      getYearIncome(2026, "Hunter"),
       getYearIncome(2026, "SaaS"),
-      getYearIncome(2026, "Media"),
       getIncomeComposition(currentMonth),
     ]);
 
@@ -115,9 +109,7 @@ export default async function Year2026Page({ searchParams }: Props) {
     { label: "每周需入账", value: formatMoney(recovery.weeklyRequired), sub: `旧排期未覆盖 ${formatMoney(recovery.scheduleGap)}` },
   ];
   const targetLines = [
-    { label: "Hunter", current: hunterIncome, target: BUSINESS_LINE_TARGETS_2026.Hunter, className: "bg-blue-600" },
     { label: "SaaS", current: saasIncome, target: BUSINESS_LINE_TARGETS_2026.SaaS, className: "bg-emerald-600" },
-    { label: "Media", current: mediaIncome, target: BUSINESS_LINE_TARGETS_2026.Media, className: "bg-amber-500" },
   ];
 
   return (
@@ -167,6 +159,8 @@ export default async function Year2026Page({ searchParams }: Props) {
           <section className="coast-workbench-board__morning" aria-label="2026 晨间行动">
             <MorningActionPanel log={morningLog} />
           </section>
+
+          <SaaSGrowthPortfolio currentMonth={currentMonth} />
 
           <section className="coast-workbench-board__tasks" aria-labelledby="tasks-heading">
             <div className="coast-section-heading coast-section-heading--compact">
@@ -284,7 +278,7 @@ export default async function Year2026Page({ searchParams }: Props) {
           <div className="coast-section-heading coast-section-heading--compact">
             <div>
               <h2 id="lines-heading">年度收入与组合目标</h2>
-              <p>Hunter / SaaS / Media 分配与 AIBounty 独立目标。</p>
+              <p>全部年度收入目标归 SaaS；自媒体只承担可归因获客，Hunter 暂停。</p>
             </div>
           </div>
           <div className="coast-workbench-board__line-grid">
@@ -293,22 +287,9 @@ export default async function Year2026Page({ searchParams }: Props) {
                 <p className="text-xs text-stone-300">2026 唯一组合目标 · 已结算现金</p>
                 <p className="mt-1 text-2xl font-black">{formatMoney(yearIncome)} / ¥1,000,000</p>
                 <div className="mt-3 border-t border-stone-700 pt-3">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-stone-300">AIBounty 100 天独立目标</span>
-                    <strong>
-                      ${aiBountyGoal.receivedUsd.toLocaleString("en-US")} / $
-                      {aiBountyGoal.targetUsd.toLocaleString("en-US")}
-                    </strong>
-                  </div>
-                  <Progress
-                    value={aiBountyGoal.progress}
-                    className="mt-2 h-2 bg-stone-700"
-                    indicatorClassName="bg-emerald-500"
-                  />
-                  <p className="mt-1.5 text-xs text-stone-400">
-                    {aiBountyGoal.progress.toFixed(1)}% · Submitted+ {aiBountyGoal.submittedCount}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-500">该目标不覆盖 Hunter ¥30 万组合分配。</p>
+                  <p className="text-sm font-semibold text-stone-200">OpenBot ¥50万 · OneBot ¥25万</p>
+                  <p className="mt-1 text-sm font-semibold text-stone-200">KOL.tools ¥15万 · DeepFeather ¥10万</p>
+                  <p className="mt-2 text-xs text-stone-400">Hunter 0H · 内容获客 2H/天 · 机动 1H/天</p>
                 </div>
               </CardContent>
             </Card>

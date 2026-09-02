@@ -26,19 +26,20 @@ export const YEAR_TARGETS: Record<number, number> = {
  * 各方向 Dashboard 可以保留自己的运营币种与目标，但 Coast 汇总统一使用人民币。
  */
 export const BUSINESS_LINE_TARGETS_2026 = {
-  Hunter: 150000,
-  SaaS: 600000,
-  Media: 250000,
+  Hunter: 0,
+  SaaS: 1000000,
+  Media: 0,
 } as const;
 
 /**
- * 每日 8H 自由时间的唯一分配来源。这里是日均预算；AIBounty 可把每日 1H
- * 合并为连续深挖块，但周总量不能因此扩大。
+ * 每日 8H 自由时间的唯一分配来源。自媒体只服务 SaaS 获客，
+ * Buffer 只用于处理最接近成交的阻塞项。
  */
 export const BUSINESS_LINE_DAILY_HOURS_2026 = {
-  Hunter: 1,
+  Hunter: 0,
   SaaS: 5,
   Media: 2,
+  Buffer: 1,
 } as const;
 
 export const DAILY_ALLOCATED_HOURS_2026 = 8;
@@ -50,7 +51,7 @@ export const DAILY_ALLOCATED_HOURS_2026 = 8;
 export const MORNING_CORE_POMODORO_TARGETS = {
   saas: 5,
   ai_notes: 2,
-  aibounty: 1,
+  buffer: 1,
   work: 4,
 } as const;
 
@@ -69,7 +70,7 @@ export function getMorningCorePomodoroCountsByKey(
   const totals: Record<MorningCoreFocusKey, number> = {
     saas: 0,
     ai_notes: 0,
-    aibounty: 0,
+    buffer: 0,
     work: 0,
   };
 
@@ -85,11 +86,57 @@ export function getMorningCorePomodoroCountsByKey(
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;
 const MONTHLY_TARGET_ROUNDING_UNIT = 1000;
-// 2026年年度目标100万，按月递增分配（从6月开始）
-// 6-12月目标总和：100万
+// 2026 年最后四个月按四个海外 SaaS 的主攻顺序分配回款目标。
 const CUSTOM_MONTHLY_TARGETS: Partial<Record<number, number[]>> = {
-  2026: [0, 0, 0, 0, 0, 50000, 70000, 100000, 140000, 180000, 220000, 240000],
+  2026: [0, 0, 0, 0, 0, 0, 0, 0, 500000, 250000, 150000, 100000],
 };
+
+export const SAAS_GROWTH_PORTFOLIO_2026 = [
+  {
+    key: "openbot",
+    name: "OpenBot",
+    focusMonth: "9月",
+    revenueTarget: 500000,
+    offer: "Robot Dataset Readiness / Change-Control",
+    customer: "机器人数据与 ML 平台团队",
+    acquisition: "每周 25 个精准账户 · 5 次对话 · 2 份报价",
+    paidGate: "9 月底前拿到 1 个 $3k–10k 付费 Pilot",
+    href: "https://openbot.ai/",
+  },
+  {
+    key: "onebot",
+    name: "OneBot",
+    focusMonth: "10月",
+    revenueTarget: 250000,
+    offer: "海外 SaaS 社区获客 Agent",
+    customer: "需要稳定获取高意向线索的海外 SaaS Founder",
+    acquisition: "每周 25 个精准账户 · 5 次对话 · 2 份报价",
+    paidGate: "10 月底前拿到 1 个 $1k Setup 或 $3k+ 年付",
+    href: "https://onebot.ai/",
+  },
+  {
+    key: "koltools",
+    name: "KOL.tools",
+    focusMonth: "11月",
+    revenueTarget: 150000,
+    offer: "多客户内容审核与交付 Workspace",
+    customer: "服务播客、课程和知识型频道的小型 Agency",
+    acquisition: "每周 25 个精准账户 · 5 次对话 · 2 份报价",
+    paidGate: "11 月底前拿到 2 个 $1k–2k 付费 Pilot",
+    href: "https://kol.tools/",
+  },
+  {
+    key: "deepfeather",
+    name: "DeepFeather",
+    focusMonth: "12月",
+    revenueTarget: 100000,
+    offer: "Software Replacement Watchlist / Audit",
+    customer: "正在削减软件成本并评估 AI 替代方案的团队",
+    acquisition: "每周 25 个精准账户 · 5 次对话 · 2 份报价",
+    paidGate: "12 月底前拿到 1 个 $1k–3k Audit 或 3 个订阅",
+    href: "https://deepfeather.com/",
+  },
+] as const;
 
 function buildMonthlyTargets(yearTarget: number): number[] {
   if (yearTarget <= 0) {

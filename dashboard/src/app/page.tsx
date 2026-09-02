@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
+import { SaaSGrowthPortfolio } from "@/components/dashboard/saas-growth-portfolio";
 import {
   formatMoney,
   getAssetSnapshots,
   getBeijingCurrentDate,
-  getHunterTargets,
   getYearIncome,
 } from "@/lib/api";
 import {
@@ -21,13 +21,10 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const currentDate = getBeijingCurrentDate();
   const years = [2026, 2027, 2028, 2029, 2030];
-  const [incomes, hunterIncome, saasIncome, mediaIncome, hunterTargets, assetSnapshots] =
+  const [incomes, saasIncome, assetSnapshots] =
     await Promise.all([
       Promise.all(years.map((year) => getYearIncome(year))),
-      getYearIncome(2026, "Hunter"),
       getYearIncome(2026, "SaaS"),
-      getYearIncome(2026, "Media"),
-      getHunterTargets(),
       getAssetSnapshots(6),
     ]);
 
@@ -40,17 +37,6 @@ export default async function Home() {
   const fiveYearIncome = incomes.reduce((sum, income) => sum + income, 0);
   const fiveYearIncomeProgress =
     fiveYearIncomeTarget > 0 ? Math.min((fiveYearIncome / fiveYearIncomeTarget) * 100, 100) : 0;
-  const activeHunterTargets = hunterTargets.filter((target) => target.status === "active");
-  const primaryHunterTarget =
-    activeHunterTargets.find((target) => target.priority === "P0") ??
-    hunterTargets.find((target) => target.priority === "P0") ??
-    hunterTargets[0];
-  const hunterNext =
-    primaryHunterTarget?.nextStep ||
-    (primaryHunterTarget
-      ? `为 ${primaryHunterTarget.name} 补一条可验证的下一步。`
-      : "目标池为空，先建立 P0。");
-
   const horizonRows = years.map((year, index) => {
     const income = incomes[index] ?? 0;
     const incomeTarget = YEAR_TARGETS[year] ?? 0;
@@ -66,34 +52,34 @@ export default async function Home() {
 
   const directionRows = [
     {
-      key: "hunter",
-      role: "现金主攻",
-      title: "Hunter",
-      measure: `${formatMoney(hunterIncome)} / ${formatMoney(BUSINESS_LINE_TARGETS_2026.Hunter)}`,
-      next: hunterNext,
-      href: "/aibounty",
-      linkLabel: "AIBounty",
-      meta: `${activeHunterTargets.length} 个主攻`,
-    },
-    {
       key: "saas",
-      role: "产品验证",
-      title: "KOL Clips",
+      role: "唯一收入主线 · 5H/天",
+      title: "四个海外 SaaS",
       measure: `${formatMoney(saasIncome)} / ${formatMoney(BUSINESS_LINE_TARGETS_2026.SaaS)}`,
-      next: "验证固定样例、生产 E2E 与外部真实运行。",
+      next: "OpenBot、OneBot、KOL.tools、DeepFeather 全部持续获客，按月切换成交主攻。",
       href: "/productlab",
       linkLabel: "Product Lab",
-      meta: "SaaS",
+      meta: "¥100 万",
     },
     {
       key: "media",
-      role: "内容支持",
-      title: "AI Notes",
-      measure: `${formatMoney(mediaIncome)} / ${formatMoney(BUSINESS_LINE_TARGETS_2026.Media)}`,
-      next: "放大 Hunter 证据、产品案例与真实失败复盘。",
+      role: "获客引擎 · 2H/天",
+      title: "自媒体",
+      measure: "不设独立收入目标",
+      next: "所有内容必须导向四个 SaaS 的可归因访问、有效对话、报价或成交。",
       href: "/ainotes",
       linkLabel: "AI Notes",
-      meta: "Media",
+      meta: "只为 SaaS 引流",
+    },
+    {
+      key: "buffer",
+      role: "机动补位 · 1H/天",
+      title: "成交阻塞清理",
+      measure: "Hunter 0H",
+      next: "只补最接近付款的销售、交付或产品阻塞，不开启第五个项目。",
+      href: "/2026",
+      linkLabel: "执行工作台",
+      meta: "不扩线",
     },
   ];
 
@@ -107,7 +93,7 @@ export default async function Home() {
               Coast2030 · 五年总盘
             </p>
             <h1 id="home-heading">2030 总览</h1>
-            <p>长期资产、年度进度与三条业务线；执行细节在 2026 工作台。</p>
+            <p>长期资产、年度进度与四个海外 SaaS；执行细节在 2026 工作台。</p>
           </div>
           <Link className="coast-button coast-button--primary" href="/2026">
             进入 2026 工作台
@@ -177,11 +163,13 @@ export default async function Home() {
           </div>
         </section>
 
+        <SaaSGrowthPortfolio currentMonth={currentDate.slice(0, 7)} />
+
         <section className="coast-overview-directions coast-overview-board__directions" aria-labelledby="directions-heading">
           <div className="coast-section-heading coast-section-heading--compact">
             <div>
-              <h2 id="directions-heading">三个方向</h2>
-              <p>年度已到账 / 目标与当前下一步。</p>
+              <h2 id="directions-heading">每日经营分配</h2>
+              <p>SaaS 5H + 内容获客 2H + 机动 1H；Hunter 0H。</p>
             </div>
           </div>
           <div className="coast-direction-grid">

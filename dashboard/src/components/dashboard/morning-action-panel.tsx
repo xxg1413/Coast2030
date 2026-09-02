@@ -31,17 +31,17 @@ const CORE_DEFINITIONS = [
   },
   {
     key: "ai_notes",
-    goal: "AI Notes · 2 个番茄钟",
+    goal: "内容获客 · 2 个番茄钟",
     targetPomodoros: MORNING_CORE_POMODORO_TARGETS.ai_notes,
-    taskPlaceholder: "今天的选题、制作或发布任务",
-    resultPlaceholder: "已发布 / 已存草稿 / 未做：原因",
+    taskPlaceholder: "今天为哪个 SaaS 获取目标客户",
+    resultPlaceholder: "发布链接 / 有效对话 / 可归因线索",
   },
   {
-    key: "aibounty",
-    goal: "AIBounty · 1 个番茄钟",
-    targetPomodoros: MORNING_CORE_POMODORO_TARGETS.aibounty,
-    taskPlaceholder: "今天要复现的攻击图或排查点",
-    resultPlaceholder: "已保存证据 / Blocked / 完整排除：原因…",
+    key: "buffer",
+    goal: "机动缓冲 · 1 个番茄钟",
+    targetPomodoros: MORNING_CORE_POMODORO_TARGETS.buffer,
+    taskPlaceholder: "补最接近成交的阻塞项",
+    resultPlaceholder: "补位结果 / 未使用：原因",
   },
   {
     key: "work",
@@ -62,7 +62,7 @@ const HABIT_DEFINITIONS = [
   { key: "daily_review", label: "晚间复盘" },
 ] as const;
 
-const LEGACY_CORE_LABELS = new Set(["AIBounty", "SaaS", "AINotes", "AI Notes"]);
+const LEGACY_CORE_LABELS = new Set(["AIBounty", "SaaS", "AINotes", "AI Notes", "内容获客", "机动缓冲"]);
 
 function updateItem(items: MorningLogItem[], key: string, patch: Partial<MorningLogItem>) {
   return items.map((item) => (item.key === key ? { ...item, ...patch } : item));

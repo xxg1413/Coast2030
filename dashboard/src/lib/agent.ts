@@ -184,6 +184,7 @@ function buildCandidates(input: AgentPlannerInput): AgentCandidate[] {
 
   return candidates.filter(
     (candidate) =>
+      (input.income[candidate.goalArea].target > 0 || candidate.goalArea === "Media") &&
       !hasDailyCoverage(input, candidate.goalArea) &&
       !hasMorningCoverage(input, candidate.goalArea),
   );

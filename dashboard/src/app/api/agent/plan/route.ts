@@ -11,7 +11,6 @@ import { createDailyAdvisorPlan, type AgentGoalArea } from "@/lib/agent";
 import { BUSINESS_LINE_TARGETS_2026 } from "@/lib/targets";
 
 const CORE_ACTIONS: Array<{ key: string; goalArea: AgentGoalArea }> = [
-  { key: "aibounty", goalArea: "Hunter" },
   { key: "saas", goalArea: "SaaS" },
   { key: "ai_notes", goalArea: "Media" },
 ];

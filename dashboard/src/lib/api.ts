@@ -837,9 +837,9 @@ export interface MorningLog {
 }
 
 const DEFAULT_MORNING_LOG_ITEMS: MorningLogItem[] = [
-    { key: "aibounty", label: "", result: "", completed: false },
     { key: "saas", label: "", result: "", completed: false },
     { key: "ai_notes", label: "", result: "", completed: false },
+    { key: "buffer", label: "", result: "", completed: false },
     { key: "work", label: "", result: "", completed: false },
     { key: "wake_early", label: "早起", result: "", completed: false },
     { key: "morning_journal", label: "晨间日志", result: "", completed: false },
