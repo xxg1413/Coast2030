@@ -8,7 +8,7 @@ const STATIC_CACHE = `coast-static-${VERSION}`;
 const PAGE_CACHE = `coast-pages-${VERSION}`;
 
 const PRECACHE = [
-  "/offline.html",
+  "/offline",
   "/manifest.webmanifest",
   "/coast-logo.svg",
   "/icons/icon-192.png",
@@ -84,7 +84,7 @@ self.addEventListener("fetch", (event) => {
         .catch(() =>
           caches
             .match(request)
-            .then((cached) => cached || caches.match("/offline.html"))
+            .then((cached) => cached || caches.match("/offline"))
         )
     );
     return;
