@@ -27,7 +27,6 @@ import { RevenueRecorder } from "@/components/dashboard/revenue-recorder";
 import { TransactionList } from "@/components/dashboard/transaction-list";
 import { WeeklyFocusList } from "@/components/dashboard/weekly-focus-list";
 import { PomodoroSessionProvider } from "@/components/dashboard/task-pomodoro";
-import { SaaSGrowthPortfolio } from "@/components/dashboard/saas-growth-portfolio";
 import { getIncomeTypeConfig } from "@/lib/income-types";
 import {
   BUSINESS_LINE_TARGETS_2026,
@@ -159,8 +158,6 @@ export default async function Year2026Page({ searchParams }: Props) {
           <section className="coast-workbench-board__morning" aria-label="2026 晨间行动">
             <MorningActionPanel log={morningLog} />
           </section>
-
-          <SaaSGrowthPortfolio currentMonth={currentMonth} />
 
           <section className="coast-workbench-board__tasks" aria-labelledby="tasks-heading">
             <div className="coast-section-heading coast-section-heading--compact">

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays } from "lucide-react";
 import { AssetProgressCard } from "@/components/dashboard/asset-progress-card";
-import { SaaSGrowthPortfolio } from "@/components/dashboard/saas-growth-portfolio";
 import {
   formatMoney,
   getAssetSnapshots,
@@ -93,7 +92,7 @@ export default async function Home() {
               Coast2030 · 五年总盘
             </p>
             <h1 id="home-heading">2030 总览</h1>
-            <p>长期资产、年度进度与海外 SaaS 增长组合；执行细节在 2026 工作台。</p>
+            <p>长期资产、年度进度与五年路线；执行细节在 2026 工作台。</p>
           </div>
           <Link className="coast-button coast-button--primary" href="/2026">
             进入 2026 工作台
@@ -162,8 +161,6 @@ export default async function Home() {
             </dl>
           </div>
         </section>
-
-        <SaaSGrowthPortfolio currentMonth={currentDate.slice(0, 7)} />
 
         <section className="coast-overview-directions coast-overview-board__directions" aria-labelledby="directions-heading">
           <div className="coast-section-heading coast-section-heading--compact">

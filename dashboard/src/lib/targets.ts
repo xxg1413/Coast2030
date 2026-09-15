@@ -91,69 +91,6 @@ const CUSTOM_MONTHLY_TARGETS: Partial<Record<number, number[]>> = {
   2026: [0, 0, 0, 0, 0, 0, 0, 0, 500000, 250000, 150000, 100000],
 };
 
-export const SAAS_GROWTH_PORTFOLIO_2026 = [
-  {
-    key: "deepfeather",
-    name: "DeepFeather",
-    mode: "always-on",
-    focusMonths: [9, 10, 11, 12],
-    schedule: "9–12月持续获客",
-    revenueTarget: null,
-    offer: "Software Replacement Watchlist / Audit",
-    customer: "正在削减软件成本并评估 AI 替代方案的团队",
-    paidGate: "每月底都用真实对话、报价和付款复盘，不等到 12 月才启动",
-    href: "https://deepfeather.com/",
-  },
-  {
-    key: "openbot",
-    name: "OpenBot",
-    mode: "monthly",
-    focusMonths: [9],
-    schedule: "9月成交主攻",
-    revenueTarget: 500000,
-    offer: "Robot Dataset Readiness / Change-Control",
-    customer: "机器人数据与 ML 平台团队",
-    paidGate: "9 月底前拿到 1 个 $3k–10k 付费 Pilot",
-    href: "https://openbot.ai/",
-  },
-  {
-    key: "onebot",
-    name: "OneBot",
-    mode: "monthly",
-    focusMonths: [10],
-    schedule: "10月成交主攻",
-    revenueTarget: 250000,
-    offer: "海外 SaaS 社区获客 Agent",
-    customer: "需要稳定获取高意向线索的海外 SaaS Founder",
-    paidGate: "10 月底前拿到 1 个 $1k Setup 或 $3k+ 年付",
-    href: "https://onebot.ai/",
-  },
-  {
-    key: "koltools",
-    name: "KOL.tools",
-    mode: "monthly",
-    focusMonths: [11],
-    schedule: "11月成交主攻",
-    revenueTarget: 150000,
-    offer: "多客户内容审核与交付 Workspace",
-    customer: "服务播客、课程和知识型频道的小型 Agency",
-    paidGate: "11 月底前拿到 2 个 $1k–2k 付费 Pilot",
-    href: "https://kol.tools/",
-  },
-  {
-    key: "mutnpc",
-    name: "MutNPC",
-    mode: "monthly",
-    focusMonths: [12],
-    schedule: "12月成交主攻",
-    revenueTarget: 100000,
-    offer: "AI NPC Prototype / Playtest Pilot",
-    customer: "需要快速验证 AI NPC 互动的海外独立游戏开发者",
-    paidGate: "12 月底前拿到 1 个人工签约的付费 Pilot；不能把 Waitlist 当付款",
-    href: "https://mutnpc.com/",
-  },
-] as const;
-
 function buildMonthlyTargets(yearTarget: number): number[] {
   if (yearTarget <= 0) {
     return Array(12).fill(0);
