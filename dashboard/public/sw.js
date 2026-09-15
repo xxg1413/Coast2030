@@ -8,6 +8,8 @@ const STATIC_CACHE = `coast-static-${VERSION}`;
 const PAGE_CACHE = `coast-pages-${VERSION}`;
 
 const PRECACHE = [
+  // Cloudflare 静态资源规范化会把 /offline 解析到 public/offline.html；
+  // 本地 next dev 下该路径是 404，属于预期差异，不要改回 /offline.html。
   "/offline",
   "/manifest.webmanifest",
   "/coast-logo.svg",
