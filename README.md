@@ -49,6 +49,7 @@ AIBounty 的 1H 是日均预算，可以合并为连续深挖块；同一笔收�
 
 - Dashboard：[`dashboard/README.md`](./dashboard/README.md)
 - 2026 执行区：[`2026/README.md`](./2026/README.md)
+- 38 岁生日财年（2026-09-19 → 2027-09-19，北极星 200 万已到账）：[`38/plan.md`](./38/plan.md) · [Gate 日志](./38/gates.md)
 
 ## 2026 细分入口
 
