@@ -45,6 +45,24 @@ export const BUSINESS_LINE_DAILY_HOURS_2026 = {
 export const DAILY_ALLOCATED_HOURS_2026 = 8;
 
 /**
+ * 38 岁生日财年（2026-09-19 → 2027-09-19）唯一代码来源。
+ * 北极星：累计净利润 ≥¥200 万 + SaaS MRR ≥$100k。
+ * 文档：38/plan.md · 38/gates.md
+ */
+export const BIRTHDAY_YEAR_38 = {
+  start: "2026-09-19",
+  end: "2027-09-19",
+  netProfitTarget: 2000000,
+  mrrTargetUSD: 100000,
+  gates: [
+    { key: "G1", date: "2026-12-19", note: "Q1 结账 · 净利 ≥¥40万 即在线" },
+    { key: "G2", date: "2027-03-19", note: "半程前哨 · 净利 <¥80万 必须砍项" },
+    { key: "G3", date: "2027-06-19", note: "三季度复核 · 决定冲刺或保盘" },
+    { key: "G4", date: "2027-09-19", note: "财年结账 · 净利 200万 + MRR $100k" },
+  ],
+} as const;
+
+/**
  * 晨间日志四个核心分类的每日番茄钟目标。
  * 每完成一次倒计时累计 1 个；达到目标后仍可继续累计，不封顶。
  */

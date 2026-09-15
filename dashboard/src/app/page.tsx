@@ -94,10 +94,15 @@ export default async function Home() {
             <h1 id="home-heading">2030 总览</h1>
             <p>长期资产、年度进度与五年路线；执行细节在 2026 工作台。</p>
           </div>
-          <Link className="coast-button coast-button--primary" href="/2026">
-            进入 2026 工作台
-            <ArrowRight aria-hidden="true" />
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link className="coast-button" href="/38">
+              38 岁财年
+            </Link>
+            <Link className="coast-button coast-button--primary" href="/2026">
+              进入 2026 工作台
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </div>
         </header>
 
         <section id="asset-progress" className="coast-assets coast-overview-board__assets" aria-labelledby="assets-heading">

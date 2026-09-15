@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bot,
+  Cake,
   CalendarCheck,
   ChevronDown,
   FileText,
@@ -28,7 +29,19 @@ const PRIMARY_ITEMS = [
     icon: CalendarCheck,
     match: (pathname: string) => pathname === "/2026" || pathname.startsWith("/2026/"),
   },
+  {
+    name: "38",
+    href: "/38",
+    icon: Cake,
+    match: (pathname: string) => pathname === "/38" || pathname.startsWith("/38/"),
+  },
 ] as const;
+
+const MOBILE_PRIMARY_LABELS: Record<string, string> = {
+  "2030": "2030 总览",
+  "2026": "2026 工作台",
+  "38": "38 岁财年",
+};
 
 const MORE_ITEMS = [
   { name: "Product Lab", href: "/productlab", icon: Layers, group: "projects" as const },
@@ -169,7 +182,7 @@ export function Navigation() {
                 aria-current={active ? "page" : undefined}
               >
                 <Icon aria-hidden="true" />
-                {item.name === "2030" ? "2030 总览" : "2026 工作台"}
+                {MOBILE_PRIMARY_LABELS[item.name] ?? item.name}
               </Link>
             );
           })}
