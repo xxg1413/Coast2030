@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# local dev database (rebuild via schema.sql + migrations)
+dashboard/local.sqlite
+
+# local tooling artifacts
+dashboard/output/
+dashboard/.hallmark/
+dashboard/.playwright-cli/
