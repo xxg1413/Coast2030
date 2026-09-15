@@ -29,26 +29,28 @@ const PRIMARY_ITEMS = [
     icon: CalendarCheck,
     match: (pathname: string) => pathname === "/2026" || pathname.startsWith("/2026/"),
   },
-  {
-    name: "38",
-    href: "/38",
-    icon: Cake,
-    match: (pathname: string) => pathname === "/38" || pathname.startsWith("/38/"),
-  },
 ] as const;
 
 const MOBILE_PRIMARY_LABELS: Record<string, string> = {
   "2030": "2030 总览",
   "2026": "2026 工作台",
-  "38": "38 岁财年",
 };
 
 const MORE_ITEMS = [
   { name: "Product Lab", href: "/productlab", icon: Layers, group: "projects" as const },
   { name: "AIBounty", href: "/aibounty", icon: Shield, group: "projects" as const },
   { name: "AI Notes", href: "/ainotes", icon: FileText, group: "projects" as const },
+  { name: "38 岁财年", href: "/38", icon: Cake, group: "plans" as const },
   { name: "Operator", href: "/operator", icon: Bot, group: "tools" as const },
 ] as const;
+
+const MOBILE_GROUP_LABELS: Record<string, string> = {
+  projects: "业务线",
+  plans: "规划",
+  tools: "工具",
+};
+
+const MOBILE_GROUPS = ["projects", "plans", "tools"] as const;
 
 export function Navigation() {
   const pathname = usePathname();
@@ -186,38 +188,29 @@ export function Navigation() {
               </Link>
             );
           })}
-          <div className="coast-mobile-menu__section" role="presentation">
-            业务线
-          </div>
-          {MORE_ITEMS.filter((item) => item.group === "projects").map((item) => {
-            const Icon = item.icon;
+          {MOBILE_GROUPS.map((group) => {
+            const items = MORE_ITEMS.filter((item) => item.group === group);
+            if (items.length === 0) return null;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMenus}
-                aria-current={pathname.startsWith(item.href) ? "page" : undefined}
-              >
-                <Icon aria-hidden="true" />
-                {item.name}
-              </Link>
-            );
-          })}
-          <div className="coast-mobile-menu__section" role="presentation">
-            工具
-          </div>
-          {MORE_ITEMS.filter((item) => item.group === "tools").map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeMenus}
-                aria-current={pathname.startsWith(item.href) ? "page" : undefined}
-              >
-                <Icon aria-hidden="true" />
-                {item.name}
-              </Link>
+              <div key={group}>
+                <div className="coast-mobile-menu__section" role="presentation">
+                  {MOBILE_GROUP_LABELS[group]}
+                </div>
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={closeMenus}
+                      aria-current={pathname.startsWith(item.href) ? "page" : undefined}
+                    >
+                      <Icon aria-hidden="true" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
