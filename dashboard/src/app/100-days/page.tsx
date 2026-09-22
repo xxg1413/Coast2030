@@ -37,8 +37,6 @@ export default async function Last100DaysPage() {
     getTransactions(),
   ]);
   const target = BUSINESS_LINE_TARGETS_2026.SaaS;
-  const recovery = getAnnualRecoveryPace(2026, annualSaasIncome, today);
-  const annualProgress = target > 0 ? Math.min((annualSaasIncome / target) * 100, 100) : 0;
   const campaignTransactions = transactions.filter(
     (transaction) =>
       transaction.type === "SaaS" &&
@@ -47,6 +45,8 @@ export default async function Last100DaysPage() {
       transaction.date <= today,
   );
   const campaignIncome = campaignTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const recovery = getAnnualRecoveryPace(2026, campaignIncome, today);
+  const campaignProgress = target > 0 ? Math.min((campaignIncome / target) * 100, 100) : 0;
   const monthlyResults = MONTHS.map((month) => {
     const entries = campaignTransactions.filter((transaction) => transaction.date.startsWith(month));
     return {
@@ -66,7 +66,7 @@ export default async function Last100DaysPage() {
               Coast2030 · 2026 收官
             </p>
             <h1 id="sprint-heading">最后 100 天</h1>
-            <p>{START} → {END} · 以年度 SaaS 到账 {formatMoney(target)} 为终点</p>
+            <p>{START} → {END} · 以期间内 SaaS 到账 {formatMoney(target)} 为终点</p>
           </div>
           <Link className="coast-button" href="/">
             <ArrowLeft aria-hidden="true" />
@@ -102,21 +102,21 @@ export default async function Last100DaysPage() {
           <div className="coast-section-heading coast-section-heading--compact">
             <div>
               <h2 id="sprint-result-heading">年度目标验收</h2>
-              <p>只用已记录的 SaaS 到账验收；百日新增单独展示，不重复计入年度总额。</p>
+              <p>只统计 {START} 起已记录的 SaaS 到账验收年度目标；更早的到账不计入。</p>
             </div>
           </div>
           <Card className="border-stone-200 bg-white/78">
             <CardContent className="space-y-4 pt-5 pb-5">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-sm text-stone-500">已到账 / 年度目标</p>
+                  <p className="text-sm text-stone-500">百日已到账 / 年度目标</p>
                   <p className="mt-1 text-2xl font-black tracking-tight text-stone-950 sm:text-3xl">
-                    {formatMoney(annualSaasIncome)} / {formatMoney(target)}
+                    {formatMoney(campaignIncome)} / {formatMoney(target)}
                   </p>
                 </div>
-                <p className="text-xl font-bold text-emerald-700">{annualProgress.toFixed(1)}%</p>
+                <p className="text-xl font-bold text-emerald-700">{campaignProgress.toFixed(1)}%</p>
               </div>
-              <Progress value={annualProgress} className="h-2" indicatorClassName="bg-emerald-600" />
+              <Progress value={campaignProgress} className="h-2" indicatorClassName="bg-emerald-600" />
               <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-stone-600">
                 <span>目标差额 {formatMoney(recovery.remaining)}</span>
                 <span>当前每周需到账 {formatMoney(recovery.weeklyRequired)}</span>
