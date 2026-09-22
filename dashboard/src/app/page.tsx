@@ -95,6 +95,9 @@ export default async function Home() {
             <p>长期资产、年度进度与五年路线；执行细节在 2026 工作台。</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link className="coast-button" href="/100-days">
+              最后 100 天
+            </Link>
             <a
               className="coast-button"
               href="https://growth.pxiaoer.blog/"

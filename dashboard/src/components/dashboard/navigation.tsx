@@ -12,6 +12,7 @@ import {
   Bot,
   Cake,
   CalendarCheck,
+  Hourglass,
   ChevronDown,
   FileText,
   Home,
@@ -40,6 +41,7 @@ const MORE_ITEMS = [
   { name: "Product Lab", href: "/productlab", icon: Layers, group: "projects" as const },
   { name: "AIBounty", href: "/aibounty", icon: Shield, group: "projects" as const },
   { name: "AI Notes", href: "/ainotes", icon: FileText, group: "projects" as const },
+  { name: "最后 100 天", href: "/100-days", icon: Hourglass, group: "plans" as const },
   { name: "38 岁财年", href: "/38", icon: Cake, group: "plans" as const },
   { name: "Operator", href: "/operator", icon: Bot, group: "tools" as const },
 ] as const;
