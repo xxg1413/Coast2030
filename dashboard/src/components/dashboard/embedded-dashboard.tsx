@@ -26,17 +26,6 @@ function EmbeddedFrame({ src, title }: EmbeddedDashboardProps) {
 
   return (
     <main className="coast-project-frame">
-      <div className="coast-project-frame__toolbar">
-        <a
-          className="coast-project-frame__open"
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          在新标签打开
-        </a>
-      </div>
-
       {status === "loading" && (
         <p className="coast-project-frame__loading" role="status">
           加载中…
@@ -46,9 +35,6 @@ function EmbeddedFrame({ src, title }: EmbeddedDashboardProps) {
       {status === "error" ? (
         <div className="coast-project-frame__error" role="alert">
           <p>嵌入页面未能加载。</p>
-          <a href={src} target="_blank" rel="noopener noreferrer">
-            在新标签打开源页面
-          </a>
         </div>
       ) : (
         <iframe

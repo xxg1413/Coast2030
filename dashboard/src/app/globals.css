@@ -1802,7 +1802,6 @@ button:disabled,
 
 .coast-project-frame {
   --coast-frame-chrome: 5rem;
-  --coast-frame-toolbar: 2.5rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1813,36 +1812,10 @@ button:disabled,
   background: var(--color-paper);
 }
 
-.coast-project-frame__toolbar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-xs);
-  min-height: var(--coast-frame-toolbar);
-  padding: var(--space-2xs) var(--space-md);
-  border-bottom: var(--rule-hair) solid var(--color-rule);
-  background: var(--color-paper-2);
-}
-
-.coast-project-frame__open,
-.coast-project-frame__error a {
-  color: var(--color-accent-strong);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
-
-.coast-project-frame__open:hover,
-.coast-project-frame__error a:hover {
-  color: var(--color-accent);
-}
-
 .coast-project-frame__loading,
 .coast-project-frame__error {
   position: absolute;
-  inset: var(--coast-frame-toolbar) 0 0;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
