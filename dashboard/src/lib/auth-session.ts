@@ -2,7 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 const SESSION_VERSION = "v1";
 export const AUTH_COOKIE_NAME = "auth_token";
-export const AUTH_SESSION_TTL_SECONDS = 60 * 60 * 24;
+export const AUTH_SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 
 function readRuntimeEnv(key: string): string | undefined {
   const processValue = process.env[key];

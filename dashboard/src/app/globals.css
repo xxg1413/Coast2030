@@ -1801,29 +1801,72 @@ button:disabled,
 }
 
 .coast-project-frame {
+  --coast-frame-chrome: 5rem;
+  --coast-frame-toolbar: 2.5rem;
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  min-height: calc(100dvh - 5rem);
+  height: calc(100dvh - var(--coast-frame-chrome));
+  max-height: calc(100dvh - var(--coast-frame-chrome));
   overflow: hidden;
   background: var(--color-paper);
 }
 
-.coast-project-frame__loading {
-  position: absolute;
-  inset: 0;
+.coast-project-frame__toolbar {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  min-height: var(--coast-frame-toolbar);
+  padding: var(--space-2xs) var(--space-md);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+  background: var(--color-paper-2);
+}
+
+.coast-project-frame__open,
+.coast-project-frame__error a {
+  color: var(--color-accent-strong);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.coast-project-frame__open:hover,
+.coast-project-frame__error a:hover {
+  color: var(--color-accent);
+}
+
+.coast-project-frame__loading,
+.coast-project-frame__error {
+  position: absolute;
+  inset: var(--coast-frame-toolbar) 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: var(--space-sm);
   margin: 0;
-  color: var(--muted);
+  padding: var(--space-md);
+  color: var(--color-muted);
+  background: var(--color-paper);
+}
+
+.coast-project-frame__error p {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
 }
 
 .coast-project-frame__content {
   display: block;
   position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  height: calc(100dvh - 5rem);
-  min-height: 36rem;
+  min-height: 0;
+  height: 100%;
   margin: 0;
   padding: 0;
   border: 0;
@@ -1837,13 +1880,8 @@ button:disabled,
 }
 
 @media (max-width: 40rem) {
-  .coast-project-frame,
-  .coast-project-frame__content {
-    min-height: calc(100dvh - 4.5rem);
-  }
-
-  .coast-project-frame__content {
-    height: calc(100dvh - 4.5rem);
+  .coast-project-frame {
+    --coast-frame-chrome: 4.5rem;
   }
 }
 

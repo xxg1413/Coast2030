@@ -13,6 +13,7 @@ Coast2030 的年度计划与收入跟踪系统（Next.js + Cloudflare）。
 ### 2) 2026 年度页
 - 路径：`/2026`
 - 标题：`2026个人计划`
+- 晨间作战先显示「下一项」和「开始专注」。今日核心推进、基础习惯默认收起；核心推进不再放不可点的完成框，基础习惯只保留勾选
 - 支持收入总览、执行与任务、收入明细
 - 收入总览展示：本月收入、月度目标、年度累计、年度进度
 - 月度目标从 `3 月` 开始计算，按指数增长分配全年目标，且按千位取整
@@ -32,7 +33,8 @@ Coast2030 的年度计划与收入跟踪系统（Next.js + Cloudflare）。
 
 ### 5) 登录认证
 - 登录页自定义品牌样式
-- Cookie 登录态（生产环境 `Secure + SameSite=None`）
+- Cookie 登录态保持 14 天。Coast 自身是第一方访问，生产环境使用 `HttpOnly + Secure + SameSite=Lax`
+- Product Lab、AI Notes、AI Bounty 嵌在 Coast 里时各自记住登录。它们的会话 Cookie 是 `HttpOnly + Secure + SameSite=None + Partitioned`，同样 14 天。直接打开子站和从 Coast 打开是两套登录，各输入一次
 - 账号密码通过环境变量配置（不再写死在代码里）
 - 登录失败限流（按 IP，15 分钟窗口）
 

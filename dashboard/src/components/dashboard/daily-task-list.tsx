@@ -25,6 +25,8 @@ const GOAL_LABELS: Record<GoalArea, string> = {
   SaaS: "SaaS",
   Media: "Media",
 };
+/** Hunter is retired — keep labels for existing tasks, omit from new-choice dropdown. */
+const GOAL_OPTIONS: GoalArea[] = ["Overall", "SaaS", "Media"];
 
 interface DailyTaskListProps {
   date: string;
@@ -265,8 +267,8 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
             className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs"
             aria-label="目标线"
           >
-            {Object.entries(GOAL_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+            {GOAL_OPTIONS.map((value) => (
+              <option key={value} value={value}>{GOAL_LABELS[value]}</option>
             ))}
           </select>
           <Input

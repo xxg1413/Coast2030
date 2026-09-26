@@ -298,10 +298,20 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
       <CardContent className="pb-5">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)]">
           <section aria-labelledby="core-progress-heading" className="min-w-0">
-            <div className="mb-2">
-              <h3 id="core-progress-heading" className="font-semibold text-stone-900">今日核心推进</h3>
-              <p className="mt-0.5 text-sm text-stone-500">先写今天的任务；分类番茄累计达标后，再填写结果。</p>
-            </div>
+            <details className="group">
+              <summary className="mb-2 flex cursor-pointer list-none items-center justify-between gap-3 rounded-md py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 [&::-webkit-details-marker]:hidden">
+                <span>
+                  <h3 id="core-progress-heading" className="font-semibold text-stone-900">今日核心推进</h3>
+                  <span className="mt-0.5 block text-sm text-stone-500">
+                    {focusTarget ? `下一项：${focusTarget.label}` : "展开后填写今天的任务。"}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-stone-500">
+                  <span className="group-open:hidden">展开</span>
+                  {coreCompleted}/{CORE_DEFINITIONS.length}
+                </span>
+              </summary>
+              <p className="mb-2 text-sm text-stone-500">先写今天的任务；分类番茄累计达标后，再填写结果。</p>
 
             <div className="divide-y divide-stone-200 border-y border-stone-200">
               {coreItems.map(({ item, goal, targetPomodoros, pomodoroCount, focusCompleted, focusProgress, taskPlaceholder, resultPlaceholder }) => {
@@ -311,12 +321,6 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                 return (
                   <div key={item.key} className="grid min-w-0 gap-2 py-3 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start">
                     <div className="flex min-h-11 items-center gap-2">
-                      <Checkbox
-                        checked={focusCompleted}
-                        disabled
-                        aria-label={`${goal} 番茄钟达标状态`}
-                        className="data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
-                      />
                       <label htmlFor={taskId} className="min-w-0 flex-1 font-semibold text-stone-800">
                         <span className="block">{goal}</span>
                         <span className="mt-1 block text-xs font-medium tabular-nums text-stone-500">
@@ -438,20 +442,28 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                 </Button>
               )}
             </div>
+            </details>
           </section>
 
           <section aria-labelledby="habit-heading" className="min-w-0 border-stone-200 lg:border-l lg:pl-6">
-            <div className="mb-2">
-              <h3 id="habit-heading" className="font-semibold text-stone-900">基础习惯</h3>
-              <p className="mt-0.5 text-sm text-stone-500">支撑状态；不占用主线专注入口。</p>
-            </div>
+            <details className="group">
+              <summary className="mb-2 flex cursor-pointer list-none items-center justify-between gap-3 rounded-md py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 [&::-webkit-details-marker]:hidden">
+                <span>
+                  <h3 id="habit-heading" className="font-semibold text-stone-900">基础习惯</h3>
+                  <span className="mt-0.5 block text-sm text-stone-500">支撑状态；不占用主线专注入口。</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2 text-xs tabular-nums text-stone-500">
+                  <span className="group-open:hidden">展开</span>
+                  {habitCompleted}/{HABIT_DEFINITIONS.length}
+                </span>
+              </summary>
             <div className="grid gap-x-4 sm:grid-cols-2 lg:grid-cols-1">
               {habitItems.map(({ item, label }) => {
                 const inputId = `morning-habit-${item.key}`;
                 return (
                   <div
                     key={item.key}
-                    className="grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-stone-200 py-2"
+                    className="grid min-h-14 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-stone-200 py-2"
                   >
                     <Checkbox
                       checked={item.completed}
@@ -474,23 +486,11 @@ export function MorningActionPanel({ log }: { log: MorningLog }) {
                         item.completed ? "text-stone-400 line-through" : "text-stone-700"
                       }`}
                     />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant={activePomodoroKey === item.key ? "secondary" : "ghost"}
-                      className="h-9 w-9 text-stone-600"
-                      onClick={() => selectFocusItem(item.key)}
-                      disabled={!item.label.trim() || (lockedPomodoro && activePomodoroKey !== item.key)}
-                      aria-label={`为${item.label || label}使用番茄钟`}
-                      aria-pressed={activePomodoroKey === item.key}
-                      title={item.label.trim() ? `为${item.label}使用番茄钟` : "先填写习惯名称"}
-                    >
-                      <Timer className="h-4 w-4" />
-                    </Button>
                   </div>
                 );
               })}
             </div>
+            </details>
           </section>
         </div>
       </CardContent>
