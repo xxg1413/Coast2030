@@ -1330,6 +1330,12 @@ let lastSuccessfulExternalPayloads: {
 } = { aiNotes: null, aiBounty: null, productLab: null };
 let externalTasksCache: { expiresAt: number; items: ExternalTask[] } | null = null;
 
+export function invalidateExternalSyncCaches() {
+    externalSyncCache = null;
+    externalTransactionsCache = null;
+    externalTasksCache = null;
+}
+
 function getMonthFromDate(date: string): string | undefined {
     return DATE_REGEX.test(date) ? date.slice(0, 7) : undefined;
 }

@@ -27,6 +27,7 @@ import {
 } from "@/lib/operator";
 import { BUSINESS_LINE_TARGETS_2026, YEAR_TARGETS } from "@/lib/targets";
 import type { AuthenticatedOperator } from "@/lib/operator-auth";
+import { registerUpstreamProjectTools } from "@/lib/operator-mcp-projects";
 
 const DATE_SCHEMA = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "必须为 YYYY-MM-DD");
 const MONTH_SCHEMA = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "必须为 YYYY-MM");
@@ -62,11 +63,11 @@ export function createCoastOperatorServer(operator: AuthenticatedOperator): McpS
   const server = new McpServer(
     {
       name: "coast-operator",
-      version: "0.3.0",
+      version: "0.4.0",
     },
     {
       instructions:
-        "Coast Operator 0.3 管理 Coast2030 的 2026 工作台。先读取现状再写入。日/周/月任务属于可撤销的内部动作，可按用户明确指令执行；模型生成的日计划用 coast_propose_daily_plan 提交并等待 Dashboard 审批。发布、漏洞提交、部署、收入和资产修改只能用 coast_request_external_action 排队，不得声称已执行。所有工具调用均被审计。",
+        "Coast Operator 0.4 管理 Coast2030 的 2026 工作台，并通过 ainotes_* / productlab_* / aibounty_* 工具直接读写三个子项目（AI Notes、Product Lab、AIBounty）的线上看板。先读取现状再写入；子项目的 upsert 工具传 id 时会先取 state 合并再全量更新。AIBounty 漏洞的 Paid 状态只能由 repo sync 登记，repo 来源记录不可改动。发布到公网、部署、向漏洞平台提交报告等对外动作仍只能用 coast_request_external_action 排队，不得声称已执行。所有工具调用均被审计。",
     },
   );
 
@@ -83,8 +84,8 @@ export function createCoastOperatorServer(operator: AuthenticatedOperator): McpS
       },
     },
     async () =>
-      textResult("Coast Operator 0.3 已连接。", {
-        version: "0.3.0",
+      textResult("Coast Operator 0.4 已连接。", {
+        version: "0.4.0",
         operator: operator.label,
         mode: "codex_mcp_operator",
         directActions: [
@@ -95,14 +96,17 @@ export function createCoastOperatorServer(operator: AuthenticatedOperator): McpS
           "set_daily_task_status",
           "create_weekly_focus",
           "create_monthly_milestone",
+          "ainotes_*：平台账号/写作任务/粉丝快照/收入记录",
+          "productlab_*：产品/路线图/推广活动/指标快照/收入记录/月度目标",
+          "aibounty_*：目标池/漏洞管线（不含 Paid）/阶段任务/KPI/复盘",
         ],
         approvalGated: [
           "model_daily_plan",
           "publish_content",
           "submit_bounty_report",
           "deploy_project",
-          "record_income",
           "record_asset",
+          "aibounty vuln Paid 状态（仅 repo sync 登记）",
         ],
       }),
   );
@@ -478,6 +482,8 @@ export function createCoastOperatorServer(operator: AuthenticatedOperator): McpS
       return textResult("已读取 Operator 外部动作审批。", { requests: result });
     },
   );
+
+  registerUpstreamProjectTools(server, operator);
 
   return server;
 }

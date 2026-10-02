@@ -38,12 +38,17 @@ Coast2030 的年度计划与收入跟踪系统（Next.js + Cloudflare）。
 - 账号密码通过环境变量配置（不再写死在代码里）
 - 登录失败限流（按 IP，15 分钟窗口）
 
-### 6) Coast Operator 0.3
+### 6) Coast Operator 0.4
 
 - `/operator`：创建或撤销 Codex 连接 Token，并处理高风险动作审批
 - `/mcp`：受 Bearer Token 保护的 Streamable HTTP MCP 地址
 - Codex 可读取 2026 总览与工作台，管理日/周/月内部任务，并提交模型生成的今日计划
-- 发布、漏洞提交、部署、收入与资产修改只创建审批请求，不会直接执行
+- `ainotes_*` / `productlab_*` / `aibounty_*` 工具组直接读写三个子项目看板（复用 `*_SYNC_PASSWORD` 密码登录 + session cookie，子项目零改动）
+  - AI Notes：平台账号、写作任务、粉丝快照、收入记录
+  - Product Lab：产品、路线图、推广活动、指标快照、收入记录、月度收入目标
+  - AIBounty：目标池、漏洞管线、阶段任务、KPI、周复盘；**Paid 状态与 repo 来源记录不可写**（只能经 repo sync）
+- 子项目更新型接口（PUT 全量覆盖）在 Coast 侧先取 state 合并再写回，不会抹掉未传字段
+- 对外发布、向平台提交漏洞报告、部署、资产修改只创建审批请求，不会直接执行
 
 连接生产环境：
 

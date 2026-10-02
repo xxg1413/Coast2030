@@ -16,7 +16,7 @@ export default async function OperatorPage() {
       <div className="mx-auto w-full max-w-[1280px] space-y-4">
         <PageHeader
           title="Coast Operator"
-          subtitle="0.3 · 让 Codex 通过一个受控链接读数据、做计划和执行内部动作"
+          subtitle="0.4 · 让 Codex 通过一个受控链接读写 Coast 与三个子项目看板"
         />
         <OperatorConnectPanel initialTokens={tokens} initialActions={actions} />
       </div>

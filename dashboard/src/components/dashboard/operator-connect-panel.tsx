@@ -145,10 +145,10 @@ export function OperatorConnectPanel({
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <CardTitle className="text-xl">Codex 连接</CardTitle>
-                  <Badge className="bg-emerald-700">Operator 0.3</Badge>
+                  <Badge className="bg-emerald-700">Operator 0.4</Badge>
                 </div>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-stone-600">
-                  模型运行在 Codex，Coast 通过 MCP 提供实时数据、受控工具、人工审批和完整审计。
+                  模型运行在 Codex。Coast 通过 MCP 提供经营数据、四个项目看板的读写工具、人工审批和完整审计。
                 </p>
               </div>
             </div>
@@ -201,8 +201,8 @@ export function OperatorConnectPanel({
             </div>
           ) : (
             <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-600">
-              先创建一个连接 Token。Codex 连接后可直接读取经营数据、管理日/周/月任务，并把模型计划提交到
-              2026 工作台等待审批。
+              先创建一个连接 Token。Codex 连接后可读写 Coast 2026 工作台，并直接操作 AI Notes、
+              Product Lab、AIBounty 三个子项目看板（任务/产品/漏洞管线/收入记录等）。
             </div>
           )}
 
@@ -210,8 +210,8 @@ export function OperatorConnectPanel({
             <h3 className="font-semibold text-stone-950">建议给 Codex 的第一条指令</h3>
             <div className="mt-2 flex items-start gap-3 rounded-xl border border-stone-200 px-4 py-3">
               <p className="min-w-0 flex-1 text-sm leading-6 text-stone-700">
-                使用 Coast Operator 读取今天的 2026 工作台和三条业务线进度，去掉已有行动后，生成最多
-                3 条最小可验证任务，并提交今日计划等待我审批。
+                用 Coast Operator 读取今天的 2026 工作台，并拉取 AI Notes、Product Lab、AIBounty
+                三个看板的最新状态，找出每条业务线今天最值得推进的一件事。
               </p>
               <Button
                 type="button"
@@ -220,7 +220,7 @@ export function OperatorConnectPanel({
                 onClick={() =>
                   copy(
                     "prompt",
-                    "使用 Coast Operator 读取今天的 2026 工作台和三条业务线进度，去掉已有行动后，生成最多 3 条最小可验证任务，并提交今日计划等待我审批。",
+                    "用 Coast Operator 读取今天的 2026 工作台，并拉取 AI Notes、Product Lab、AIBounty 三个看板的最新状态，找出每条业务线今天最值得推进的一件事。",
                   )
                 }
               >
@@ -239,21 +239,23 @@ export function OperatorConnectPanel({
           </CardHeader>
           <CardContent className="grid gap-4 text-sm">
             <div>
-              <p className="font-semibold text-emerald-800">可直接执行</p>
+              <p className="font-semibold text-emerald-800">可直接执行（含审计）</p>
               <p className="mt-1 leading-6 text-stone-600">
-                读取总览与工作台；创建、修改、完成日任务；创建周焦点和月关键点。
+                读取总览与工作台；管理日/周/月任务；读写 AI Notes、Product Lab、AIBounty
+                看板（账号、任务、路线图、活动、指标、收入、目标池、漏洞管线、KPI、复盘）。
               </p>
             </div>
             <div>
-              <p className="font-semibold text-amber-800">必须人工审批</p>
+              <p className="font-semibold text-amber-800">必须人工审批或受限</p>
               <p className="mt-1 leading-6 text-stone-600">
-                模型日计划；内容发布；漏洞报告提交；部署；收入和资产修改。
+                模型日计划；对外发布；向漏洞平台提交报告；项目部署；资产修改。AIBounty 漏洞的
+                Paid 状态只能由 repo sync 登记，repo 来源记录不可改动。
               </p>
             </div>
             <div>
               <p className="font-semibold text-stone-800">当前不开放</p>
               <p className="mt-1 leading-6 text-stone-600">
-                删除记录、自动付款、绕过审批、把审批状态当作执行结果。
+                自动付款、绕过审批、把审批状态当作执行结果、AIBounty 全量导入覆盖。
               </p>
             </div>
           </CardContent>
@@ -369,7 +371,7 @@ export function OperatorConnectPanel({
             </div>
           ) : (
             <p className="text-sm leading-6 text-stone-500">
-              暂无审批请求。Codex 对外发布、提交、部署、收入或资产修改时，只能先在这里排队。
+              暂无审批请求。Codex 要对外发布、向漏洞平台提交报告、部署项目或修改资产时，会先在这里排队；子项目看板内的数据修改可直接执行并写审计。
             </p>
           )}
         </CardContent>

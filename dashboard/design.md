@@ -173,14 +173,15 @@
 - 动效不超过三种：按钮按压、菜单开合、首屏一次性轻入场。
 - `prefers-reduced-motion: reduce` 下移除空间位移，只保留不超过 150 ms 的状态切换。
 
-## 9. Coast Operator 0.3
+## 9. Coast Operator 0.4
 
 - **入口**：`/operator` 是 Codex 连接和审批控制台；`/mcp` 是受 Bearer Token 保护的 Streamable HTTP MCP 地址；`/2026` 展示模型计划和实际任务。2030 首页仍只展示长期结果。
 - **模型位置**：模型运行在用户连接的 Codex 中。Coast 不再把固定规则 Planner 冒充为 Agent，而是向 Codex 提供实时数据、受控工具、审批状态和审计记录。
 - **读取能力**：Codex 可读取 2026 总览、晨间行动、日/周/月任务、三条业务线收入、AIBounty 进度和子 Dashboard 同步状态。
 - **内部执行**：在用户明确指令下，Codex 可创建或修改日任务、完成/重开日任务、创建周焦点和月关键点；不开放删除工具。
+- **子项目执行（0.4 新增）**：`ainotes_*` / `productlab_*` / `aibounty_*` 工具组直接读写三个子项目看板，通道为服务端密码登录 + session cookie（复用 `*_SYNC_PASSWORD`，子项目零改动）。覆盖 AI Notes 平台/任务/快照/收入，Product Lab 产品/路线图/活动/指标/收入/月度目标，AIBounty 目标池/漏洞管线/阶段任务/KPI/复盘。子项目 PUT 全量覆盖接口由 Coast 侧先取 state 合并再写回。AIBounty 的 Paid 状态与 `source=repo` 记录只经 repo sync，不开放 API 写。
 - **模型计划**：Codex 可提交当天最多三条最小可验证行动。提案进入现有 run/work item/approval/event 控制面，必须由本人在 `/2026` 审批后才写入今日任务。
-- **高风险动作**：内容发布、漏洞报告提交、项目部署、收入和资产修改只能创建审批请求；批准不等于已执行，必须由后续连接器回写真实执行结果和证据。
+- **高风险动作**：对外发布、向漏洞平台提交报告、项目部署、资产修改只能创建审批请求；批准不等于已执行，必须由后续连接器回写真实执行结果和证据。子项目看板内的数据修改（含删除）可直接执行并写审计。
 - **认证**：MCP Token 由 `/operator` 创建，服务端只保存 SHA-256 哈希，可撤销、可过期；Dashboard 页面继续使用带过期时间的 HMAC 签名 Cookie。
 - **审计**：每次 MCP 工具调用记录 token、工具、脱敏请求、结果、状态和时间；高风险审批使用独立 action request 表。
 - **连接方式**：Codex CLI、桌面 App 和 IDE 均可使用同一远程 MCP 配置；Token 只显示一次，不写入仓库。
