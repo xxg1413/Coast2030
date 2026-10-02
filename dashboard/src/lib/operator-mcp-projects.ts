@@ -15,7 +15,7 @@ const MONTH_SCHEMA = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "必须为 YYYY
 const AINOTES_PLATFORM_STATUS = z.enum(["运营中", "已暂停", "筹备中"]);
 const AINOTES_TASK_STATUS = z.enum(["待办", "进行中", "已发布", "已完成"]);
 
-const PRODUCTLAB_STAGE = z.enum(["概念期", "筹备中", "开发中", "已上线", "用户增长", "运营中", "已暂停"]);
+const PRODUCTLAB_STAGE = z.enum(["概念期", "筹备中", "开发中", "验证期", "增长中", "运营中", "已暂停"]);
 const PRODUCTLAB_ROADMAP_STATUS = z.enum(["待办", "进行中", "已完成", "已搁置"]);
 const PRODUCTLAB_ROADMAP_PRIORITY = z.enum(["高", "中", "低"]);
 const PRODUCTLAB_PILLAR = z.enum(["核心功能", "支付变现", "Onboarding", "增长获客", "仪表盘", "集成", "稳定性", "其他"]);
