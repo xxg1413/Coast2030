@@ -172,21 +172,165 @@ export interface TaskItem {
     text: string;
     completed: boolean;
     goalArea: GoalArea;
+    repeat: TaskRepeatMode;
+    seriesId: string | null;
+    seriesAnchor: string;
+}
+
+const ISO_WEEK_KEY_REGEX = /^\d{4}-W\d{2}$/;
+const MONTH_KEY_REGEX = /^\d{4}-\d{2}$/;
+
+function isValidIsoWeekKey(value?: string): value is string {
+    return Boolean(value && ISO_WEEK_KEY_REGEX.test(value));
+}
+
+function isValidMonthKey(value?: string): value is string {
+    return Boolean(value && MONTH_KEY_REGEX.test(value));
+}
+
+function isoWeekKeyRank(weekKey: string): number {
+    const match = weekKey.match(/^(\d{4})-W(\d{2})$/);
+    if (!match) return Number.NaN;
+    return Number(match[1]) * 100 + Number(match[2]);
+}
+
+/** 每周重复：从锚点周起，每个后续周都出现。 */
+function matchesWeeklyRecurrence(anchorWeekKey: string, targetWeekKey: string): boolean {
+    if (!isValidIsoWeekKey(anchorWeekKey) || !isValidIsoWeekKey(targetWeekKey)) return false;
+    return isoWeekKeyRank(targetWeekKey) >= isoWeekKeyRank(anchorWeekKey);
+}
+
+/** 每月重复：从锚点月起，每个后续月都出现。 */
+function matchesMonthlyRecurrence(anchorMonthKey: string, year: number, month: number): boolean {
+    if (!isValidMonthKey(anchorMonthKey)) return false;
+    const match = anchorMonthKey.match(/^(\d{4})-(\d{2})$/)!;
+    return year * 100 + month >= Number(match[1]) * 100 + Number(match[2]);
+}
+
+async function materializeRecurringWeeklyTasks(db: D1Database, weekKey: string): Promise<void> {
+    const series = await db
+        .prepare(
+            `SELECT series_id, repeat_mode, series_anchor FROM weekly_focus
+             WHERE repeat_mode != 'none' AND series_id IS NOT NULL
+             GROUP BY series_id`,
+        )
+        .all<{ series_id: string; repeat_mode: string; series_anchor: string }>();
+
+    for (const item of series.results) {
+        if (normalizeRepeatMode(item.repeat_mode) !== "weekly") continue;
+        if (!matchesWeeklyRecurrence(item.series_anchor, weekKey)) continue;
+
+        const exists = await db
+            .prepare("SELECT id FROM weekly_focus WHERE series_id = ? AND week_key = ? LIMIT 1")
+            .bind(item.series_id, weekKey)
+            .first();
+        if (exists) continue;
+
+        const proto = await db
+            .prepare(
+                "SELECT text, goal_area, repeat_mode, series_anchor FROM weekly_focus WHERE series_id = ? ORDER BY id DESC LIMIT 1",
+            )
+            .bind(item.series_id)
+            .first<{ text: string; goal_area: string; repeat_mode: string; series_anchor: string }>();
+        if (!proto) continue;
+
+        await db
+            .prepare(
+                `INSERT INTO weekly_focus (text, completed, week_key, goal_area, repeat_mode, series_id, series_anchor)
+                 VALUES (?, 0, ?, ?, ?, ?, ?)`,
+            )
+            .bind(proto.text, weekKey, proto.goal_area, proto.repeat_mode, item.series_id, proto.series_anchor)
+            .run();
+    }
+}
+
+async function materializeRecurringMonthlyTasks(db: D1Database, year: number, month: number): Promise<void> {
+    const series = await db
+        .prepare(
+            `SELECT series_id, repeat_mode, series_anchor FROM monthly_milestones
+             WHERE repeat_mode != 'none' AND series_id IS NOT NULL
+             GROUP BY series_id`,
+        )
+        .all<{ series_id: string; repeat_mode: string; series_anchor: string }>();
+
+    for (const item of series.results) {
+        if (normalizeRepeatMode(item.repeat_mode) !== "monthly") continue;
+        if (!matchesMonthlyRecurrence(item.series_anchor, year, month)) continue;
+
+        const exists = await db
+            .prepare("SELECT id FROM monthly_milestones WHERE series_id = ? AND year = ? AND month = ? LIMIT 1")
+            .bind(item.series_id, year, month)
+            .first();
+        if (exists) continue;
+
+        const proto = await db
+            .prepare(
+                `SELECT text, milestone_datetime, goal_area, repeat_mode, series_anchor FROM monthly_milestones
+                 WHERE series_id = ? ORDER BY id DESC LIMIT 1`,
+            )
+            .bind(item.series_id)
+            .first<{
+                text: string;
+                milestone_datetime: string | null;
+                goal_area: string;
+                repeat_mode: string;
+                series_anchor: string;
+            }>();
+        if (!proto) continue;
+
+        // 日期前缀沿用原型的时间，日、月落到目标月（超过目标月天数时取月末）。
+        const protoDate = proto.milestone_datetime && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(proto.milestone_datetime)
+            ? proto.milestone_datetime
+            : null;
+        const protoTime = protoDate ? protoDate.slice(11, 16) : "09:00";
+        const protoDay = protoDate ? Number(protoDate.slice(8, 10)) : 1;
+        const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+        const instanceDate = `${year}-${String(month).padStart(2, "0")}-${String(Math.min(protoDay, daysInMonth)).padStart(2, "0")}`;
+
+        await db
+            .prepare(
+                `INSERT INTO monthly_milestones (year, month, text, completed, milestone_datetime, goal_area, repeat_mode, series_id, series_anchor)
+                 VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+            )
+            .bind(
+                year,
+                month,
+                buildPrefixedText(stripExistingDateTimePrefix(proto.text), instanceDate, protoTime),
+                `${instanceDate} ${protoTime}:00`,
+                proto.goal_area,
+                proto.repeat_mode,
+                item.series_id,
+                proto.series_anchor,
+            )
+            .run();
+    }
 }
 
 export async function getStructuredWeeklyFocus(): Promise<{ title: string; tasks: TaskItem[] }> {
     const db = await getDB();
     const weekKey = getIsoWeekKey();
+    await materializeRecurringWeeklyTasks(db, weekKey);
     const result = await db
-        .prepare("SELECT id, text, completed, goal_area FROM weekly_focus WHERE week_key = ? ORDER BY created_at ASC")
+        .prepare("SELECT id, text, completed, goal_area, repeat_mode, series_id, series_anchor FROM weekly_focus WHERE week_key = ? ORDER BY created_at ASC")
         .bind(weekKey)
-        .all<{ id: number; text: string; completed: number; goal_area: string }>();
+        .all<{
+            id: number;
+            text: string;
+            completed: number;
+            goal_area: string;
+            repeat_mode: string;
+            series_id: string | null;
+            series_anchor: string;
+        }>();
 
     const tasks = result.results.map((r) => ({
         id: r.id.toString(),
         text: r.text,
         completed: r.completed === 1,
         goalArea: normalizeGoalArea(r.goal_area),
+        repeat: normalizeRepeatMode(r.repeat_mode),
+        seriesId: r.series_id,
+        seriesAnchor: r.series_anchor || "",
     }));
 
     return { title: `本周焦点 · ${weekKey}`, tasks };
@@ -224,9 +368,62 @@ export async function addTask(taskText: string, goalArea?: string): Promise<bool
     return true;
 }
 
-export async function deleteTask(taskId: string): Promise<boolean> {
+export async function deleteTask(taskId: string, deleteSeries = false): Promise<boolean> {
     const db = await getDB();
+    if (deleteSeries) {
+        const row = await db
+            .prepare("SELECT series_id FROM weekly_focus WHERE id = ? LIMIT 1")
+            .bind(Number(taskId))
+            .first<{ series_id: string | null }>();
+        if (row?.series_id) {
+            await db.prepare("DELETE FROM weekly_focus WHERE series_id = ?").bind(row.series_id).run();
+            return true;
+        }
+    }
     await db.prepare("DELETE FROM weekly_focus WHERE id = ?").bind(Number(taskId)).run();
+    return true;
+}
+
+/** 编辑本周焦点的重复：每周重复 + 起始周（如 2026-W41）。对整个系列生效。 */
+export async function setWeeklyFocusRecurrence(
+    id: string,
+    repeatMode?: string,
+    anchorWeekKey?: string,
+): Promise<boolean> {
+    const db = await getDB();
+    const taskId = Number(id);
+    const row = await db
+        .prepare("SELECT id, week_key, series_id FROM weekly_focus WHERE id = ? LIMIT 1")
+        .bind(taskId)
+        .first<{ id: number; week_key: string; series_id: string | null }>();
+    if (!row) return false;
+
+    const mode = normalizeRepeatMode(repeatMode) === "weekly" ? "weekly" : "none";
+
+    if (mode === "none") {
+        if (row.series_id) {
+            await db
+                .prepare("UPDATE weekly_focus SET repeat_mode = 'none', series_id = NULL, series_anchor = '' WHERE series_id = ?")
+                .bind(row.series_id)
+                .run();
+        }
+        return true;
+    }
+
+    const seriesId = row.series_id || crypto.randomUUID();
+    const anchorMatch = anchorWeekKey?.match(/^(\d{4})-W(\d{1,2})$/);
+    const anchor = anchorMatch
+        ? `${anchorMatch[1]}-W${anchorMatch[2].padStart(2, "0")}`
+        : row.week_key;
+
+    await db
+        .prepare(
+            `UPDATE weekly_focus
+                 SET repeat_mode = ?, series_id = ?, series_anchor = ?
+                 WHERE id = ? OR series_id = ?`,
+        )
+        .bind(mode, seriesId, anchor, taskId, seriesId)
+        .run();
     return true;
 }
 
@@ -2113,26 +2310,49 @@ export async function getMonthlyTasks(month?: string): Promise<TaskItem[]> {
 
     if (!parsed) {
         const fallback = await db
-            .prepare("SELECT id, text, completed, goal_area FROM monthly_milestones ORDER BY year DESC, month DESC, created_at ASC")
-            .all<{ id: number; text: string; completed: number; goal_area: string }>();
+            .prepare("SELECT id, text, completed, goal_area, repeat_mode, series_id, series_anchor FROM monthly_milestones ORDER BY year DESC, month DESC, created_at ASC")
+            .all<{
+                id: number;
+                text: string;
+                completed: number;
+                goal_area: string;
+                repeat_mode: string;
+                series_id: string | null;
+                series_anchor: string;
+            }>();
         return fallback.results.map((r) => ({
             id: r.id.toString(),
             text: r.text,
             completed: r.completed === 1,
             goalArea: normalizeGoalArea(r.goal_area),
+            repeat: normalizeRepeatMode(r.repeat_mode),
+            seriesId: r.series_id,
+            seriesAnchor: r.series_anchor || "",
         }));
     }
 
+    await materializeRecurringMonthlyTasks(db, parsed.year, parsed.month);
     const result = await db
-        .prepare("SELECT id, text, completed, goal_area FROM monthly_milestones WHERE year = ? AND month = ? ORDER BY created_at ASC")
+        .prepare("SELECT id, text, completed, goal_area, repeat_mode, series_id, series_anchor FROM monthly_milestones WHERE year = ? AND month = ? ORDER BY created_at ASC")
         .bind(parsed.year, parsed.month)
-        .all<{ id: number; text: string; completed: number; goal_area: string }>();
+        .all<{
+            id: number;
+            text: string;
+            completed: number;
+            goal_area: string;
+            repeat_mode: string;
+            series_id: string | null;
+            series_anchor: string;
+        }>();
 
     return result.results.map((r) => ({
         id: r.id.toString(),
         text: r.text,
         completed: r.completed === 1,
         goalArea: normalizeGoalArea(r.goal_area),
+        repeat: normalizeRepeatMode(r.repeat_mode),
+        seriesId: r.series_id,
+        seriesAnchor: r.series_anchor || "",
     }));
 }
 
@@ -2162,9 +2382,63 @@ export async function addMonthlyTask(taskText: string, month?: string, goalArea?
     return true;
 }
 
-export async function deleteMonthlyTask(id: string): Promise<boolean> {
+export async function deleteMonthlyTask(id: string, deleteSeries = false): Promise<boolean> {
     const db = await getDB();
+    if (deleteSeries) {
+        const row = await db
+            .prepare("SELECT series_id FROM monthly_milestones WHERE id = ? LIMIT 1")
+            .bind(Number(id))
+            .first<{ series_id: string | null }>();
+        if (row?.series_id) {
+            await db.prepare("DELETE FROM monthly_milestones WHERE series_id = ?").bind(row.series_id).run();
+            return true;
+        }
+    }
     await db.prepare("DELETE FROM monthly_milestones WHERE id = ?").bind(Number(id)).run();
+    return true;
+}
+
+/** 编辑本月关键点的重复：每月重复 + 起始月（如 2026-10）。对整个系列生效。 */
+export async function setMonthlyMilestoneRecurrence(
+    id: string,
+    repeatMode?: string,
+    anchorMonthKey?: string,
+): Promise<boolean> {
+    const db = await getDB();
+    const taskId = Number(id);
+    const row = await db
+        .prepare("SELECT id, year, month, series_id FROM monthly_milestones WHERE id = ? LIMIT 1")
+        .bind(taskId)
+        .first<{ id: number; year: number; month: number; series_id: string | null }>();
+    if (!row) return false;
+
+    const mode = normalizeRepeatMode(repeatMode) === "monthly" ? "monthly" : "none";
+
+    if (mode === "none") {
+        if (row.series_id) {
+            await db
+                .prepare(
+                    "UPDATE monthly_milestones SET repeat_mode = 'none', series_id = NULL, series_anchor = '' WHERE series_id = ?",
+                )
+                .bind(row.series_id)
+                .run();
+        }
+        return true;
+    }
+
+    const seriesId = row.series_id || crypto.randomUUID();
+    const anchor = isValidMonthKey(anchorMonthKey)
+        ? anchorMonthKey
+        : `${row.year}-${String(row.month).padStart(2, "0")}`;
+
+    await db
+        .prepare(
+            `UPDATE monthly_milestones
+                 SET repeat_mode = ?, series_id = ?, series_anchor = ?
+                 WHERE id = ? OR series_id = ?`,
+        )
+        .bind(mode, seriesId, anchor, taskId, seriesId)
+        .run();
     return true;
 }
 

@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Plus, Trash2, Loader2 } from "lucide-react";
+import { CalendarDays, CalendarX2, Check, Loader2, Plus, Repeat, Trash2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
@@ -17,12 +17,16 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "./empty-state";
 import { TaskPomodoroButton } from "./task-pomodoro";
+import type { TaskRepeatMode } from "@/lib/api";
 
 interface TaskItem {
   id: string;
   text: string;
   completed: boolean;
   goalArea: GoalArea;
+  repeat: TaskRepeatMode;
+  seriesId: string | null;
+  seriesAnchor: string;
 }
 
 type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
@@ -31,6 +35,14 @@ const GOAL_LABELS: Record<GoalArea, string> = {
   Hunter: "Hunter",
   SaaS: "SaaS",
   Media: "Media",
+};
+
+const MONTHLY_REPEAT_OPTIONS: Array<TaskRepeatMode> = ["none", "monthly"];
+const MONTHLY_REPEAT_LABELS: Record<TaskRepeatMode, string> = {
+  none: "不重复",
+  monthly: "每月",
+  daily: "每天",
+  weekly: "每周",
 };
 
 export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; month: string; months: string[] }) {
@@ -42,6 +54,10 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
   const [goalArea, setGoalArea] = useState<GoalArea>("Overall");
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [repeatEditId, setRepeatEditId] = useState<string | null>(null);
+  const [repeatMode, setRepeatMode] = useState<TaskRepeatMode>("none");
+  const [repeatAnchor, setRepeatAnchor] = useState("");
+  const [savingRepeat, setSavingRepeat] = useState(false);
   const isAllMonths = month === "all";
 
   const handleMonthChange = (value: string) => {
@@ -86,19 +102,43 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
     }
   };
 
-  const handleDelete = async (task: TaskItem) => {
-    setDeleting(task.id);
+  const handleDelete = async (taskId: string, series = false) => {
+    setDeleting(taskId);
     try {
       await fetch("/api/tasks/monthly/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: task.id }),
+        body: JSON.stringify({ id: taskId, series }),
       });
       router.refresh();
     } catch (e) {
       console.error(e);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const openRepeatEdit = (task: TaskItem) => {
+    setRepeatMode(task.repeat === "monthly" ? "monthly" : "none");
+    setRepeatAnchor(task.seriesAnchor || "");
+    setRepeatEditId(task.id);
+  };
+
+  const saveRepeatEdit = async () => {
+    if (!repeatEditId) return;
+    setSavingRepeat(true);
+    try {
+      await fetch("/api/tasks/monthly/repeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: repeatEditId, repeat: repeatMode, anchorMonth: repeatAnchor }),
+      });
+      setRepeatEditId(null);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingRepeat(false);
     }
   };
 
@@ -133,48 +173,132 @@ export function MonthlyTaskList({ tasks, month, months }: { tasks: TaskItem[]; m
 
           {tasks.map((task) => {
             const disabled = toggling === task.id || deleting === task.id;
+            const inRepeatEdit = repeatEditId === task.id;
 
             return (
               <div
                 key={task.id}
-                className="flex items-start justify-between gap-3 rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 group"
+                className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 group"
               >
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <Checkbox
-                    id={`monthly-${task.id}`}
-                    checked={task.completed}
-                    onCheckedChange={() => handleToggle(task)}
-                    disabled={disabled}
-                    className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                  />
-                  <label
-                    htmlFor={`monthly-${task.id}`}
-                    className={`text-sm leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
-                      task.completed ? "line-through text-stone-400" : "text-stone-900"
-                    }`}
-                  >
-                    {task.text}
-                  </label>
-                  <span className="shrink-0 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
-                    {GOAL_LABELS[task.goalArea]}
-                  </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
-                  <TaskPomodoroButton taskKey={`monthly:${task.id}`} label={task.text} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                    onClick={() => handleDelete(task)}
-                    disabled={deleting === task.id}
-                  >
-                    {deleting === task.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    <Checkbox
+                      id={`monthly-${task.id}`}
+                      checked={task.completed}
+                      onCheckedChange={() => handleToggle(task)}
+                      disabled={disabled}
+                      className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <div className="min-w-0 space-y-2">
+                      <label
+                        htmlFor={`monthly-${task.id}`}
+                        className={`block text-sm leading-relaxed peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${
+                          task.completed ? "line-through text-stone-400" : "text-stone-900"
+                        }`}
+                      >
+                        {task.text}
+                      </label>
+                      <div className="flex items-center gap-0.5">
+                        <span className="mr-1 shrink-0 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                          {GOAL_LABELS[task.goalArea]}
+                        </span>
+                        {task.repeat === "monthly" && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700">
+                            <Repeat className="h-3 w-3" aria-hidden="true" />
+                            每月{task.seriesAnchor ? `·从${task.seriesAnchor}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <TaskPomodoroButton taskKey={`monthly:${task.id}`} label={task.text} />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-stone-500 hover:text-cyan-700 hover:bg-cyan-50"
+                      title="设置重复（每月 + 起始月）"
+                      onClick={() => (inRepeatEdit ? setRepeatEditId(null) : openRepeatEdit(task))}
+                      disabled={disabled || savingRepeat}
+                    >
+                      <Repeat className="h-3.5 w-3.5" />
+                    </Button>
+                    {task.repeat === "monthly" && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-stone-500 hover:text-destructive hover:bg-destructive/10"
+                        title="删除整个重复系列（所有月）"
+                        onClick={() => {
+                          if (window.confirm("删除整个重复系列？所有月的这条任务都会被删除。")) {
+                            handleDelete(task.id, true);
+                          }
+                        }}
+                        disabled={disabled}
+                      >
+                        <CalendarX2 className="h-3.5 w-3.5" />
+                      </Button>
                     )}
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                      title={task.repeat === "monthly" ? "只删除本月这一条" : "删除任务"}
+                      onClick={() => handleDelete(task.id)}
+                      disabled={disabled}
+                    >
+                      {deleting === task.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
+
+                {inRepeatEdit && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-cyan-100 bg-cyan-50/60 px-2 py-2">
+                    <select
+                      value={repeatMode}
+                      onChange={(event) => setRepeatMode(event.target.value as TaskRepeatMode)}
+                      className="h-8 rounded-md border border-stone-200 bg-white px-2 text-xs"
+                      aria-label="重复方式"
+                    >
+                      {MONTHLY_REPEAT_OPTIONS.map((value) => (
+                        <option key={value} value={value}>{MONTHLY_REPEAT_LABELS[value]}</option>
+                      ))}
+                    </select>
+                    <Input
+                      type="month"
+                      value={repeatAnchor}
+                      onChange={(event) => setRepeatAnchor(event.target.value)}
+                      className="h-8 w-[160px] bg-white border-stone-200"
+                      aria-label="起始月"
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={saveRepeatEdit}
+                      disabled={savingRepeat}
+                    >
+                      {savingRepeat ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => setRepeatEditId(null)}
+                      disabled={savingRepeat}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })}

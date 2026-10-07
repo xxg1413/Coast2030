@@ -349,6 +349,25 @@ const MIGRATIONS: Migration[] = [
               ON daily_tasks(series_id, task_date);
         `,
     },
+    {
+        version: 13,
+        name: 'weekly_monthly_recurrence',
+        sql: `
+            ALTER TABLE weekly_focus ADD COLUMN repeat_mode TEXT NOT NULL DEFAULT 'none';
+            ALTER TABLE weekly_focus ADD COLUMN series_id TEXT;
+            ALTER TABLE weekly_focus ADD COLUMN series_anchor TEXT NOT NULL DEFAULT '';
+
+            CREATE INDEX IF NOT EXISTS idx_weekly_focus_series
+              ON weekly_focus(series_id, week_key);
+
+            ALTER TABLE monthly_milestones ADD COLUMN repeat_mode TEXT NOT NULL DEFAULT 'none';
+            ALTER TABLE monthly_milestones ADD COLUMN series_id TEXT;
+            ALTER TABLE monthly_milestones ADD COLUMN series_anchor TEXT NOT NULL DEFAULT '';
+
+            CREATE INDEX IF NOT EXISTS idx_monthly_milestones_series
+              ON monthly_milestones(series_id, year, month);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {
