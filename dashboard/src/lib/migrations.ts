@@ -368,6 +368,20 @@ const MIGRATIONS: Migration[] = [
               ON monthly_milestones(series_id, year, month);
         `,
     },
+    {
+        version: 14,
+        name: 'recurrence_unique_instances',
+        sql: `
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_daily_tasks_series_date
+              ON daily_tasks(series_id, task_date) WHERE series_id IS NOT NULL;
+
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_weekly_focus_series_week
+              ON weekly_focus(series_id, week_key) WHERE series_id IS NOT NULL;
+
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_monthly_milestones_series_month
+              ON monthly_milestones(series_id, year, month) WHERE series_id IS NOT NULL;
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {
@@ -393,10 +407,33 @@ export async function runMigrations(db: D1Database): Promise<void> {
         .sort((a, b) => a.version - b.version);
 
     for (const migration of pending) {
-        await db.exec(migration.sql);
+        await execMigrationSql(db, migration.sql);
         await db
             .prepare('INSERT INTO schema_migrations (version, name) VALUES (?, ?)')
             .bind(migration.version, migration.name)
             .run();
+    }
+}
+
+/**
+ * 逐条执行迁移语句；D1 会按分号拆分。可重入：幂等语句（CREATE ... IF NOT EXISTS）
+ * 直接跳过；非幂等的 ALTER TABLE ADD COLUMN 遇到"列已存在"视为已应用，避免迁移
+ * 中途失败后版本号未写入、重跑撞 duplicate column 卡死全站。
+ */
+async function execMigrationSql(db: D1Database, sql: string): Promise<void> {
+    const statements = sql
+        .split(';')
+        .map((statement) => statement.trim())
+        .filter(Boolean);
+
+    for (const statement of statements) {
+        try {
+            await db.exec(statement);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            // 重入场景：列/索引/表已经存在，说明这条已应用过，跳过即可。
+            if (/duplicate column|already exists/i.test(message)) continue;
+            throw error;
+        }
     }
 }

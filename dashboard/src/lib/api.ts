@@ -236,7 +236,7 @@ async function materializeRecurringWeeklyTasks(db: D1Database, weekKey: string):
 
         await db
             .prepare(
-                `INSERT INTO weekly_focus (text, completed, week_key, goal_area, repeat_mode, series_id, series_anchor)
+                `INSERT OR IGNORE INTO weekly_focus (text, completed, week_key, goal_area, repeat_mode, series_id, series_anchor)
                  VALUES (?, 0, ?, ?, ?, ?, ?)`,
             )
             .bind(proto.text, weekKey, proto.goal_area, proto.repeat_mode, item.series_id, proto.series_anchor)
@@ -289,7 +289,7 @@ async function materializeRecurringMonthlyTasks(db: D1Database, year: number, mo
 
         await db
             .prepare(
-                `INSERT INTO monthly_milestones (year, month, text, completed, milestone_datetime, goal_area, repeat_mode, series_id, series_anchor)
+                `INSERT OR IGNORE INTO monthly_milestones (year, month, text, completed, milestone_datetime, goal_area, repeat_mode, series_id, series_anchor)
                  VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)`,
             )
             .bind(
@@ -912,7 +912,11 @@ export function matchesTaskRecurrence(
             new Date(`${targetDate}T00:00:00Z`).getUTCDay()
         );
     }
-    return anchorDate.slice(8, 10) === targetDate.slice(8, 10);
+    // 每月：按"几号"匹配；锚点日超过目标月天数时钳制到月末（如 31 号 → 2 月 28/29 号）。
+    const anchorDay = Number(anchorDate.slice(8, 10));
+    const [targetYear, targetMonth] = targetDate.split("-").map(Number);
+    const effectiveDay = Math.min(anchorDay, new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate());
+    return Number(targetDate.slice(8, 10)) === effectiveDay;
 }
 
 /**
@@ -967,7 +971,7 @@ async function materializeRecurringDailyTasks(
 
         await db
             .prepare(
-                `INSERT INTO daily_tasks
+                `INSERT OR IGNORE INTO daily_tasks
                    (task_date, task_datetime, text, completed, goal_area, repeat_mode, series_id, series_anchor)
                  VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
             )
