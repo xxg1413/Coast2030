@@ -9,18 +9,19 @@
 
 | 文件/目录 | 说明 |
 |------|------|
-| `08-plan.md` | 当前月度执行计划 |
-| `archive/` | 历史计划与归档复盘 |
+| `archive/` | 历史计划与归档复盘（3 月计划、8 月计划已归档至 git 历史） |
 | `servers.md` | 服务器与基础设施记录 |
+
+> 当前唯一执行计划:**38 财年计划** [`../38/plan.md`](../38/plan.md) + **100 天年末战役** [`../38/100-day-plan.md`](../38/100-day-plan.md)。
 
 ---
 
 ## 快速入口
 
-- SaaS：[`pxiaoer-product-lab/SaaS/README.md`](../../pxiaoer-product-lab/SaaS/README.md)
-- 漏洞挖掘：[`AIBounty/README.md`](../../AIBounty/README.md)
+- SaaS：[`pxiaoer-product-lab/SaaS/README.md`](../../pxiaoer-product-lab/SaaS/README.md)（产品数据以线上看板为唯一事实源）
+- 漏洞挖掘：[`AIBounty/README.md`](../../AIBounty/README.md)（已停摆，只读维护）
 - 自媒体：[`pxiaoer-ai-notes/ainotes/README.md`](../../pxiaoer-ai-notes/ainotes/README.md)
-- 当前计划：[`08-plan.md`](./08-plan.md)
+- 当前计划：[`../38/plan.md`](../38/plan.md)（总纲）· [`../38/100-day-plan.md`](../38/100-day-plan.md)（战役）
 - 3 月归档：[`archive/2026-03-plan.md`](./archive/2026-03-plan.md)
 - 服务器记录：[`servers.md`](./servers.md)
 
