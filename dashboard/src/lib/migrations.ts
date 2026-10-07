@@ -337,6 +337,18 @@ const MIGRATIONS: Migration[] = [
               ON operator_tool_calls(created_at DESC);
         `,
     },
+    {
+        version: 12,
+        name: 'daily_task_recurrence',
+        sql: `
+            ALTER TABLE daily_tasks ADD COLUMN repeat_mode TEXT NOT NULL DEFAULT 'none';
+            ALTER TABLE daily_tasks ADD COLUMN series_id TEXT;
+            ALTER TABLE daily_tasks ADD COLUMN series_anchor TEXT NOT NULL DEFAULT '';
+
+            CREATE INDEX IF NOT EXISTS idx_daily_tasks_series_date
+              ON daily_tasks(series_id, task_date);
+        `,
+    },
 ];
 
 async function ensureMigrationsTable(db: D1Database): Promise<void> {

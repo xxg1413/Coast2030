@@ -1,4 +1,4 @@
-import { getDB } from "./db";
+import { getDB, type D1Database } from "./db";
 import {
     BUSINESS_LINE_TARGETS_2026,
     MORNING_CORE_POMODORO_TARGETS,
@@ -688,15 +688,108 @@ export interface DailyTaskItem {
     text: string;
     completed: boolean;
     goalArea: GoalArea;
+    repeat: TaskRepeatMode;
+    seriesId: string | null;
+}
+
+export type TaskRepeatMode = "none" | "daily" | "weekly" | "monthly";
+const TASK_REPEAT_MODES: TaskRepeatMode[] = ["none", "daily", "weekly", "monthly"];
+
+function normalizeRepeatMode(value?: string): TaskRepeatMode {
+    return TASK_REPEAT_MODES.includes(value as TaskRepeatMode) ? (value as TaskRepeatMode) : "none";
+}
+
+/** 重复任务按 ISO 日期字符串比较即可：同长度、同格式（YYYY-MM-DD）。 */
+export function matchesTaskRecurrence(
+    repeatMode: TaskRepeatMode,
+    anchorDate: string,
+    targetDate: string,
+): boolean {
+    if (repeatMode === "none" || !anchorDate || !targetDate) return false;
+    if (targetDate < anchorDate) return false;
+    if (repeatMode === "daily") return true;
+    if (repeatMode === "weekly") {
+        return (
+            new Date(`${anchorDate}T00:00:00Z`).getUTCDay() ===
+            new Date(`${targetDate}T00:00:00Z`).getUTCDay()
+        );
+    }
+    return anchorDate.slice(8, 10) === targetDate.slice(8, 10);
+}
+
+/**
+ * 打开某一天时，为命中的重复任务生成当天实例（幂等）。
+ * 实例文本取系列最近一条，编辑会沿用到后续生成的实例。
+ */
+async function materializeRecurringDailyTasks(
+    db: D1Database,
+    targetDate: string,
+): Promise<void> {
+    const series = await db
+        .prepare(
+            `SELECT series_id, repeat_mode, series_anchor FROM daily_tasks
+             WHERE repeat_mode != 'none' AND series_id IS NOT NULL
+             GROUP BY series_id`,
+        )
+        .all<{ series_id: string; repeat_mode: string; series_anchor: string }>();
+
+    for (const item of series.results) {
+        const repeatMode = normalizeRepeatMode(item.repeat_mode);
+        if (!matchesTaskRecurrence(repeatMode, item.series_anchor, targetDate)) continue;
+
+        const exists = await db
+            .prepare("SELECT id FROM daily_tasks WHERE series_id = ? AND task_date = ? LIMIT 1")
+            .bind(item.series_id, targetDate)
+            .first();
+        if (exists) continue;
+
+        const proto = await db
+            .prepare(
+                `SELECT text, goal_area, repeat_mode, series_anchor FROM daily_tasks
+                 WHERE series_id = ? ORDER BY id DESC LIMIT 1`,
+            )
+            .bind(item.series_id)
+            .first<{ text: string; goal_area: string; repeat_mode: string; series_anchor: string }>();
+        if (!proto) continue;
+
+        const now = getNowDateTimeInfo();
+        await db
+            .prepare(
+                `INSERT INTO daily_tasks
+                   (task_date, task_datetime, text, completed, goal_area, repeat_mode, series_id, series_anchor)
+                 VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+            )
+            .bind(
+                targetDate,
+                now.datetime,
+                proto.text,
+                proto.goal_area,
+                proto.repeat_mode,
+                item.series_id,
+                proto.series_anchor,
+            )
+            .run();
+    }
 }
 
 export async function getDailyTasks(date?: string): Promise<DailyTaskItem[]> {
     const db = await getDB();
     const targetDate = normalizeDate(date) || getCurrentDate();
+    await materializeRecurringDailyTasks(db, targetDate);
     const result = await db
-        .prepare("SELECT id, task_date, text, completed, goal_area FROM daily_tasks WHERE task_date = ? ORDER BY created_at ASC")
+        .prepare(
+            "SELECT id, task_date, text, completed, goal_area, repeat_mode, series_id FROM daily_tasks WHERE task_date = ? ORDER BY created_at ASC",
+        )
         .bind(targetDate)
-        .all<{ id: number; task_date: string; text: string; completed: number; goal_area: string }>();
+        .all<{
+            id: number;
+            task_date: string;
+            text: string;
+            completed: number;
+            goal_area: string;
+            repeat_mode: string;
+            series_id: string | null;
+        }>();
 
     return result.results.map((task) => ({
         id: task.id.toString(),
@@ -704,10 +797,17 @@ export async function getDailyTasks(date?: string): Promise<DailyTaskItem[]> {
         text: task.text,
         completed: task.completed === 1,
         goalArea: normalizeGoalArea(task.goal_area),
+        repeat: normalizeRepeatMode(task.repeat_mode),
+        seriesId: task.series_id,
     }));
 }
 
-export async function addDailyTask(text: string, date?: string, goalArea?: string): Promise<boolean> {
+export async function addDailyTask(
+    text: string,
+    date?: string,
+    goalArea?: string,
+    repeatMode?: string,
+): Promise<boolean> {
     const db = await getDB();
     const trimmed = text.trim();
     const targetDate = normalizeDate(date) || getCurrentDate();
@@ -715,6 +815,8 @@ export async function addDailyTask(text: string, date?: string, goalArea?: strin
     const addedAt = getNowDateTimeInfo();
     const prefixedText = buildPrefixedText(trimmed, addedAt.date, addedAt.time);
     const normalizedGoalArea = normalizeGoalArea(goalArea);
+    const normalizedRepeat = normalizeRepeatMode(repeatMode);
+    const seriesId = normalizedRepeat === "none" ? null : crypto.randomUUID();
     const parent = await db
         .prepare(`
             SELECT id FROM weekly_focus
@@ -727,10 +829,19 @@ export async function addDailyTask(text: string, date?: string, goalArea?: strin
 
     await db
         .prepare(`
-            INSERT INTO daily_tasks (task_date, task_datetime, text, completed, goal_area, parent_weekly_id)
-            VALUES (?, ?, ?, 0, ?, ?)
+            INSERT INTO daily_tasks (task_date, task_datetime, text, completed, goal_area, parent_weekly_id, repeat_mode, series_id, series_anchor)
+            VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)
         `)
-        .bind(targetDate, addedAt.datetime, prefixedText, normalizedGoalArea, parent?.id || null)
+        .bind(
+            targetDate,
+            addedAt.datetime,
+            prefixedText,
+            normalizedGoalArea,
+            parent?.id || null,
+            normalizedRepeat,
+            seriesId,
+            normalizedRepeat === "none" ? "" : targetDate,
+        )
         .run();
     return true;
 }
@@ -802,8 +913,18 @@ export async function updateDailyTask(id: string, text: string): Promise<boolean
     return true;
 }
 
-export async function deleteDailyTask(id: string): Promise<boolean> {
+export async function deleteDailyTask(id: string, deleteSeries = false): Promise<boolean> {
     const db = await getDB();
+    if (deleteSeries) {
+        const row = await db
+            .prepare("SELECT series_id FROM daily_tasks WHERE id = ? LIMIT 1")
+            .bind(Number(id))
+            .first<{ series_id: string | null }>();
+        if (row?.series_id) {
+            await db.prepare("DELETE FROM daily_tasks WHERE series_id = ?").bind(row.series_id).run();
+            return true;
+        }
+    }
     await db.prepare("DELETE FROM daily_tasks WHERE id = ?").bind(Number(id)).run();
     return true;
 }

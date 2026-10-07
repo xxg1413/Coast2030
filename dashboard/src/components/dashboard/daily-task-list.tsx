@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, ListChecks, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CalendarX2, Check, ListChecks, Loader2, Pencil, Plus, Repeat, Trash2, X } from "lucide-react";
 import { EmptyState } from "./empty-state";
 import { TaskPomodoroButton } from "./task-pomodoro";
+import type { TaskRepeatMode } from "@/lib/api";
 
 interface DailyTask {
   id: string;
@@ -16,6 +17,8 @@ interface DailyTask {
   completed: boolean;
   date: string;
   goalArea: GoalArea;
+  repeat: TaskRepeatMode;
+  seriesId: string | null;
 }
 
 type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
@@ -27,6 +30,14 @@ const GOAL_LABELS: Record<GoalArea, string> = {
 };
 /** Hunter is retired — keep labels for existing tasks, omit from new-choice dropdown. */
 const GOAL_OPTIONS: GoalArea[] = ["Overall", "SaaS", "Media"];
+
+const REPEAT_LABELS: Record<TaskRepeatMode, string> = {
+  none: "不重复",
+  daily: "每天",
+  weekly: "每周",
+  monthly: "每月",
+};
+const REPEAT_OPTIONS = Object.keys(REPEAT_LABELS) as TaskRepeatMode[];
 
 interface DailyTaskListProps {
   date: string;
@@ -40,6 +51,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
 
   const [newTask, setNewTask] = useState("");
   const [goalArea, setGoalArea] = useState<GoalArea>("Overall");
+  const [newRepeat, setNewRepeat] = useState<TaskRepeatMode>("none");
   const [adding, setAdding] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -63,7 +75,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
       await fetch("/api/tasks/daily/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newTask, date, goalArea }),
+        body: JSON.stringify({ text: newTask, date, goalArea, repeat: newRepeat }),
       });
       setNewTask("");
       router.refresh();
@@ -90,13 +102,13 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
     }
   };
 
-  const handleDelete = async (taskId: string) => {
+  const handleDelete = async (taskId: string, series = false) => {
     setDeletingId(taskId);
     try {
       await fetch("/api/tasks/daily/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId }),
+        body: JSON.stringify({ id: taskId, series }),
       });
       router.refresh();
     } catch (error) {
@@ -199,6 +211,12 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                       <span className="mr-1 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
                         {GOAL_LABELS[task.goalArea]}
                       </span>
+                      {task.repeat !== "none" && (
+                        <span className="mr-1 inline-flex items-center gap-0.5 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700">
+                          <Repeat className="h-3 w-3" aria-hidden="true" />
+                          {REPEAT_LABELS[task.repeat]}
+                        </span>
+                      )}
                       {inEdit ? (
                         <>
                           <Button
@@ -239,10 +257,28 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                         </>
                       )}
 
+                      {task.repeat !== "none" && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-stone-500 hover:text-destructive hover:bg-destructive/10"
+                          title="删除整个重复系列（所有日期）"
+                          onClick={() => {
+                            if (window.confirm("删除整个重复系列？所有日期的这条任务都会被删除。")) {
+                              handleDelete(task.id, true);
+                            }
+                          }}
+                          disabled={disabled}
+                        >
+                          <CalendarX2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+
                       <Button
                         size="icon"
                         variant="ghost"
                         className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                        title={task.repeat !== "none" ? "只删除当天这一条" : "删除任务"}
                         onClick={() => handleDelete(task.id)}
                         disabled={disabled}
                       >
@@ -260,7 +296,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
           })}
         </div>
 
-        <div className="grid grid-cols-[110px_1fr_auto] items-center gap-2 pt-3 border-t border-stone-100">
+        <div className="grid grid-cols-[86px_82px_1fr_auto] items-center gap-2 pt-3 border-t border-stone-100">
           <select
             value={goalArea}
             onChange={(event) => setGoalArea(event.target.value as GoalArea)}
@@ -269,6 +305,16 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
           >
             {GOAL_OPTIONS.map((value) => (
               <option key={value} value={value}>{GOAL_LABELS[value]}</option>
+            ))}
+          </select>
+          <select
+            value={newRepeat}
+            onChange={(event) => setNewRepeat(event.target.value as TaskRepeatMode)}
+            className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs"
+            aria-label="重复"
+          >
+            {REPEAT_OPTIONS.map((value) => (
+              <option key={value} value={value}>{REPEAT_LABELS[value]}</option>
             ))}
           </select>
           <Input
