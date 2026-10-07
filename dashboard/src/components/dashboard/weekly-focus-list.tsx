@@ -40,6 +40,29 @@ const WEEKLY_REPEAT_LABELS: Record<TaskRepeatMode, string> = {
   monthly: "每月",
 };
 
+function getIsoWeekKey(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+/** 起始周候选：近 8 周 ~ 未来 4 周。 */
+function buildWeekOptions(): string[] {
+  const now = new Date();
+  const keys: string[] = [];
+  for (let offset = -8; offset <= 4; offset += 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + offset * 7);
+    keys.push(getIsoWeekKey(d));
+  }
+  return keys;
+}
+const WEEK_OPTIONS = buildWeekOptions();
+const CURRENT_WEEK_KEY = getIsoWeekKey(new Date());
+
 export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: WeeklyFocusTask[]; title?: string }) {
   const router = useRouter();
   const [newTask, setNewTask] = useState("");
@@ -105,7 +128,7 @@ export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: Week
 
   const openRepeatEdit = (task: WeeklyFocusTask) => {
     setRepeatMode(task.repeat === "weekly" ? "weekly" : "none");
-    setRepeatAnchor(task.seriesAnchor || "");
+    setRepeatAnchor(task.seriesAnchor || CURRENT_WEEK_KEY);
     setRepeatEditId(task.id);
   };
 
@@ -244,13 +267,22 @@ export function WeeklyFocusList({ tasks, title = "本周焦点" }: { tasks: Week
                         <option key={value} value={value}>{WEEKLY_REPEAT_LABELS[value]}</option>
                       ))}
                     </select>
-                    <Input
+                    <select
                       value={repeatAnchor}
                       onChange={(event) => setRepeatAnchor(event.target.value)}
-                      placeholder="起始周，如 2026-W41（留空=从本周起）"
-                      className="h-8 w-[220px] bg-white border-stone-200"
+                      className="h-8 rounded-md border border-stone-200 bg-white px-2 text-xs"
                       aria-label="起始周"
-                    />
+                    >
+                      {(WEEK_OPTIONS.includes(repeatAnchor) || !repeatAnchor
+                        ? WEEK_OPTIONS
+                        : [repeatAnchor, ...WEEK_OPTIONS]
+                      ).map((week) => (
+                        <option key={week} value={week}>
+                          {week}
+                          {week === CURRENT_WEEK_KEY ? "（本周）" : ""}
+                        </option>
+                      ))}
+                    </select>
                     <Button
                       size="icon"
                       variant="ghost"

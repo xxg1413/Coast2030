@@ -115,9 +115,9 @@ export function getMorningCorePomodoroCountsByKey(
 const MONTHLY_TARGET_START_MONTH = 3;
 const MONTHLY_TARGET_GROWTH_RATIO = 1.3;
 const MONTHLY_TARGET_ROUNDING_UNIT = 1000;
-// 2026 年最后四个月按月度成交主攻分配回款目标；DeepFeather 是常驻获客线，不占月份。
+// 2026 Q4 按 100 天战役（38/100-day-plan.md）分配：合计 ¥50 万，后置加载（发射复利）；9 月及以前归零（历史已结账）。
 const CUSTOM_MONTHLY_TARGETS: Partial<Record<number, number[]>> = {
-  2026: [0, 0, 0, 0, 0, 0, 0, 0, 500000, 250000, 150000, 100000],
+  2026: [0, 0, 0, 0, 0, 0, 0, 0, 0, 100000, 150000, 250000],
 };
 
 function buildMonthlyTargets(yearTarget: number): number[] {

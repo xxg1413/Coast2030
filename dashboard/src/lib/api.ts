@@ -1,4 +1,8 @@
 import { getDB, type D1Database } from "./db";
+import { matchesTaskRecurrence, normalizeRepeatMode, type TaskRepeatMode } from "./recurrence";
+
+export { matchesTaskRecurrence };
+export type { TaskRepeatMode };
 import {
     BUSINESS_LINE_TARGETS_2026,
     MORNING_CORE_POMODORO_TARGETS,
@@ -411,7 +415,15 @@ export async function setWeeklyFocusRecurrence(
     }
 
     const seriesId = row.series_id || crypto.randomUUID();
-    const anchorMatch = anchorWeekKey?.match(/^(\d{4})-W(\d{1,2})$/);
+    const existingAnchor = row.series_id
+        ? (
+            await db
+                .prepare("SELECT series_anchor FROM weekly_focus WHERE series_id = ? AND series_anchor != '' LIMIT 1")
+                .bind(row.series_id)
+                .first<{ series_anchor: string }>()
+        )?.series_anchor || ""
+        : "";
+    const anchorMatch = (existingAnchor || anchorWeekKey || "")?.match(/^(\d{4})-W(\d{1,2})$/);
     const anchor = anchorMatch
         ? `${anchorMatch[1]}-W${anchorMatch[2].padStart(2, "0")}`
         : row.week_key;
@@ -890,35 +902,6 @@ export interface DailyTaskItem {
     seriesAnchor: string;
 }
 
-export type TaskRepeatMode = "none" | "daily" | "weekly" | "monthly";
-const TASK_REPEAT_MODES: TaskRepeatMode[] = ["none", "daily", "weekly", "monthly"];
-
-function normalizeRepeatMode(value?: string): TaskRepeatMode {
-    return TASK_REPEAT_MODES.includes(value as TaskRepeatMode) ? (value as TaskRepeatMode) : "none";
-}
-
-/** 重复任务按 ISO 日期字符串比较即可：同长度、同格式（YYYY-MM-DD）。 */
-export function matchesTaskRecurrence(
-    repeatMode: TaskRepeatMode,
-    anchorDate: string,
-    targetDate: string,
-): boolean {
-    if (repeatMode === "none" || !anchorDate || !targetDate) return false;
-    if (targetDate < anchorDate) return false;
-    if (repeatMode === "daily") return true;
-    if (repeatMode === "weekly") {
-        return (
-            new Date(`${anchorDate}T00:00:00Z`).getUTCDay() ===
-            new Date(`${targetDate}T00:00:00Z`).getUTCDay()
-        );
-    }
-    // 每月：按"几号"匹配；锚点日超过目标月天数时钳制到月末（如 31 号 → 2 月 28/29 号）。
-    const anchorDay = Number(anchorDate.slice(8, 10));
-    const [targetYear, targetMonth] = targetDate.split("-").map(Number);
-    const effectiveDay = Math.min(anchorDay, new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate());
-    return Number(targetDate.slice(8, 10)) === effectiveDay;
-}
-
 /**
  * 打开某一天时，为命中的重复任务生成当天实例（幂等）。
  * 实例文本/时间取系列最近一条，日期前缀重写为当天。
@@ -1148,7 +1131,16 @@ export async function setDailyTaskRecurrence(
     }
 
     const seriesId = row.series_id || crypto.randomUUID();
-    const anchor = normalizeDate(anchorDate) || row.task_date;
+    // 已有系列保持原锚点：在任意历史实例上编辑时，日程不随这条实例的日期漂移。
+    const existingAnchor = row.series_id
+        ? (
+            await db
+                .prepare("SELECT series_anchor FROM daily_tasks WHERE series_id = ? AND series_anchor != '' LIMIT 1")
+                .bind(row.series_id)
+                .first<{ series_anchor: string }>()
+        )?.series_anchor || ""
+        : "";
+    const anchor = existingAnchor || normalizeDate(anchorDate) || row.task_date;
 
     await db
         .prepare(
@@ -2431,9 +2423,16 @@ export async function setMonthlyMilestoneRecurrence(
     }
 
     const seriesId = row.series_id || crypto.randomUUID();
-    const anchor = isValidMonthKey(anchorMonthKey)
-        ? anchorMonthKey
-        : `${row.year}-${String(row.month).padStart(2, "0")}`;
+    const existingAnchor = row.series_id
+        ? (
+            await db
+                .prepare("SELECT series_anchor FROM monthly_milestones WHERE series_id = ? AND series_anchor != '' LIMIT 1")
+                .bind(row.series_id)
+                .first<{ series_anchor: string }>()
+        )?.series_anchor || ""
+        : "";
+    const anchor = existingAnchor || (isValidMonthKey(anchorMonthKey) ? anchorMonthKey : "")
+        || `${row.year}-${String(row.month).padStart(2, "0")}`;
 
     await db
         .prepare(
