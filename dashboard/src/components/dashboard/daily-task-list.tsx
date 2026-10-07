@@ -19,6 +19,7 @@ interface DailyTask {
   goalArea: GoalArea;
   repeat: TaskRepeatMode;
   seriesId: string | null;
+  seriesAnchor: string;
 }
 
 type GoalArea = "Overall" | "Hunter" | "SaaS" | "Media";
@@ -38,6 +39,25 @@ const REPEAT_LABELS: Record<TaskRepeatMode, string> = {
   monthly: "每月",
 };
 const REPEAT_OPTIONS = Object.keys(REPEAT_LABELS) as TaskRepeatMode[];
+const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
+
+/** 每周按锚点日期的星期几、每月按锚点日期的几号，徽章直接告诉用户下次什么时候出现。 */
+function repeatBadgeLabel(repeat: TaskRepeatMode, anchor: string): string {
+  if (repeat === "daily") return "每天";
+  if (repeat === "weekly" && anchor) {
+    return `每周·周${WEEKDAY_LABELS[new Date(`${anchor}T00:00:00Z`).getUTCDay()] ?? ""}`;
+  }
+  if (repeat === "monthly" && anchor) {
+    return `每月·${Number(anchor.slice(8, 10))}日`;
+  }
+  return REPEAT_LABELS[repeat];
+}
+
+interface RepeatDraft {
+  mode: TaskRepeatMode;
+  anchor: string;
+  time: string;
+}
 
 interface DailyTaskListProps {
   date: string;
@@ -51,13 +71,15 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
 
   const [newTask, setNewTask] = useState("");
   const [goalArea, setGoalArea] = useState<GoalArea>("Overall");
-  const [newRepeat, setNewRepeat] = useState<TaskRepeatMode>("none");
   const [adding, setAdding] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [repeatEditId, setRepeatEditId] = useState<string | null>(null);
+  const [repeatDraft, setRepeatDraft] = useState<RepeatDraft>({ mode: "none", anchor: date, time: "09:00" });
+  const [savingRepeat, setSavingRepeat] = useState(false);
 
   const completedCount = useMemo(() => tasks.filter((task) => task.completed).length, [tasks]);
 
@@ -75,7 +97,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
       await fetch("/api/tasks/daily/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: newTask, date, goalArea, repeat: newRepeat }),
+        body: JSON.stringify({ text: newTask, date, goalArea }),
       });
       setNewTask("");
       router.refresh();
@@ -146,6 +168,43 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
     }
   };
 
+  const openRepeatEdit = (task: DailyTask) => {
+    const timeMatch = task.text.match(/(\d{1,2}:\d{2})/);
+    setRepeatDraft({
+      mode: task.repeat,
+      anchor: task.seriesAnchor || task.date,
+      time: timeMatch ? timeMatch[1].padStart(5, "0") : "09:00",
+    });
+    setRepeatEditId(task.id);
+  };
+
+  const cancelRepeatEdit = () => {
+    setRepeatEditId(null);
+  };
+
+  const saveRepeatEdit = async () => {
+    if (!repeatEditId) return;
+    setSavingRepeat(true);
+    try {
+      await fetch("/api/tasks/daily/repeat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: repeatEditId,
+          repeat: repeatDraft.mode,
+          anchorDate: repeatDraft.anchor,
+          time: repeatDraft.time,
+        }),
+      });
+      cancelRepeatEdit();
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSavingRepeat(false);
+    }
+  };
+
   return (
     <Card className="glass-panel flex h-full w-full flex-col">
       <CardHeader className="space-y-3 pb-4">
@@ -173,6 +232,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
 
           {tasks.map((task) => {
             const inEdit = editingId === task.id;
+            const inRepeatEdit = repeatEditId === task.id;
             const disabled = togglingId === task.id || deletingId === task.id || updating;
 
             return (
@@ -207,6 +267,63 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                       </label>
                     )}
 
+                    {inRepeatEdit && (
+                      <div className="flex flex-wrap items-center gap-2 rounded-md border border-cyan-100 bg-cyan-50/60 px-2 py-2">
+                        <select
+                          value={repeatDraft.mode}
+                          onChange={(event) =>
+                            setRepeatDraft((draft) => ({ ...draft, mode: event.target.value as TaskRepeatMode }))
+                          }
+                          className="h-8 rounded-md border border-stone-200 bg-white px-2 text-xs"
+                          aria-label="重复方式"
+                        >
+                          {REPEAT_OPTIONS.map((value) => (
+                            <option key={value} value={value}>{REPEAT_LABELS[value]}</option>
+                          ))}
+                        </select>
+                        <Input
+                          type="date"
+                          value={repeatDraft.anchor}
+                          onChange={(event) =>
+                            setRepeatDraft((draft) => ({ ...draft, anchor: event.target.value }))
+                          }
+                          className="h-8 w-[150px] bg-white border-stone-200"
+                          aria-label="重复日期"
+                        />
+                        <Input
+                          type="time"
+                          value={repeatDraft.time}
+                          onChange={(event) =>
+                            setRepeatDraft((draft) => ({ ...draft, time: event.target.value }))
+                          }
+                          className="h-8 w-[118px] bg-white border-stone-200"
+                          aria-label="时间"
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={saveRepeatEdit}
+                          disabled={savingRepeat}
+                        >
+                          {savingRepeat ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={cancelRepeatEdit}
+                          disabled={savingRepeat}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-0.5">
                       <span className="mr-1 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] font-medium text-stone-600">
                         {GOAL_LABELS[task.goalArea]}
@@ -214,7 +331,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                       {task.repeat !== "none" && (
                         <span className="mr-1 inline-flex items-center gap-0.5 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700">
                           <Repeat className="h-3 w-3" aria-hidden="true" />
-                          {REPEAT_LABELS[task.repeat]}
+                          {repeatBadgeLabel(task.repeat, task.seriesAnchor)}
                         </span>
                       )}
                       {inEdit ? (
@@ -245,6 +362,16 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
                       ) : (
                         <>
                           <TaskPomodoroButton taskKey={`daily:${task.id}`} label={task.text} />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-stone-500 hover:text-cyan-700 hover:bg-cyan-50"
+                            title="设置重复（每天 / 每周 / 每月 + 日期和时间）"
+                            onClick={() => openRepeatEdit(task)}
+                            disabled={disabled}
+                          >
+                            <Repeat className="h-3.5 w-3.5" />
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
@@ -296,7 +423,7 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
           })}
         </div>
 
-        <div className="grid grid-cols-[86px_82px_1fr_auto] items-center gap-2 pt-3 border-t border-stone-100">
+        <div className="grid grid-cols-[110px_1fr_auto] items-center gap-2 pt-3 border-t border-stone-100">
           <select
             value={goalArea}
             onChange={(event) => setGoalArea(event.target.value as GoalArea)}
@@ -305,16 +432,6 @@ export function DailyTaskList({ date, tasks }: DailyTaskListProps) {
           >
             {GOAL_OPTIONS.map((value) => (
               <option key={value} value={value}>{GOAL_LABELS[value]}</option>
-            ))}
-          </select>
-          <select
-            value={newRepeat}
-            onChange={(event) => setNewRepeat(event.target.value as TaskRepeatMode)}
-            className="h-9 rounded-md border border-stone-200 bg-white px-2 text-xs"
-            aria-label="重复"
-          >
-            {REPEAT_OPTIONS.map((value) => (
-              <option key={value} value={value}>{REPEAT_LABELS[value]}</option>
             ))}
           </select>
           <Input

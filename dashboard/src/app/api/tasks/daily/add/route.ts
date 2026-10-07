@@ -3,12 +3,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
     try {
-        const { text, date, goalArea, repeat } = await request.json();
+        const { text, date, goalArea } = await request.json();
         if (!text || !text.trim()) {
             return NextResponse.json({ error: "Text required" }, { status: 400 });
         }
 
-        const success = await addDailyTask(text, date, goalArea, repeat);
+        const success = await addDailyTask(text, date, goalArea);
         if (!success) {
             return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
         }
