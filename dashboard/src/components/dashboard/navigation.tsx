@@ -14,11 +14,13 @@ import {
   CalendarCheck,
   Hourglass,
   ChevronDown,
+  Clapperboard,
   FileText,
   Home,
   Layers,
   Menu,
   Shield,
+  TrendingUp,
   X,
 } from "lucide-react";
 
@@ -43,23 +45,28 @@ const MORE_ITEMS = [
   { name: "AI Notes", href: "/ainotes", icon: FileText, group: "projects" as const },
   { name: "最后 100 天", href: "/100-days", icon: Hourglass, group: "plans" as const },
   { name: "38 岁财年", href: "/38", icon: Cake, group: "plans" as const },
+  { name: "Growth Ops", href: "https://growth.pxiaoer.blog", icon: TrendingUp, group: "systems" as const },
+  { name: "Content Ops", href: "https://content.pxiaoer.blog", icon: Clapperboard, group: "systems" as const },
   { name: "Operator", href: "/operator", icon: Bot, group: "tools" as const },
 ] as const;
 
 const MOBILE_GROUP_LABELS: Record<string, string> = {
   projects: "业务线",
   plans: "规划",
+  systems: "运营系统",
   tools: "工具",
 };
 
-const MOBILE_GROUPS = ["projects", "plans", "tools"] as const;
+const MOBILE_GROUPS = ["projects", "plans", "systems", "tools"] as const;
+
+const isExternal = (href: string) => href.startsWith("http");
 
 export function Navigation() {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const moreIsActive = MORE_ITEMS.some((item) => pathname.startsWith(item.href));
+  const moreIsActive = MORE_ITEMS.some((item) => !isExternal(item.href) && pathname.startsWith(item.href));
 
   useEffect(() => {
     if (!moreOpen && !mobileOpen) return;
@@ -137,19 +144,26 @@ export function Navigation() {
               <div id="coast-more-links" className="coast-project-popover">
                 {MORE_ITEMS.map((item, index) => {
                   const Icon = item.icon;
-                  const active = pathname.startsWith(item.href);
+                  const active = !isExternal(item.href) && pathname.startsWith(item.href);
                   const showDivider = index > 0 && item.group !== MORE_ITEMS[index - 1]?.group;
                   return (
                     <div key={item.href} className={showDivider ? "coast-project-popover__group" : undefined}>
-                      <Link
-                        href={item.href}
-                        onClick={closeMenus}
-                        aria-current={active ? "page" : undefined}
-                        data-active={active ? "true" : undefined}
-                      >
-                        <Icon aria-hidden="true" />
-                        {item.name}
-                      </Link>
+                      {isExternal(item.href) ? (
+                        <a href={item.href} target="_blank" rel="noreferrer" onClick={closeMenus}>
+                          <Icon aria-hidden="true" />
+                          {item.name}
+                        </a>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={closeMenus}
+                          aria-current={active ? "page" : undefined}
+                          data-active={active ? "true" : undefined}
+                        >
+                          <Icon aria-hidden="true" />
+                          {item.name}
+                        </Link>
+                      )}
                     </div>
                   );
                 })}
@@ -200,7 +214,18 @@ export function Navigation() {
                 </div>
                 {items.map((item) => {
                   const Icon = item.icon;
-                  return (
+                  return isExternal(item.href) ? (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={closeMenus}
+                    >
+                      <Icon aria-hidden="true" />
+                      {item.name}
+                    </a>
+                  ) : (
                     <Link
                       key={item.href}
                       href={item.href}
